@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.vscode/
+*.tsbuildinfo
+
+.env
+.env.local
+
+*.log
+
+# Cache do plugin do TanStack Router (gerado no build)
+.tanstack/

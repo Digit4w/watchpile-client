@@ -1,0 +1,289 @@
+/* Coreografia da Home: entrada dos widgets e miniaturas do painel.
+ *
+ * Os TOKENS de movimento são do sistema (`--motion-*`, `--ease-chrome`, design
+ * system seção 11); a coreografia — quais keyframes, qual escalonamento — é
+ * daqui, porque é específica destes componentes.
+ *
+ * ── Entrada do widget ──────────────────────────────────────────────────────
+ * Widget nascendo de estalo é seco: aparece do nada no meio da grade e o olho
+ * não acompanha de onde veio. Uma escala curta a partir de 96% resolve sem
+ * virar espetáculo — o widget "assenta" no lugar.
+ *
+ * O escalonamento por índice serve ao carregamento da página, onde tudo entra
+ * junto: sem ele são N widgets piscando no mesmo quadro. Com teto, pra que
+ * vinte widgets não virem uma fila de dois segundos.
+ */
+.wp-widget-in {
+  animation: wp-widget-in var(--motion-chrome) var(--ease-chrome) backwards;
+  animation-delay: min(var(--wp-index, 0) * 40ms, 240ms);
+}
+@keyframes wp-widget-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ── Saída do widget ────────────────────────────────────────────────────────
+ * O espelho exato da entrada, e de propósito: o widget volta pelo caminho por
+ * onde veio. Inventar um gesto diferente pra sair (cair, girar, deslizar pro
+ * lado) daria a ele um peso dramático que remover widget não tem.
+ *
+ * `forwards` segura o último quadro: entre o fim da animação e o `DELETE`
+ * voltando do servidor passa uma volta de rede, e sem isso o widget
+ * reapareceria inteiro nesse intervalo.
+ */
+.wp-widget-out {
+  animation: wp-widget-out var(--motion-chrome) var(--ease-chrome) forwards;
+}
+@keyframes wp-widget-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+}
+
+/* ── Tampa da lixeira ───────────────────────────────────────────────────────
+ * O botão de remover abre um popover de confirmação, e a tampa se solta junto
+ * — sobe um fio e inclina. É a mesma ideia do chevron que gira na sidebar: o
+ * glifo conta o estado, sem precisar de cor.
+ *
+ * `transform-box: fill-box` porque o `<path>` gira em torno do PRÓPRIO centro;
+ * sem isso a origem é a do SVG e a tampa sai voando.
+ */
+.wp-trash-lid {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform var(--motion-micro) var(--ease-chrome);
+}
+[data-state="open"] .wp-trash-lid {
+  transform: translateY(-1.5px) rotate(-7deg);
+}
+
+/* ── Painel de configuração ─────────────────────────────────────────────────
+ * O popover inteiro já entra com a duração de chrome (`components/ui/popover`).
+ * O que faltava era o conteúdo: quatro blocos de chip e select apareciam todos
+ * no mesmo quadro, e o painel lia como uma imagem colada em cima da tela em vez
+ * de algo que se abre.
+ *
+ * O escalonamento é o mesmo recurso da entrada dos widgets — dá ordem de
+ * leitura, de cima pra baixo. Passo curto (35ms) e sem teto: são quatro blocos
+ * fixos, não uma lista que cresce.
+ */
+.wp-settings-block {
+  animation: wp-settings-block var(--motion-chrome) var(--ease-chrome) backwards;
+  animation-delay: calc(var(--wp-index, 0) * 35ms);
+}
+@keyframes wp-settings-block {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Miniaturas animadas dos tipos de widget (design/mockups/home-chrome.html).
+ *
+ * Neutras de propósito: são chrome permanente do painel, e `--color-accent`
+ * está reservado a feedback transiente (design system, seção 2). O charme vem
+ * do ritmo, não da cor.
+ *
+ * Duas camadas: um loop ambiente lento sempre ligado, e uma versão mais viva no
+ * hover — é o convite pra pegar e arrastar. Painel inteiro pulsando forte o
+ * tempo todo cansa, e a Home é tela de permanência (design system, seção 11).
+ *
+ * Fora do Tailwind porque são keyframes de um componente só: token de movimento
+ * é do sistema (`--motion-*`, `--ease-chrome`), coreografia é daqui.
+ */
+
+.wp-mini {
+  position: relative;
+  overflow: hidden;
+}
+
+/* LIST — as três linhas acendem em sequência, como quem varre a lista */
+.wp-mini-row {
+  animation: wp-mini-sweep var(--motion-ambient) var(--ease-chrome) infinite;
+}
+.wp-mini-row:nth-child(2) {
+  animation-delay: 0.35s;
+}
+.wp-mini-row:nth-child(3) {
+  animation-delay: 0.7s;
+}
+@keyframes wp-mini-sweep {
+  0%,
+  55%,
+  100% {
+    opacity: 0.6;
+    transform: translateX(0);
+  }
+  18% {
+    opacity: 1;
+    transform: translateX(2px);
+  }
+}
+
+/* GRID — as capas respiram em diagonal */
+.wp-mini-cell {
+  animation: wp-mini-breathe var(--motion-ambient) var(--ease-chrome) infinite;
+}
+.wp-mini-cell:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.wp-mini-cell:nth-child(3) {
+  animation-delay: 0.4s;
+}
+.wp-mini-cell:nth-child(4) {
+  animation-delay: 0.2s;
+}
+.wp-mini-cell:nth-child(5) {
+  animation-delay: 0.4s;
+}
+.wp-mini-cell:nth-child(6) {
+  animation-delay: 0.6s;
+}
+@keyframes wp-mini-breathe {
+  0%,
+  60%,
+  100% {
+    opacity: 0.55;
+    transform: translateY(0);
+  }
+  22% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+/* SCROLL — a fita anda sozinha e some nas bordas */
+.wp-mini-track {
+  width: max-content;
+  animation: wp-mini-slide 9s linear infinite;
+}
+@keyframes wp-mini-slide {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.wp-mini-fade {
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 14%,
+    #000 86%,
+    transparent
+  );
+}
+
+/* No hover tudo fica mais vivo */
+.wp-picker-item:hover .wp-mini-row,
+.wp-picker-item:hover .wp-mini-cell {
+  animation-duration: 1.6s;
+}
+.wp-picker-item:hover .wp-mini-track {
+  animation-duration: 4s;
+}
+
+/* Design system, seção 11: reduzir movimento desliga o LOOP, não a transição.
+ * O quadro em que ele para é legível de propósito. */
+@media (prefers-reduced-motion: reduce) {
+  .wp-mini-row,
+  .wp-mini-cell,
+  .wp-mini-track {
+    animation: none;
+    opacity: 0.85;
+  }
+
+  /* A entrada do widget é transição, não loop, então não some — mas perde a
+   * escala e o deslocamento, que é a parte que incomoda quem pediu menos
+   * movimento. O fade fica: sem ele o widget volta a aparecer de estalo. */
+  .wp-widget-in {
+    animation-name: wp-widget-fade;
+    animation-delay: 0ms;
+  }
+  @keyframes wp-widget-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* A saída não pode virar `animation: none`: é ela que avisa, pelo
+   * `animationend`, que já dá pra apagar o widget. Sem animação nenhuma o
+   * evento nunca chega e o widget fica esmaecido pra sempre na tela. O nome
+   * mantém o prefixo `wp-widget-out` justamente porque o componente filtra por
+   * ele. */
+  .wp-widget-out {
+    animation-name: wp-widget-out-fade;
+  }
+  @keyframes wp-widget-out-fade {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  /* O escalonamento some, o fade fica — mesma regra da entrada. Sem o
+   * `animation-delay: 0ms` os blocos continuariam esperando a vez. */
+  .wp-settings-block {
+    animation-name: wp-settings-fade;
+    animation-delay: 0ms;
+  }
+  @keyframes wp-settings-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* ── Atalhos da carta sem ponteiro ──────────────────────────────────────────
+ * `group-hover` não existe no toque, e sem isto os atalhos ficavam
+ * inalcançáveis no celular — a carta tinha ações que ninguém conseguia abrir.
+ *
+ * A saída não é mostrar o véu sempre: escurecer toda carta permanentemente
+ * torna a grade ilegível, e a arte é o conteúdo. Então no toque os botões
+ * ficam visíveis num canto, sem véu, encostados no alto à direita — onde o
+ * mockup já punha o bookmark.
+ *
+ * `hover: none` e não largura de tela: quem decide é o dispositivo apontador,
+ * não o tamanho da janela. Tablet com caneta e desktop com touch existem.
+ */
+@media (hover: none) {
+  .wp-card-actions {
+    opacity: 1;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 6px;
+    background-color: transparent;
+  }
+
+  /* Quem religa o clique é o BOTÃO, nunca a camada — 07/09/2026, quando a
+   * carta inteira virou link. A camada é `inset-0`, e devolvê-la ao fluxo de
+   * ponteiro aqui faria o toque na arte cair nela em vez de no link. */
+  .wp-card-shortcut {
+    pointer-events: auto;
+  }
+}
+
+/* A tampa da lixeira NÃO entra na regra acima de propósito: é transição de
+ * estado, e a seção 11 diz que essas ficam. Cortá-la deixaria o botão sem
+ * nenhum sinal de que abriu alguma coisa. */

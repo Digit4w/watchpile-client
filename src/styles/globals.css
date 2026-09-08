@@ -1,0 +1,21 @@
+/* tokens.css é cópia versionada de design/tokens.css (25/08/2026) — ver o
+ * cabeçalho dele. Não redefinir valor aqui.
+ */
+@import "./tokens.css";
+
+/* Movimento do chrome flutuante — folha e popover. Fica em arquivo próprio
+ * porque é vocabulário de sistema (seção 11 do design system), não estilo de
+ * uma tela; o cabeçalho dele conta por que precisou ser escrito à mão.
+ */
+@import "./motion.css";
+
+/* Todo mockup em design/mockups/ assume <body class="bg-surface text-ink
+ * font-sans"> — é assim que texto sem classe de cor própria (ex.: um <h1>)
+ * herda ink em vez de cair no preto padrão do browser sobre fundo escuro.
+ * Aplicado uma vez aqui em vez de repetido tela a tela.
+ */
+body {
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}

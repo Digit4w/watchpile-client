@@ -1,0 +1,309 @@
+/* Watchpile — tokens
+ *
+ * CÓPIA versionada de ../../../design/tokens.css (25/08/2026) — design/ não
+ * é repositório git, então este repo não pode importá-lo direto sem quebrar
+ * em qualquer lugar que não seja a máquina onde os dois ficam lado a lado
+ * (CI incluído — foi assim que isso apareceu). Editar aqui é editar uma
+ * cópia desatualizada: mude em design/tokens.css primeiro, depois copie pra
+ * cá. Não há sincronização automática ainda.
+ *
+ * Materialização de ../../../watchpile-design-system.md. Os dois andam juntos.
+ *
+ * O que JÁ está decidido (design system, seção 2): tema escuro é o único, por
+ * enquanto. Não existe bloco de tema claro aqui e não se escreve `dark:` em
+ * classe nenhuma — com um tema só, o prefixo não faz nada além de sugerir que
+ * existe um segundo. Se um dia houver, o mecanismo é redefinir estes tokens.
+ *
+ * Por isso os nomes são semânticos e sem cromia: `surface`, `ink`, `muted`.
+ * Nada de `dark-bg` ou `zinc-900` — nome com tema dentro obriga a renomear.
+ */
+
+@import "tailwindcss";
+
+/* Sem @source pra design/mockups/*.html aqui — diferente da cópia em
+ * design/tokens.css, esta é consumida pelo Vite plugin do Tailwind, que já
+ * escaneia src/ sozinho. Copiar aquele @source bloaria o CSS com utilitário
+ * usado só em mockup, nunca no app de verdade (foi o que estava acontecendo
+ * antes desta cópia existir: ver histórico do CSS gerado, quase o dobro).
+ */
+
+@theme {
+  /* ── Superfícies e texto ──────────────────────────────────────────────────
+   * Nome semântico, nunca literal: `surface`, não `zinc-900`. Trocar a paleta
+   * depois não pode virar busca-e-substitui pelos arquivos.
+   */
+  --color-surface: oklch(0.19 0.005 265); /* fundo da página */
+  --color-card: oklch(0.23 0.005 265); /* card, painel */
+  --color-raised: oklch(0.28 0.005 265); /* menu, popover, hover */
+  --color-line: oklch(0.34 0.006 265); /* borda, divisória */
+
+  --color-ink: oklch(0.97 0.002 265); /* texto principal */
+  --color-muted: oklch(0.82 0.008 265); /* texto secundário */
+  --color-faint: oklch(0.67 0.008 265); /* metadado, placeholder */
+
+  /* A rampa de texto foi REESPAÇADA em 04/09/2026 (design system, seção 9).
+   * `faint` estava em 0.55 e dava 3,48:1 sobre `card` — reprovava AA em texto
+   * de 12px, que é onde ela mais aparece (96 dos 176 usos). O piso de 4,5:1 no
+   * pior fundo (`raised`) exige L=0.65, e 0.65 empata com o limite: 0.67 é o
+   * primeiro valor com margem (4,88). Subir só `faint` o poria a 0.05 de
+   * `muted`, ou seja, dois tokens com a mesma aparência — por isso `muted`
+   * subiu junto, e os degraus ficam parelhos em 0.15. Em tema escuro não cabem
+   * três níveis de texto todos passando em AA sem reespaçar a rampa inteira;
+   * descoberto medindo, não desenhando. */
+
+  /* ── Estado ───────────────────────────────────────────────────────────────
+   * Chrome neutro, sem accent hue (design system, seção 2, 23/08/2026): botão
+   * primário e estado ativo reusam `ink`/`surface` invertidos, não uma cor
+   * própria. A marca ainda não existe — inventar um accent agora resolveria a
+   * coisa errada. `success`/`warning`/`danger` são status, não marca, e ficam.
+   */
+  /* Vidro fosco no chrome flutuante (design system, seção 2, 23/08/2026): barra,
+   * botão sobre arte, mini-player. Escuro tingido, nunca transparente puro — a
+   * cor de base continua dominante por trás do blur, senão o AA (seção 9) quebra
+   * dependendo da arte por baixo. Usar sempre com um utilitário de backdrop-blur.
+   * Testar contra arte clara E escura antes de aprovar um componente com isto.
+   */
+  --color-glass: oklch(0.23 0.005 265 / 70%);
+
+  --color-success: oklch(0.72 0.14 155);
+  --color-warning: oklch(0.78 0.14 80);
+
+  /* `danger` subiu de 0.65 para 0.72 em 04/09/2026, e a chroma desceu de 0.18
+   * para 0.17 (design system, seção 9). Medido: o token clareia o suficiente
+   * SOZINHO — 5,25 sobre `surface`, 4,80 sobre `card` —, mas todo VÉU da
+   * própria cor por baixo dele come a margem: `text-danger` sobre
+   * `bg-danger/10` dava 4,29 no card e 4,43 no vidro, e o hover em `/20` caía
+   * a 3,85. É a forma do achado da rampa de texto, um degrau adiante: ali o
+   * piso do tema empurrava os níveis uns contra os outros, aqui é a peça
+   * pousando sobre uma diluição de si mesma.
+   *
+   * 0.72 é a menor altura em que todos os pares passam, e 0.17 é a MAIOR
+   * chroma que ainda cabe no gamut sRGB ali — de 0.18 pra cima o vermelho crava
+   * em 255 e o navegador remapeia, o que faz o número medido deixar de ser o
+   * número escrito. Descer a chroma é preço da altura, não gosto: 0.17 é o que
+   * segura o vermelho mais perto do original. O pior par fica em 4,72 (o hover
+   * do véu dentro do vidro).
+   *
+   * De quebra, o `danger` era o ímpar do trio de status — `success` 0.72,
+   * `warning` 0.78, ele 0.65.
+   */
+  --color-danger: oklch(0.72 0.17 25);
+
+  /* O texto que pousa sobre PREENCHIMENTO sólido de `danger`, e o primeiro
+   * `*-ink` do sistema (04/09/2026). Ele existe porque a pergunta não tem
+   * resposta automática: subir o `danger` melhora tudo que é TEXTO vermelho e
+   * piora tudo que é texto BRANCO sobre vermelho — `text-ink` sobre
+   * `bg-danger` já reprovava a 3,23 e cairia a 2,43. Texto escuro resolve com
+   * folga, a 6,98.
+   *
+   * O valor é o de `--color-surface` e mesmo assim é token PRÓPRIO: o que ele
+   * nomeia é "o que se lê sobre vermelho cheio", não "o fundo da página". Se um
+   * dia a página mudar de tom, a legibilidade deste botão não pode seguir junto
+   * sem ninguém medir.
+   */
+  --color-danger-ink: oklch(0.19 0.005 265);
+
+  /* Accent (24/08/2026, promovido de candidata a token — design system, seções
+   * 2 e 10). Mesmo ciano testado nas 5 variações do símbolo da marca
+   * (design/mockups/_brand.html). "Chrome neutro" (seção 2) continua
+   * valendo para botão/chip/foco — isto é só para o punhado de detalhes
+   * pequenos e deliberados (à la Spotify) onde vale destacar algo, ex.: o
+   * highlight de "onde isto vai cair" no resize/reorder de widget. Não é
+   * `--color-accent-ink` ainda: nenhum uso até agora precisa de texto sobre
+   * fundo accent sólido.
+   *
+   * Contraste conferido em 28/08/2026 (design system, seção 9): 8,76:1 contra
+   * `--color-surface` e 8,02:1 contra `--color-card` — passa AA de texto, bem
+   * acima do 3:1 exigido de elemento não-textual. Sobre ARTE de obra continua
+   * não conferido: não há como medir sem escolher uma capa, e é por isso que o
+   * accent não se usa pousado sobre pôster.
+   */
+  --color-accent: oklch(0.75 0.13 200);
+
+  /* ── Tipografia ───────────────────────────────────────────────────────────
+   * Fonte de sistema por enquanto: escolher família é decisão do design system,
+   * e webfont carregada cedo demais vira token que ninguém revisa.
+   */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* ── Proporções de arte ───────────────────────────────────────────────────
+   * Pôster de filme é 2:3, capa de mangá varia, jogo costuma ser 3:4. Conviverem
+   * na mesma grade é problema de layout, e é para ser resolvido aqui — não tela
+   * a tela (design system, seção 4).
+   */
+  /* Namespace do tema vira utilitário sozinho: --aspect-poster gera `aspect-poster`,
+   * --radius-card gera `rounded-card`, --color-ink gera `text-ink`/`bg-ink`.
+   * Não escrever `aspect-[--aspect-poster]`: no v4 a forma com colchete e variável
+   * crua emite `aspect-ratio: --aspect-poster`, sem o var(), e não aplica nada.
+   */
+  --aspect-poster: 2 / 3;
+  --aspect-cover: 3 / 4;
+  --aspect-banner: 16 / 9;
+
+  /* ── Carta de mídia ────────────────────────────────────────────────────────
+   * Decidido em 29/08/2026, revisado no mesmo dia (design system, seção 4).
+   *
+   * **A ALTURA é o número que não se negocia.** A grade da Home anda de 72px em
+   * 72px (linha 56 + gap 16), e uma fileira de cartas só encaixa exata se
+   * `altura + gap` for múltiplo disso — 200 + 16 = 216 = 3 × 72. Sem isso, o
+   * usuário arrasta a borda do widget procurando a fileira certa e sempre para
+   * numa carta cortada pela metade. A conta está em
+   * `client/src/domain/home-metrics.ts`, com testes, e a largura **não aparece
+   * nela**.
+   *
+   * A largura, portanto, é uma FAIXA, não um valor. A primeira versão fixou as
+   * duas por simetria e criou uma faixa morta à direita em tela larga — sobra
+   * que não tinha por que existir. Hoje a trilha da grade é `1fr`: preenche a
+   * largura sempre, e a carta cresce dentro dela até o teto.
+   *
+   *   min   133,33px  2:3 exato — a proporção de pôster (`--aspect-poster`)
+   *   max   150px     3:4 — a proporção de capa (`--aspect-cover`), o quanto se
+   *                   aceita distorcer antes de parecer outra coisa
+   *
+   * Passar do teto vira espaço simétrico entre as cartas, nunca uma faixa só de
+   * um lado.
+   */
+  --spacing-card-poster: 8.33333rem;
+  --spacing-card-poster-max: 9.375rem;
+  --spacing-card-poster-h: 12.5rem;
+
+  /* ── Carta compacta ────────────────────────────────────────────────────────
+   * Decidido em 29/08/2026 (design system, seção 4). Existe porque `/library`
+   * ganhou os quatro modos de exibição do Spotify, e "grade compacta" pede uma
+   * carta que o sistema não tinha.
+   *
+   * No Spotify a compactação vem de TIRAR o rótulo de baixo da arte. Aqui o
+   * rótulo já vive EM CIMA dela (design system, seção 4), então tirar texto não
+   * encolhe nada — a carta precisou encolher junto.
+   *
+   * Os números são 3/4 da carta padrão em cada eixo, e é só isso: 200 × 0,75 =
+   * 150, 133,33 × 0,75 = 100, 150 × 0,75 = 112,5. Proporção idêntica à padrão
+   * (piso 2:3, teto 3:4), densidade ~1,8× maior.
+   *
+   * **Não fecha no passo de 72px, e isso é a regra, não a exceção.** O passo é
+   * propriedade da grade da HOME, onde altura+gap precisa encaixar numa linha
+   * de widget; `/library` não tem essa grade e não tem o que encaixar
+   * (design system, seção 4, 29/08/2026).
+   */
+  --spacing-card-poster-sm: 6.25rem;
+  --spacing-card-poster-sm-max: 7.03125rem;
+  --spacing-card-poster-sm-h: 9.375rem;
+
+  /* ── Raio ──────────────────────────────────────────────────────────────────
+   * Moderado, sem exagerar (design system, seção 4, 23/08/2026): visível o
+   * bastante para parecer premium, sem virar pill. Escala por tamanho de
+   * elemento, não por componente — inventário de componentes ainda não existe.
+   */
+  --radius-sm: 0.625rem; /* 10px — chip, badge, botão pequeno */
+  --radius-md: 0.75rem; /* 12px — card, input, botão padrão */
+  --radius-lg: 1rem; /* 16px — modal, popover, painel grande/hero */
+
+  /* ── Movimento ─────────────────────────────────────────────────────────────
+   * Design system, seção 11 (28/08/2026). Curva única de saída: desacelera no
+   * fim, sem overshoot. Vai no @theme porque o namespace --ease-* gera o
+   * utilitário `ease-chrome` sozinho. Nome não é `--ease-out`: colidiria com o
+   * built-in do Tailwind.
+   */
+  --ease-chrome: cubic-bezier(0.2, 0, 0, 1);
+}
+/* ── Durações (28/08/2026) ────────────────────────────────────────────────────
+ * Fora do @theme porque o Tailwind v4 não tem namespace de duração que gere
+ * utilitário sozinho — usa-se `duration-[var(--motion-chrome)]`, com o `var()`
+ * explícito (ver o aviso das proporções acima).
+ *
+ * Três degraus, e nada além (design system, seção 11):
+ *   micro     o que responde ao dedo — hover, press, troca de cor
+ *   chrome    painel entrando, menu abrindo, barra crescendo
+ *   ambient   loop lento que não pede atenção
+ */
+:root {
+  --motion-micro: 120ms;
+  --motion-chrome: 220ms;
+  --motion-ambient: 4s;
+}
+
+/* ── Opacidade do desabilitado (04/09/2026) ───────────────────────────────────
+ * Fora do @theme pelo mesmo motivo das durações: usa-se
+ * `disabled:opacity-[var(--opacity-disabled)]`, com o `var()` explícito.
+ *
+ * UM valor, e ele é 0.7 — não 0.5. Medido (design system, seção 9): o botão
+ * sólido desabilitado dava 2,36:1, porque `opacity` desbota fundo E texto na
+ * direção da MESMA cor (a da página), e é o PAR que colapsa, não o texto. Ele
+ * só cruza 4,5:1 em 0.7, e a 0.7 ele continua lendo como inerte — conferido na
+ * tela rodando, não estimado.
+ *
+ * O valor é um só porque três (0.4, 0.5 e 0.6, em 17 sítios) não eram decisão:
+ * eram cópia. Opacidade nova usa este token; se ele não servir, é decisão no
+ * design system, não número solto no componente — a mesma regra da seção 11.
+ */
+:root {
+  --opacity-disabled: 0.7;
+}
+
+/* ── Scrollbar estilizado (24/08/2026) ────────────────────────────────────────
+ * Fora do @theme de propósito: não é token de cor/tipo/espaço, é uma classe
+ * utilitária que CONSOME os tokens acima (`--color-line`), pra containers que
+ * preferem um scroll discreto em vez da barra crua do navegador — o caso que
+ * motivou isto: `home.html` deixa o usuário encolher um widget abaixo da
+ * altura do conteúdo (resize), e o scroll vertical resultante precisa
+ * parecer intencional, não um acidente. Mesmo tratamento já valia, sem
+ * classe, pro scroll horizontal da rolagem de pôsteres — `.scrollbar-styled`
+ * só torna isso reutilizável nos dois eixos.
+ */
+.scrollbar-styled {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+}
+
+/* Rolagem sem barra nenhuma — para a fileira do widget `scroll` da Home
+ * (29/08/2026). Não é preferência estética: `scrollbar-width: thin` reserva
+ * ~8px de altura no Windows e no Linux, e esses 8px sairiam de dentro dos
+ * 200px da carta, cortando a base dela. O encaixe da grade (`home-metrics.ts`)
+ * não sobrevive a isso.
+ *
+ * Usar só onde a rolagem é óbvia por outros meios — uma fileira de capas que
+ * transborda se anuncia sozinha. Container de leitura continua com
+ * `.scrollbar-styled`. */
+/* ── Realce dentro do vidro ───────────────────────────────────────────────────
+ * 01/09/2026, descoberto na tela rodando. `--color-raised` é OPACO, e usá-lo
+ * como hover dentro de um painel de vidro pinta um bloco sólido sobre o blur:
+ * a linha apontada vira a única que não deixa ver através, e o vidro deixa de
+ * existir justamente onde a pessoa está olhando.
+ *
+ * A regra, então, é semântica e não uma exceção: **sobre vidro, `raised` é
+ * TINGIMENTO, não superfície**. Tinge com `ink` em vez de trocar o fundo, e o
+ * blur atravessa.
+ *
+ * Uma regra só porque `PopoverContent` já carrega `bg-glass`, e porque o
+ * custom property vale para o próprio elemento (o botão de vidro, cujo hover é
+ * nele mesmo) e para os descendentes (as linhas de um menu). Componente novo
+ * dentro de vidro herda isto sem saber que existe.
+ *
+ * O valor casa o degrau que `raised` dá sobre `card`: +0,05 de L, que sobre a
+ * base do vidro sai em torno de 10% de `ink`.
+ */
+.bg-glass {
+  --color-raised: oklch(0.97 0.002 265 / 10%);
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-styled::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scrollbar-styled::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-styled::-webkit-scrollbar-thumb {
+  background-color: var(--color-line);
+  border-radius: 9999px;
+}
+.scrollbar-styled::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-raised);
+}

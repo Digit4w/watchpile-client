@@ -1,0 +1,290 @@
+/* Movimento do chrome flutuante — folha lateral e popover.
+ *
+ * POR QUE ISTO EXISTE (30/08/2026). Os componentes do shadcn vinham com
+ * `animate-in`, `fade-in-0`, `zoom-in-95` e `slide-in-from-right` escritos no
+ * `className`, e **nenhuma dessas classes existia**: elas vêm do plugin
+ * `tw-animate-css`, que nunca foi instalado. O CSS gerado tinha zero ocorrência
+ * de cada uma. Toda folha e todo popover do app apareciam e sumiam num quadro,
+ * e o comentário de `sheet.tsx` afirmava o contrário — o Radix entrega o
+ * `data-state` e segura a desmontagem, mas quem anima é o CSS, e ele não
+ * estava aqui.
+ *
+ * POR QUE NÃO INSTALAR O PLUGIN. Ele traz um vocabulário inteiro — zoom,
+ * spin, bounce, uma escala de durações própria — e o design system decidiu o
+ * oposto: três durações, **uma curva só, sem overshoot**, porque isto é
+ * ferramenta de registro e não brinquedo (seção 11, e o princípio 3 da seção
+ * 1). Um plugin cujo default é mais animado que o sistema faz cada componente
+ * novo começar errado e ser corrigido depois.
+ *
+ * ONDE ISTO MORA. `components/home/home-motion.css` é coreografia de UM
+ * componente e mora junto dele; isto aqui vale pra todo overlay do app, então
+ * é sistema e entra por `globals.css`.
+ *
+ * ANIMATION, NÃO TRANSITION. O Radix só adia a desmontagem enquanto houver uma
+ * `animation` rodando — ele escuta `animationend`. Escrito como `transition`, a
+ * entrada funcionaria e a **saída** seria cortada no primeiro quadro.
+ */
+
+/* Entrar é informativo: diz de onde a peça veio. Sair não é — quem fechou já
+ * sabe o que aconteceu, e o que se quer é a tela de volta. Daí a assimetria:
+ * `--motion-chrome` (220ms) pra entrar, `--motion-micro` (120ms) pra sair.
+ * Nenhum valor novo, os dois já são da tabela da seção 11.
+ */
+@keyframes wp-sheet-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes wp-sheet-out-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes wp-sheet-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes wp-sheet-out-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+@keyframes wp-sheet-in-top {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes wp-sheet-out-top {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+@keyframes wp-sheet-in-bottom {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes wp-sheet-out-bottom {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+/* A folha é opaca (`bg-card`, borda e sombra) e vem de fora da tela. Deslizar
+ * já conta a história inteira; somar um fade faria uma peça sólida atravessar
+ * o conteúdo meio transparente, que é o visual que o vidro fosco do design
+ * system (seção 2) reserva pro chrome que fica POR CIMA, não pro que entra.
+ */
+[data-slot="sheet-content"] {
+  animation-duration: var(--motion-chrome);
+  animation-timing-function: var(--ease-chrome);
+  /* `backwards` e NÃO `both`, e a diferença tem consequência funcional aqui.
+   *
+   * Com `both`, a folha aberta fica com um `transform` identidade grudado pra
+   * sempre — e elemento transformado vira bloco contêiner de qualquer
+   * descendente `position: fixed`. A folha de widget da Home existe justamente
+   * pra se arrastar de dentro dela pra fora (`widget-picker.tsx`), então um
+   * espaço de coordenadas trocado ali é bug de arrasto, não detalhe de estilo.
+   *
+   * `backwards` aplica só o primeiro quadro antes de começar: a entrada
+   * funciona igual e, terminada, o elemento volta a não ter transform nenhum.
+   */
+  animation-fill-mode: backwards;
+}
+
+[data-slot="sheet-content"][data-state="closed"] {
+  animation-duration: var(--motion-micro);
+  /* Na saída é o contrário: o último quadro precisa GRUDAR, senão a folha
+   * volta pro lugar num salto e fica lá até o Radix desmontá-la.
+   */
+  animation-fill-mode: forwards;
+}
+
+[data-slot="sheet-content"][data-side="right"][data-state="open"] {
+  animation-name: wp-sheet-in-right;
+}
+[data-slot="sheet-content"][data-side="right"][data-state="closed"] {
+  animation-name: wp-sheet-out-right;
+}
+[data-slot="sheet-content"][data-side="left"][data-state="open"] {
+  animation-name: wp-sheet-in-left;
+}
+[data-slot="sheet-content"][data-side="left"][data-state="closed"] {
+  animation-name: wp-sheet-out-left;
+}
+[data-slot="sheet-content"][data-side="top"][data-state="open"] {
+  animation-name: wp-sheet-in-top;
+}
+[data-slot="sheet-content"][data-side="top"][data-state="closed"] {
+  animation-name: wp-sheet-out-top;
+}
+[data-slot="sheet-content"][data-side="bottom"][data-state="open"] {
+  animation-name: wp-sheet-in-bottom;
+}
+[data-slot="sheet-content"][data-side="bottom"][data-state="closed"] {
+  animation-name: wp-sheet-out-bottom;
+}
+
+/* O popover nasce ANCORADO num gatilho, e o movimento diz isso: ele vem dos
+ * 4px do lado do botão que o abriu. Quatro, não doze — o deslocamento é uma
+ * pista de origem, não uma entrada. O que carrega a aparição é a opacidade.
+ *
+ * **Sem escala.** `zoom-in-95` era o que o shadcn trazia, e escala num painel
+ * de menu é o gesto mais próximo de overshoot que sobrou depois de a curva
+ * proibi-lo: o texto dentro reflui um pouco e a peça chama atenção pra si em
+ * vez de pro conteúdo.
+ */
+@keyframes wp-pop-in-from-top {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes wp-pop-out-to-top {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+@keyframes wp-pop-in-from-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes wp-pop-out-to-bottom {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@keyframes wp-pop-in-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes wp-pop-out-to-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+}
+@keyframes wp-pop-in-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes wp-pop-out-to-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(4px);
+  }
+}
+
+[data-slot="popover-content"] {
+  animation-duration: var(--motion-chrome);
+  animation-timing-function: var(--ease-chrome);
+  /* Mesmo motivo da folha: nada de transform residual num painel aberto. */
+  animation-fill-mode: backwards;
+}
+
+[data-slot="popover-content"][data-state="closed"] {
+  animation-duration: var(--motion-micro);
+  animation-fill-mode: forwards;
+}
+
+/* `data-side` é o lado do GATILHO em que o painel foi colocado: `bottom`
+ * significa "abaixo do botão", então ele vem de cima. O nome do keyframe diz a
+ * origem do movimento, não o valor do atributo, pra que a leitura não dependa
+ * de lembrar dessa inversão.
+ */
+[data-slot="popover-content"][data-side="bottom"][data-state="open"] {
+  animation-name: wp-pop-in-from-top;
+}
+[data-slot="popover-content"][data-side="bottom"][data-state="closed"] {
+  animation-name: wp-pop-out-to-top;
+}
+[data-slot="popover-content"][data-side="top"][data-state="open"] {
+  animation-name: wp-pop-in-from-bottom;
+}
+[data-slot="popover-content"][data-side="top"][data-state="closed"] {
+  animation-name: wp-pop-out-to-bottom;
+}
+[data-slot="popover-content"][data-side="right"][data-state="open"] {
+  animation-name: wp-pop-in-from-left;
+}
+[data-slot="popover-content"][data-side="right"][data-state="closed"] {
+  animation-name: wp-pop-out-to-left;
+}
+[data-slot="popover-content"][data-side="left"][data-state="open"] {
+  animation-name: wp-pop-in-from-right;
+}
+[data-slot="popover-content"][data-side="left"][data-state="closed"] {
+  animation-name: wp-pop-out-to-right;
+}
+
+/* NÃO há `@media (prefers-reduced-motion)` desligando nada aqui, e isso é
+ * decisão registrada, não esquecimento (design system, seção 11, 28/08/2026):
+ * quem pede menos movimento perde o LOOP ambiente, não a transição de estado.
+ * Uma folha que teleporta parece defeito, e a animação é justamente o que
+ * comunica causa e efeito — de onde o painel veio e pra onde ele foi.
+ */

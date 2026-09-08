@@ -1,0 +1,48 @@
+name: check
+
+# O cliente não tinha verificação nenhuma até 31/08/2026, e a conta apareceu:
+# três PRs entraram em `dev` sem um único check (#17, #18 e #21). O que os
+# sustentou foi verificação local — que funciona até a vez em que alguém
+# esquece.
+#
+# Quem compilava o cliente era o CI do SERVIDOR, por checkout cruzado
+# (`watchpile-server/.github/workflows/build.yml`). Isso continua valendo e é
+# útil: ele prova que os dois lados casam. Mas só roda em PR do servidor, então
+# uma mudança feita só aqui não passava por nada.
+#
+# Este workflow é o mínimo: lint, testes, build. Sem matriz e sem artefato — o
+# empacotamento é do servidor, que é quem monta o artefato combinado.
+on:
+  pull_request:
+    branches: [dev, main]
+    paths-ignore: ['**.md']
+  push:
+    branches: [dev, main]
+    paths-ignore: ['**.md']
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: lint, test and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+
+      - name: install
+        run: bun install --frozen-lockfile
+
+      - name: lint
+        run: bun run lint
+
+      - name: test
+        run: bun run test
+
+      # `bun run build` é `vite build && tsc -b`, e o `tsc -b` do fim é o que
+      # checa tipo neste repo — o Vite transpila sem checar.
+      #
+      # Não trocar por `tsc --noEmit`: sozinho ele NÃO checa nada aqui, porque
+      # o `tsconfig.json` tem `"files": []` e usa project references. Sem o
+      # `-b` o comando termina verde sem ter olhado um arquivo.
+      - name: build
+        run: bun run build

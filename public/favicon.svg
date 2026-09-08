@@ -1,0 +1,18 @@
+<!--
+  Ícone de produção do símbolo A3 (mosaico) — design system, seção 10.
+  Fonte da forma: design/mockups/_brand.html (rascunho inline, viewBox 0 0 64 64).
+  Cores resolvidas de tokens.css pra sRGB, já que fill de SVG não confia em
+  oklch() em todo rasterizador: fundo é o token de cor "surface" (#131416),
+  mosaico é o token "accent" (#00c6ce).
+  Gera favicon.svg (client/public) e todo o conjunto de ícone do Electron
+  (server/build) — ver design/brand/README.md.
+-->
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" rx="230" fill="#131416" />
+  <g transform="translate(176 176) scale(10.5)">
+    <rect x="7" y="7" width="23" height="23" rx="6" fill="#00c6ce" opacity="0.5" transform="rotate(-3 18.5 18.5)" />
+    <rect x="34" y="7" width="23" height="23" rx="6" fill="#00c6ce" opacity="0.75" transform="rotate(3 45.5 18.5)" />
+    <rect x="7" y="34" width="23" height="23" rx="6" fill="#00c6ce" opacity="0.9" transform="rotate(3 18.5 45.5)" />
+    <rect x="34" y="34" width="23" height="23" rx="6" fill="#00c6ce" transform="rotate(-3 45.5 45.5)" />
+  </g>
+</svg>

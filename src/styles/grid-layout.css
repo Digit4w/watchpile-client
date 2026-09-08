@@ -1,0 +1,74 @@
+/* Overrides do `react-grid-layout` (v2.2.4) ───────────────────────────────────
+ * Importado por `components/home/home-grid.tsx` LOGO DEPOIS do CSS da lib, no
+ * mesmo módulo — é o que garante a ordem no bundle sem precisar inflar
+ * especificidade. Os seletores abaixo repetem os da lib de propósito.
+ *
+ * O default da lib é `background: red; opacity: 0.2` no placeholder e preto
+ * translúcido no handle de resize: os dois foram escritos pra tema claro e não
+ * são escolha nossa. Aqui eles passam a consumir os tokens.
+ */
+
+/* Preview do espaço do widget (design system, seção 2, 24/08/2026).
+ *
+ * `--color-accent` tem exatamente um uso autorizado, e é este: feedback de
+ * "onde isto vai cair" — transiente, some quando o gesto acaba. Chrome
+ * permanente (botão, chip, foco) continua neutro; não estender daqui.
+ *
+ * Tracejado em accent com preenchimento quase transparente, como em
+ * `design/mockups/home.html`: um único ponto de cor, no lugar exato que o
+ * widget vai ocupar. Raio igual ao do card (`--radius-lg`), senão o preview
+ * não parece o mesmo objeto que está sendo arrastado.
+ */
+.react-grid-item.react-grid-placeholder {
+  background: color-mix(in oklab, var(--color-accent) 10%, transparent);
+  border: 2px dashed var(--color-accent);
+  border-radius: var(--radius-lg);
+  opacity: 1;
+}
+
+/* Reflow dos vizinhos — a compactação, em token (29/08/2026).
+ *
+ * A lib já move os itens com transição, mas em `200ms ease`, valor dela e não
+ * nosso. Isso apareceu ao animar a SAÍDA do widget: a saída em `--motion-chrome`
+ * e o reflow logo depois em outra duração e outra curva leem como dois sistemas
+ * de movimento na mesma tela.
+ *
+ * Só duração e curva: `transition-property` continua sendo da lib, que a troca
+ * conforme o item use `transform` ou `left/top`. E os estados `.resizing` /
+ * `.react-draggable-dragging` cortam a transição com seletor mais específico —
+ * seguem cortando, que é o certo: durante o gesto o item acompanha o cursor.
+ */
+.react-grid-layout,
+.react-grid-item {
+  transition-duration: var(--motion-chrome);
+  transition-timing-function: var(--ease-chrome);
+}
+
+/* Handle de resize — neutro, não accent: ele é chrome permanente do modo de
+ * edição, não feedback de arrasto (mesma distinção que deixa o tile "Add
+ * widget" fora do accent). Glifo e cores como no mockup: duas diagonais em
+ * `faint`, `ink` no hover.
+ *
+ * `mask-image` em vez de `background-image` porque a cor precisa vir de token
+ * e reagir ao hover — SVG em data URI não enxerga `currentColor`.
+ */
+.react-grid-item > .react-resizable-handle {
+  transition: opacity var(--motion-micro) var(--ease-chrome);
+}
+
+.react-grid-item > .react-resizable-handle::after {
+  right: 4px;
+  bottom: 4px;
+  width: 12px;
+  height: 12px;
+  border: 0;
+  background-color: var(--color-faint);
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'%3E%3Cline x1='4' y1='16' x2='16' y2='4'/%3E%3Cline x1='10' y1='16' x2='16' y2='10'/%3E%3C/svg%3E");
+  mask-repeat: no-repeat;
+  mask-size: contain;
+}
+
+.react-grid-item > .react-resizable-handle:hover::after,
+.react-grid-item.resizing > .react-resizable-handle::after {
+  background-color: var(--color-ink);
+}

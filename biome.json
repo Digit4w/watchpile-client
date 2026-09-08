@@ -1,0 +1,116 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.10/schema.json",
+  "root": true,
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "files": {
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/node_modules",
+      "!**/src/routeTree.gen.ts",
+      "!public"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 80
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "asNeeded",
+      "trailingCommas": "all",
+      "arrowParentheses": "always"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": { "source": { "organizeImports": "on" } }
+  },
+  "overrides": [
+    {
+      "includes": ["src/domain/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "react": "A camada domain é de regras puras: nada de React. Mova o que precisa dele para hooks/ ou components/.",
+                  "@tanstack/react-router": "A camada domain não conhece navegação.",
+                  "@tanstack/react-query": "A camada domain não conhece cache nem estado de servidor. Isso é hooks/.",
+                  "nuqs": "A camada domain não conhece URL. Estado navegável é hooks/ ou routes/.",
+                  "tailwind-variants": "A camada domain não conhece estilo. Classe de Tailwind é assunto de components/.",
+                  "@/infra/lib/http-client": {
+                    "importNames": ["httpClient"],
+                    "message": "A camada domain não faz requisição — chamar a API é de services/, e é o que a mantém testável sem servidor nenhum. `HttpError` continua liberado: é a FORMA de uma falha, não um pedido, e lê-la é regra decidível (ver search-refusal.ts). Do resto de infra/, só `import type` do contrato gerado."
+                  },
+                  "@/infra/lib/query-client": "A camada domain não conhece cache. O QueryClient é de hooks/."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "complexity": {
+        "noBannedTypes": "error"
+      },
+      "correctness": {
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error"
+      },
+      "style": {
+        "noCommonJs": "error",
+        "noInferrableTypes": "error",
+        "noNamespace": "error",
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "tailwind-variants": {
+                "importNames": ["tv", "cn", "cx"],
+                "message": "Importe de @/styles/tv. O import direto usa o merge padrão do tailwind-merge, que não conhece os grupos custom (aspect-poster etc.) e mistura classes de grupos diferentes em silêncio."
+              }
+            }
+          }
+        },
+        "useAsConstAssertion": "error",
+        "useConst": "error"
+      },
+      "suspicious": {
+        "noDoubleEquals": "error",
+        "noEmptyInterface": "error",
+        "noExplicitAny": "warn",
+        "noExtraNonNullAssertion": "error",
+        "noMisleadingInstantiator": "error",
+        "noNonNullAssertedOptionalChain": "error",
+        "noTsIgnore": "error",
+        "noVar": "error",
+        "useAdjacentOverloadSignatures": "error"
+      },
+      "nursery": {
+        "useSortedClasses": {
+          "level": "on",
+          "fix": "safe",
+          "options": {
+            "functions": ["tv", "cn", "cva"]
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+/* ── O `⋯` de uma linha sem ponteiro ────────────────────────────────────────
+ *
+ * Nas listas o menu fica escondido e aparece no hover da linha, que é o que
+ * mantém a coluna limpa em duzentas linhas. No toque não há hover, e sem isto
+ * a linha teria ações que ninguém consegue abrir — o mesmo buraco que a carta
+ * tinha antes de `home-motion.css`.
+ *
+ * `hover: none` e NÃO largura de tela: quem decide é o dispositivo apontador.
+ * Tablet com caneta e desktop com touch existem, e a peça que substituiu esta
+ * usava `max-md:`, que erra nos dois.
+ *
+ * **O TAMANHO do alvo é outra pergunta, e ela se responde por largura** — ver
+ * `entry-menu.tsx`. Visibilidade é do apontador; tamanho concorda com o vizinho
+ * da mesma linha.
+ */
+@media (hover: none) {
+  .wp-row-menu {
+    opacity: 1;
+  }
+}
+
+/* ── O `⋯` de uma carta COMPACTA sem ponteiro ───────────────────────────────
+ *
+ * Mesmo buraco da linha, na grade compacta: sem hover o menu era inalcançável,
+ * e naquele modo ele é a ÚNICA ação que existe — a carta de 100px não comporta
+ * o `+`/`−`, e é essa troca que faz o modo ser compacto.
+ *
+ * Ele mora no canto de CIMA À ESQUERDA, e não onde a carta cheia põe os
+ * atalhos: o canto de cima à direita já é do selo de tipo, e o de baixo é a
+ * faixa do nome. Na carta cheia a esquerda é do selo de nota, que a compacta
+ * não tem.
+ */
+@media (hover: none) {
+  .wp-corner-menu {
+    opacity: 1;
+  }
+}

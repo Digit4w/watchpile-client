@@ -1,0 +1,66 @@
+/* Coreografia do import: a troca entre "escolher a fonte" e "importando".
+ *
+ * Os TOKENS são do sistema (`--motion-*`, `--ease-chrome`, design system seção
+ * 11); a coreografia é daqui, como em `home-motion.css`.
+ *
+ * ── O que estava seco, e por quê ───────────────────────────────────────────
+ * Apertar `Import` trocava três caixas por uma, no mesmo quadro. Não é falta de
+ * enfeite: a tela deixava de explicar o que aconteceu — de onde veio a caixa
+ * que está ali agora e para onde foram as outras. Entrar é informativo, e era
+ * exatamente a informação que faltava.
+ *
+ * ── Por que NÃO tem barra de progresso ─────────────────────────────────────
+ * O design system decidiu em 06/09/2026 que progresso de trabalho em segundo
+ * plano é NÚMERO, nunca barra: o denominador é conhecido e o numerador anda de
+ * um em um. O que se anima aqui é a CHEGADA da caixa e a subida do número, não
+ * uma proporção desenhada.
+ *
+ * A exceção aparente é a leitura da fonte, onde o total ainda não existe — e
+ * ali também não há barra, porque uma barra sem denominador desenha uma fração
+ * que ela não conhece. O que existe é um PULSO, que diz "está acontecendo" sem
+ * afirmar quanto falta.
+ */
+
+/* Entrada da caixa que roda e do bloco de resultado. Mesma direção do popover:
+ * 4px de baixo pra cima, sem escala e sem overshoot.
+ */
+.wp-import-in {
+  animation: wp-import-in var(--motion-chrome) var(--ease-chrome) backwards;
+}
+@keyframes wp-import-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* O pulso da leitura: só enquanto não há denominador.
+ *
+ * É LOOP AMBIENTE, então `prefers-reduced-motion` o desliga — ao contrário da
+ * entrada acima, que é transição de estado e permanece (design system, seção
+ * 11, 28/08/2026). Sem o pulso o ponto fica aceso, que continua dizendo
+ * "acontecendo" sem se mexer.
+ */
+.wp-import-pulse {
+  animation: wp-import-pulse var(--motion-ambient) var(--ease-chrome) infinite;
+}
+@keyframes wp-import-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wp-import-pulse {
+    animation: none;
+    opacity: 1;
+  }
+}
