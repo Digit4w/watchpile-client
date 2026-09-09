@@ -9,6 +9,7 @@ import {
   SearchGrid,
   SearchGridSkeleton,
   SearchResultsHeader,
+  SearchSourceField,
 } from '@/components/search/search-results'
 import {
   SearchError,
@@ -133,18 +134,28 @@ function SearchRoute() {
   /** A que a tela responde sozinha vence a que veio da rede: ela é definitiva. */
   const refusalVisible = withoutSource ?? refusal
 
+  /**
+   * A fonte que ESTA consulta usa, e as outras que o tipo tem — a saída da
+   * recusa (09/09/2026).
+   *
+   * Sai de `sourceByType`, não da resposta: quando a busca recusa não há
+   * resposta nenhuma, e é justamente aí que o controle precisa existir. `null`
+   * em `querySource` só acontece em tipo sem fonte, onde `alternates` já é
+   * vazio pela ausência da chave no mapa.
+   */
+  const typeSources = scope ? (sourceByType.get(scope) ?? null) : null
+  const querySource = effectiveSource(typeSources, provider)
+  const alternates = (typeSources?.options ?? []).filter(
+    (option) => option.slug !== querySource?.slug,
+  )
+
   const data = searchQuery.data
   /**
    * O nome da fonte, pro vazio. Antes da primeira resposta ele sai dos
    * provedores que servem o tipo — a tela precisa dizer ONDE vai procurar
    * **antes** de procurar, que é o ponto inteiro daquele vazio.
    */
-  const source =
-    data?.provider.name ??
-    (scope
-      ? (effectiveSource(sourceByType.get(scope) ?? null, provider)?.name ??
-        null)
-      : null)
+  const source = data?.provider.name ?? querySource?.name ?? null
 
   return (
     <AppShell
@@ -187,14 +198,34 @@ function SearchRoute() {
          * recusa que a própria tela responde — tipo sem fonte —, depois a que
          * veio do servidor, depois o erro, e só então o vazio e a espera. */}
         {refusalVisible && scope && (
-          <SearchRefused
-            refusal={refusalVisible}
-            type={typeLabel}
-            term={q}
-            isAdmin={user.isAdmin}
-            onManual={() => setManual(true)}
-            onRetry={() => searchQuery.refetch()}
-          />
+          <>
+            {/* **O controle de fonte SOBREVIVE à recusa — 09/09/2026.** Ele
+             * vivia só no cabeçalho de resultados, dentro do ramo `data && …`,
+             * então sumia exatamente quando a fonte falha — e a única menção ao
+             * provedor que caiu virava a frase de erro, que é prosa e não
+             * controle.
+             *
+             * Só quando há o que trocar: com uma fonte só, `Source AniList`
+             * acima de um painel que já nomeia o AniList seria rótulo sem
+             * saída. */}
+            {alternates.length > 0 && querySource && (
+              <div className="mb-3 flex justify-end">
+                <SearchSourceField
+                  sources={sourceByType.get(scope)?.options ?? []}
+                  current={querySource.slug}
+                  onSource={(slug) => setSearch({ provider: slug })}
+                />
+              </div>
+            )}
+            <SearchRefused
+              refusal={refusalVisible}
+              type={typeLabel}
+              term={q}
+              isAdmin={user.isAdmin}
+              onManual={() => setManual(true)}
+              onRetry={() => searchQuery.refetch()}
+            />
+          </>
         )}
 
         {!withoutSource && searchQuery.isError && !refusal && (

@@ -1,8 +1,36 @@
 import { Link } from '@tanstack/react-router'
 import { RemoteArt } from '@/components/media/remote-art'
+import { SourcePicker } from '@/components/search/search-scope'
+import type { Source } from '@/domain/search-scope'
 import { countOf } from '@/lib/format'
 import { searchCopy } from '@/routes/-search.copy'
 import type { SearchResult, SearchSource } from '@/services/search'
+
+/**
+ * O rótulo `Source` mais o controle — e ele é peça própria desde 09/09/2026,
+ * porque passou a aparecer em DOIS estados da tela.
+ *
+ * Ele vivia dentro do cabeçalho de resultados, que só existe no ramo em que a
+ * busca voltou com dados — então ele sumia exatamente quando a fonte falha,
+ * que é o único momento em que trocar de fonte é a coisa que resolve. A
+ * recusa renderiza este mesmo campo acima do painel.
+ */
+export function SearchSourceField({
+  sources,
+  current,
+  onSource,
+}: {
+  sources: readonly Source[]
+  current: string
+  onSource: (slug: string) => void
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-faint text-xs">{searchCopy.source}</span>
+      <SourcePicker sources={sources} current={current} onSource={onSource} />
+    </div>
+  )
+}
 
 /**
  * A linha de resultados é CONTEÚDO, não uma terceira faixa de chrome: ela rola
@@ -31,27 +59,11 @@ export function SearchResultsHeader({
         <p className="text-faint text-sm tabular-nums">
           {countOf(total, searchCopy.results)}
         </p>
-        <div className="flex items-center gap-1.5">
-          <span className="text-faint text-xs">{searchCopy.source}</span>
-          {/* Com uma source só não há o que trocar, e um seletor de uma opção
-           * é um controle que mente sobre ter escolha. */}
-          {sources.length > 1 ? (
-            <select
-              value={provider.slug}
-              onChange={(event) => onSource(event.target.value)}
-              aria-label={searchCopy.changeSource}
-              className="h-9 rounded-md bg-transparent px-1 text-ink text-sm outline-none transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised focus-visible:ring-[3px] focus-visible:ring-ink/50"
-            >
-              {sources.map((source) => (
-                <option key={source.slug} value={source.slug}>
-                  {source.name}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span className="text-ink text-sm">{provider.name}</span>
-          )}
-        </div>
+        <SearchSourceField
+          sources={sources}
+          current={provider.slug}
+          onSource={onSource}
+        />
       </div>
 
       {provider.attribution && (
