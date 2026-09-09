@@ -62,7 +62,15 @@ export const libraryCopy = {
     titleField: 'Title',
     titlePlaceholder: "Frieren: Beyond Journey's End",
     status: 'Status',
-    totalPlaceholder: '28',
+    /**
+     * **O campo de total NÃO tem placeholder** — 09/09/2026, decisão do dono.
+     * Ele era `'28'`, um exemplo escrito à mão que nunca mudava porque nunca
+     * foi valor, e foi lido como dado: número cinza dentro de campo numérico é
+     * indistinguível de campo preenchido e desabilitado, e a dica logo abaixo
+     * reforçava a leitura de que alguém já tinha preenchido. **Placeholder de
+     * campo numérico não pode ser um número plausível**, porque o campo não
+     * tem nenhum outro sinal de vazio — e vazio é o estado que a dica descreve.
+     */
     // "Ainda em publicação" é caso normal, não erro: mangá em publicação não
     // tem último capítulo (brief, 3.12), e a carta já desenha "12 / ?".
     totalHint: 'Leave it empty if it is still running.',

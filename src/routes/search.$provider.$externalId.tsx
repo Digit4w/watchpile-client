@@ -116,6 +116,7 @@ function ProviderTitleRoute() {
         title: data.title,
         year: data.year,
         synopsis: data.synopsis,
+        total: data.total,
         art: data.art,
         providerName: data.provider.name,
         source: { provider, externalId },
