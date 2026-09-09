@@ -106,6 +106,32 @@ export const libraryCopy = {
       remove: (name: string) => `Remove ${name}`,
     },
   },
+
+  /**
+   * A folha de EDITAR obra — 09/09/2026.
+   *
+   * A copy dela é curta de propósito: quem chega aqui já sabe qual obra é (o
+   * menu abriu a partir dela) e o que quer arrumar. O corpo diz o RECORTE, que
+   * é o que não é óbvio — status, nota e pilhas continuam onde sempre
+   * estiveram, e uma folha que os prometesse mandaria procurar aqui o que já
+   * está a um clique na tela de trás.
+   */
+  edit: {
+    title: 'Edit this title',
+    body: 'Fix what you typed in. Status, score and piles stay where they are.',
+    submit: 'Save changes',
+    failed: 'Could not save the changes. Try again.',
+    /**
+     * A recusa, com o motivo e ANTES do clique — o app não tem toast.
+     *
+     * Nomeia o provedor porque é ele que a causou: **a recusa mora na peça que
+     * a causou**, e o alcance visual dela é o alcance real (régua de 06/09). O
+     * id de um provedor só é único dentro do tipo, então trocar o tipo aqui
+     * deixaria o vínculo apontando pra outra obra.
+     */
+    typeLocked: (provider: string) =>
+      `The type came from ${provider} and cannot change while the link exists.`,
+  },
   empty: {
     title: 'Your library is empty',
     /**

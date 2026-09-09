@@ -119,6 +119,12 @@ export const appCopy = {
     moreActions: 'More actions',
     /** O destino, não a ação — o item que abre a obra. */
     viewDetails: 'View details',
+    /**
+     * Abre a folha de editar (09/09/2026). Diz `title` e não `entry` porque é
+     * a palavra que a tela usa em todo lugar — a copy do produto fala de obra,
+     * e `entry` é o nome da tabela.
+     */
+    edit: 'Edit title',
     addToPile: 'Add to pile',
     savedIn: 'Saved in',
     findPile: 'Find a pile',
