@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { EditEntrySheet } from '@/components/library/edit-entry-sheet'
 import { EntryPiles } from '@/components/media/entry-piles'
 import {
   ActionMenu,
@@ -9,7 +10,7 @@ import {
   ActionMenuSeparator,
   MoreIcon,
 } from '@/components/menu/action-menu'
-import { PileAddIcon, TrashIcon } from '@/components/menu/menu-icons'
+import { EditIcon, PileAddIcon, TrashIcon } from '@/components/menu/menu-icons'
 import type { Entry } from '@/domain/media'
 import { useDeleteEntry } from '@/hooks/mutations/entries/use-delete-entry'
 import { appCopy } from '@/lib/copy'
@@ -54,70 +55,94 @@ export function TitleActions({
   onDeleted: () => void
 }) {
   const [open, setOpen] = useState(false)
-  const [vista, setVista] = useState<'menu' | 'piles' | 'confirmar'>('menu')
+  const [view, setView] = useState<'menu' | 'piles' | 'confirm'>('menu')
+  /**
+   * A folha de editar é irmã do menu, não uma vista dele: três campos não
+   * cabem num painel de 256px, e obra é objeto de FOLHA (design system, seção
+   * 5). Abrir uma fecha o outro.
+   */
+  const [editing, setEditing] = useState(false)
   const remove = useDeleteEntry()
 
   return (
-    <ActionMenu
-      open={open}
-      onOpenChange={(next) => {
-        // Fechar volta ao menu: reabrir no meio de uma sub-vista faria o
-        // popover lembrar de um caminho que quem fechou já abandonou.
-        if (!next) {
-          setVista('menu')
+    <>
+      <ActionMenu
+        open={open}
+        onOpenChange={(next) => {
+          // Fechar volta ao menu: reabrir no meio de uma sub-vista faria o
+          // popover lembrar de um caminho que quem fechou já abandonou.
+          if (!next) {
+            setView('menu')
+          }
+          setOpen(next)
+        }}
+        trigger={
+          <button
+            type="button"
+            aria-label={appCopy.entry.moreActions}
+            className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted outline-none transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised hover:text-ink focus-visible:ring-[3px] focus-visible:ring-ink/50"
+          >
+            <MoreIcon size={18} />
+          </button>
         }
-        setOpen(next)
-      }}
-      trigger={
-        <button
-          type="button"
-          aria-label={appCopy.entry.moreActions}
-          className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted outline-none transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised hover:text-ink focus-visible:ring-[3px] focus-visible:ring-ink/50"
-        >
-          <MoreIcon size={18} />
-        </button>
-      }
-    >
-      {vista === 'piles' ? (
-        <ActionMenuPanel>
-          <div className="flex flex-col gap-2">
-            <ActionMenuBack onClick={() => setVista('menu')} />
-            <EntryPiles entry={entry} />
-          </div>
-        </ActionMenuPanel>
-      ) : vista === 'confirmar' ? (
-        /**
-         * Tirar da biblioteca APAGA a obra, com progresso, nota e log junto —
-         * não é o `Remove from pile` de `/piles/:id`, e a copy diz isso com
-         * todas as letras (design system, seção 5).
-         */
-        <ActionMenuConfirm
-          title={appCopy.entry.removeTitle}
-          body={appCopy.entry.removeBody}
-          confirmLabel={appCopy.entry.removeConfirm}
-          pending={remove.isPending}
-          onCancel={() => setVista('menu')}
-          onConfirm={() => remove.mutate(entry.id, { onSuccess: onDeleted })}
-        />
-      ) : (
-        <>
-          <ActionMenuItem
-            icon={<PileAddIcon />}
-            submenu
-            onClick={() => setVista('piles')}
-          >
-            {appCopy.entry.addToPile}
-          </ActionMenuItem>
-          <ActionMenuSeparator />
-          <ActionMenuItem
-            icon={<TrashIcon />}
-            tone="danger"
-            onClick={() => setVista('confirmar')}
-          >
-            {appCopy.entry.remove}
-          </ActionMenuItem>
-        </>
-      )}
-    </ActionMenu>
+      >
+        {view === 'piles' ? (
+          <ActionMenuPanel>
+            <div className="flex flex-col gap-2">
+              <ActionMenuBack onClick={() => setView('menu')} />
+              <EntryPiles entry={entry} />
+            </div>
+          </ActionMenuPanel>
+        ) : view === 'confirm' ? (
+          /**
+           * Tirar da biblioteca APAGA a obra, com progresso, nota e log junto —
+           * não é o `Remove from pile` de `/piles/:id`, e a copy diz isso com
+           * todas as letras (design system, seção 5).
+           */
+          <ActionMenuConfirm
+            title={appCopy.entry.removeTitle}
+            body={appCopy.entry.removeBody}
+            confirmLabel={appCopy.entry.removeConfirm}
+            pending={remove.isPending}
+            onCancel={() => setView('menu')}
+            onConfirm={() => remove.mutate(entry.id, { onSuccess: onDeleted })}
+          />
+        ) : (
+          <>
+            {/* Editar vem antes de empilhar: uma fala da OBRA, a outra de onde
+             * ela está. Mesma ordem do `⋯` das listagens — o inventário de ações
+             * de uma obra é o mesmo em toda tela (régua de 07/09), e o que muda
+             * daqui pra lá é só `View details`, que aqui seria ir a onde já se
+             * está. */}
+            <ActionMenuItem
+              icon={<EditIcon />}
+              onClick={() => {
+                setOpen(false)
+                setEditing(true)
+              }}
+            >
+              {appCopy.entry.edit}
+            </ActionMenuItem>
+            <ActionMenuItem
+              icon={<PileAddIcon />}
+              submenu
+              onClick={() => setView('piles')}
+            >
+              {appCopy.entry.addToPile}
+            </ActionMenuItem>
+            <ActionMenuSeparator />
+            <ActionMenuItem
+              icon={<TrashIcon />}
+              tone="danger"
+              onClick={() => setView('confirm')}
+            >
+              {appCopy.entry.remove}
+            </ActionMenuItem>
+          </>
+        )}
+      </ActionMenu>
+
+      <EditEntrySheet entry={entry} open={editing} onOpenChange={setEditing} />
+    </>
   )
 }

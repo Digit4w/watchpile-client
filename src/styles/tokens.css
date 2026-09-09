@@ -207,6 +207,26 @@
    */
   --ease-chrome: cubic-bezier(0.2, 0, 0, 1);
 }
+
+/* ── Esquema de cor do agente de usuário (09/09/2026) ─────────────────────────
+ * A outra metade da decisão de tema único (design system, seção 2). A metade
+ * escrita era a visível — "não escreva `dark:` em classe nenhuma"; esta é a
+ * que fala com o NAVEGADOR, e sem ela ele supõe claro.
+ *
+ * O que a página pinta com token nenhum problema tinha. O que o AGENTE DE
+ * USUÁRIO desenha, sim: a lista aberta de um `<select>` nativo (os `<option>`
+ * herdam `text-ink` quase branco e pousam no fundo branco do popup — o
+ * `link-provider-sheet` ficava branco-no-branco), o botão de escolher arquivo
+ * do CSV e o da capa de pilha, as setinhas do `type="number"` do progresso
+ * exato, o preenchimento automático da senha no login, mais a barra de
+ * rolagem e o cursor de texto do app inteiro.
+ *
+ * A régua: tema declarado no CSS da página não alcança o que o navegador
+ * desenha — isso se declara em `color-scheme`, e uma vez só.
+ */
+:root {
+  color-scheme: dark;
+}
 /* ── Durações (28/08/2026) ────────────────────────────────────────────────────
  * Fora do @theme porque o Tailwind v4 não tem namespace de duração que gere
  * utilitário sozinho — usa-se `duration-[var(--motion-chrome)]`, com o `var()`

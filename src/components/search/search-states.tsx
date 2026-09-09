@@ -103,6 +103,15 @@ export function SearchNoResults({
  * **A mesma recusa muda de copy por audiência**: quem não é admin não recebe um
  * botão que não pode usar — sinal que a pessoa não consegue apagar é ansiedade
  * sem saída (brief, 3.9).
+ *
+ * **A troca de fonte NÃO mora aqui, e isso foi visto na tela rodando —
+ * 09/09/2026.** Ela chegou a ser um botão por fonte alternativa, ao lado de
+ * `Try again`; com anime servido por quatro provedores o painel saiu com CINCO
+ * ações na fileira, e `Try again` — a única que não resolve — ficou com o
+ * mesmo peso visual das três que resolvem. A saída passou a ser o campo
+ * `Source` logo acima do painel, que desde este ciclo sobrevive à recusa: **um
+ * parâmetro, um controle**, e o inventário de fontes de um tipo não tem teto,
+ * então ele é menu e nunca fileira (design system, seção 5).
  */
 export function SearchRefused({
   refusal,

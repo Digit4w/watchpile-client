@@ -21,10 +21,10 @@ import { libraryCopy } from '@/routes/-library.copy'
 
 const PICKED =
   'flex h-9 items-center gap-1.5 rounded-sm border border-ink bg-ink px-2.5 text-surface text-xs'
-const DISPONIVEL =
+const AVAILABLE =
   'flex h-9 items-center gap-1.5 rounded-sm border border-line px-2.5 text-muted text-xs transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised hover:text-ink'
 
-const CAMPO = 'h-9 rounded-md text-sm'
+const FIELD = 'h-9 rounded-md text-sm'
 
 /**
  * Um resultado de busca escolhido, preenchendo a folha (brief, 3.10).
@@ -41,6 +41,14 @@ const CAMPO = 'h-9 rounded-md text-sm'
  *   legítima de quem vai ler a própria biblioteca
  * - o que a obra não guarda (ano, sinopse, arte) aparece como CONTEXTO e não
  *   como campo: `entries` não tem coluna pra nenhum dos três
+ *
+ * **E o TOTAL entrou em 09/09/2026, do lado dos que se editam.** O servidor já
+ * o mapeava em `field_map` pros sete provedores e já o entregava no detalhe —
+ * quem o descartava era este tipo, que não tinha o campo. O efeito era que toda
+ * obra vinda da busca nascia com `total` nulo, e o `12 / ?` da 3.11, que é o
+ * estado desenhado pra *não se sabe*, virava o estado de quase tudo — inclusive
+ * de obra terminada cujo total o provedor tinha acabado de dizer na tela ao
+ * lado. Ele é **editável**, como o título: a fonte propõe, a pessoa manda.
  */
 export type EntryPick = {
   /**
@@ -54,6 +62,12 @@ export type EntryPick = {
   title: string
   year: number | null
   synopsis: string | null
+  /**
+   * Quantas unidades o provedor declara, ou nulo — que aqui é *em publicação*,
+   * não *zero*: o servidor já converte o zero do MyAnimeList em nulo, porque
+   * lá ele quer dizer que a obra não terminou.
+   */
+  total: number | null
   /** A URL já montada pelo servidor, ou nulo. Emprestada, como na grade. */
   art: string | null
   providerName: string
@@ -139,7 +153,14 @@ export function AddEntrySheet({
   )
   const [title, setTitle] = useState(pick?.title ?? '')
   const [status, setStatus] = useState<EntryStatus>('watching')
-  const [total, setTotal] = useState('')
+  /**
+   * **Nasce com o que o provedor disse** (09/09/2026), e vazio quando ele não
+   * disse. O que a pessoa apagar continua virando nulo em `initialTotal`, que
+   * é o comportamento certo pra obra em publicação.
+   */
+  const [total, setTotal] = useState(
+    pick?.total != null ? String(pick.total) : '',
+  )
   /**
    * As pilhas escolhidas nascem vazias mesmo vindo da busca: um resultado do
    * TMDB não sabe nada sobre as pilhas de quem procurou.
@@ -177,7 +198,7 @@ export function AddEntrySheet({
     setMediaType(pick?.mediaType ?? null)
     setTitle(pick?.title ?? '')
     setStatus('watching')
-    setTotal('')
+    setTotal(pick?.total != null ? String(pick.total) : '')
     setPiles([])
     create.reset()
   }
@@ -312,7 +333,7 @@ export function AddEntrySheet({
                     type="button"
                     onClick={() => setMediaType(info.slug)}
                     aria-pressed={chosen === info.slug}
-                    className={chosen === info.slug ? PICKED : DISPONIVEL}
+                    className={chosen === info.slug ? PICKED : AVAILABLE}
                   >
                     <MediaTypeIcon
                       type={info.slug}
@@ -334,7 +355,7 @@ export function AddEntrySheet({
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 placeholder={libraryCopy.add.titlePlaceholder}
-                className={CAMPO}
+                className={FIELD}
                 autoFocus
               />
               {pick && (
@@ -352,7 +373,7 @@ export function AddEntrySheet({
                   onClick={() => setStatus(value)}
                   aria-pressed={status === value}
                   className={
-                    status === value ? `${PICKED} gap-0` : `${DISPONIVEL} gap-0`
+                    status === value ? `${PICKED} gap-0` : `${AVAILABLE} gap-0`
                   }
                 >
                   {appCopy.statuses[value]}
@@ -380,8 +401,7 @@ export function AddEntrySheet({
                     setTotal(event.target.value.replace(/\D/g, ''))
                   }
                   inputMode="numeric"
-                  placeholder={libraryCopy.add.totalPlaceholder}
-                  className={`${CAMPO} tabular-nums`}
+                  className={`${FIELD} tabular-nums`}
                 />
                 <p className="text-faint text-xs">
                   {libraryCopy.add.totalHint}

@@ -7,7 +7,11 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import type { MediaTypeInfo } from '@/domain/media-type'
-import { effectiveSource, type TypeSources } from '@/domain/search-scope'
+import {
+  effectiveSource,
+  type Source,
+  type TypeSources,
+} from '@/domain/search-scope'
 import { searchCopy } from '@/routes/-search.copy'
 
 function Chevron({
@@ -191,6 +195,78 @@ function Row({
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * A troca de fonte FORA do menu de escopo — a peça do cabeçalho de resultados.
+ *
+ * **Ela era um `<select>` NATIVO até 09/09/2026**, e foi o último do app a ser
+ * desenhado pelo sistema operacional numa tela de lançamento: a lista abria
+ * com a estética do SO no meio de um app que resolve escolha com popover em
+ * todo lugar. Trocá-la aqui não é enfeite — é o mesmo controle passando a
+ * aparecer também sob a RECUSA, que é onde ele mais importa.
+ *
+ * **Mora neste arquivo de propósito.** Ela e o menu de escopo escrevem o mesmo
+ * par de parâmetros da consulta, e é aqui que o `Chevron`, o `Check` e o
+ * desenho da linha de fonte já existem — copiá-los pra um arquivo vizinho é
+ * como os cinco menus escritos à mão nasceram.
+ *
+ * Com uma fonte só ela continua sendo TEXTO: um seletor de uma opção é um
+ * controle que mente sobre ter escolha.
+ */
+export function SourcePicker({
+  sources,
+  current,
+  onSource,
+}: {
+  sources: readonly Source[]
+  current: string
+  onSource: (slug: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const label = sources.find((source) => source.slug === current)?.name ?? ''
+
+  if (sources.length <= 1) {
+    return <span className="text-ink text-sm">{label}</span>
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={searchCopy.changeSource}
+          className="flex h-9 cursor-pointer items-center gap-1 rounded-md px-2 text-ink text-sm outline-none transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised focus-visible:ring-[3px] focus-visible:ring-ink/50"
+        >
+          <span className="min-w-0 truncate">{label}</span>
+          <Chevron size={12} open={open} />
+        </button>
+      </PopoverTrigger>
+
+      <PopoverContent align="end" sideOffset={4} className="w-48 p-1">
+        {sources.map((source) => (
+          <button
+            key={source.slug}
+            type="button"
+            role="menuitemradio"
+            aria-checked={source.slug === current}
+            onClick={() => {
+              onSource(source.slug)
+              setOpen(false)
+            }}
+            className={`flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-left text-sm ${
+              source.slug === current
+                ? 'text-ink'
+                : 'text-muted transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised hover:text-ink'
+            }`}
+          >
+            <span className="min-w-0 flex-1 truncate">{source.name}</span>
+            {source.slug === current && <Check />}
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
   )
 }
 

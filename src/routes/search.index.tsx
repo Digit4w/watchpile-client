@@ -133,18 +133,25 @@ function SearchRoute() {
   /** A que a tela responde sozinha vence a que veio da rede: ela é definitiva. */
   const refusalVisible = withoutSource ?? refusal
 
+  /**
+   * A fonte que ESTA consulta usa, e as opções do tipo — o que alimenta a
+   * faixa de fonte (09/09/2026).
+   *
+   * Sai de `sourceByType`, não da resposta: na recusa e no vazio não há
+   * resposta nenhuma, e é justamente aí que o controle precisa existir. Quando
+   * a resposta chega, ela vence — quem respondeu é fato, e o efetivo é
+   * previsão.
+   */
+  const typeSources = scope ? (sourceByType.get(scope) ?? null) : null
+  const querySource = effectiveSource(typeSources, provider)
+
   const data = searchQuery.data
   /**
    * O nome da fonte, pro vazio. Antes da primeira resposta ele sai dos
    * provedores que servem o tipo — a tela precisa dizer ONDE vai procurar
    * **antes** de procurar, que é o ponto inteiro daquele vazio.
    */
-  const source =
-    data?.provider.name ??
-    (scope
-      ? (effectiveSource(sourceByType.get(scope) ?? null, provider)?.name ??
-        null)
-      : null)
+  const source = data?.provider.name ?? querySource?.name ?? null
 
   return (
     <AppShell
@@ -186,6 +193,22 @@ function SearchRoute() {
          * (design system, seção 8): **o que ela já sabe, ela diz**. Primeiro a
          * recusa que a própria tela responde — tipo sem fonte —, depois a que
          * veio do servidor, depois o erro, e só então o vazio e a espera. */}
+        {/* **A faixa de fonte fica ACIMA de todos os estados, e é a mesma em
+         * todos** — 09/09/2026, decisão do dono. Ela vivia dentro do ramo
+         * `data && …`, então o único controle rotulado da fonte sumia
+         * exatamente na recusa (onde trocar de fonte é o que resolve) e no
+         * vazio (onde se escolhe a fonte antes de digitar).
+         *
+         * Ela some sozinha em tipo SEM fonte, porque aí `options` é vazio e
+         * não há nome a dizer. */}
+        <SearchResultsHeader
+          total={data && !refusalVisible ? data.results.length : null}
+          attribution={data?.provider.attribution ?? null}
+          sources={typeSources?.options ?? []}
+          current={data?.provider.slug ?? querySource?.slug ?? ''}
+          onSource={(slug) => setSearch({ provider: slug })}
+        />
+
         {refusalVisible && scope && (
           <SearchRefused
             refusal={refusalVisible}
@@ -217,32 +240,23 @@ function SearchRoute() {
           !withoutSource &&
           !searchQuery.isError &&
           q.trim() !== '' &&
-          !isLoading && (
-            <>
-              <SearchResultsHeader
-                total={data.results.length}
-                provider={data.provider}
-                sources={data.sources}
-                onSource={(slug) => setSearch({ provider: slug })}
-              />
-              {data.results.length > 0 ? (
-                <SearchGrid
-                  results={data.results}
-                  owned={data.owned}
-                  // Há resultados, logo houve escopo: a busca é POR TIPO e o
-                  // servidor recusa sem ele. O `??` é só o compilador.
-                  type={scope ?? ''}
-                />
-              ) : (
-                <SearchNoResults
-                  term={term}
-                  source={data.provider.name}
-                  type={typeLabel}
-                  onManual={() => setManual(true)}
-                />
-              )}
-            </>
-          )}
+          !isLoading &&
+          (data.results.length > 0 ? (
+            <SearchGrid
+              results={data.results}
+              owned={data.owned}
+              // Há resultados, logo houve escopo: a busca é POR TIPO e o
+              // servidor recusa sem ele. O `??` é só o compilador.
+              type={scope ?? ''}
+            />
+          ) : (
+            <SearchNoResults
+              term={term}
+              source={data.provider.name}
+              type={typeLabel}
+              onManual={() => setManual(true)}
+            />
+          ))}
       </div>
 
       {/* Só o caminho MANUAL abre folha aqui. O preenchido mudou de endereço:

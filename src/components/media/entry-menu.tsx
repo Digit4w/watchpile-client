@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { EditEntrySheet } from '@/components/library/edit-entry-sheet'
 import {
   ActionMenu,
   ActionMenuBack,
@@ -10,6 +11,7 @@ import {
   MoreIcon,
 } from '@/components/menu/action-menu'
 import {
+  EditIcon,
   OpenIcon,
   PileAddIcon,
   PileRemoveIcon,
@@ -154,101 +156,126 @@ export function EntryMenu({
   const remove = useDeleteEntry()
   const [open, setOpen] = useState(false)
   const [view, setView] = useState<'menu' | 'piles' | 'confirm'>('menu')
+  /**
+   * A folha de editar é IRMÃ do menu, não uma vista dentro dele: três campos
+   * não cabem num painel de 256px, e o peso do formulário acompanha o objeto —
+   * obra ganha folha (design system, seção 5). Abrir uma FECHA o outro, senão
+   * o popover fica de pé atrás da folha modal, ancorado num gatilho que a
+   * folha cobriu.
+   */
+  const [editing, setEditing] = useState(false)
 
   return (
-    <ActionMenu
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) {
-          setView('menu')
+    <>
+      <ActionMenu
+        open={open}
+        onOpenChange={(next) => {
+          if (!next) {
+            setView('menu')
+          }
+          setOpen(next)
+        }}
+        align={variant === 'row' ? 'end' : 'center'}
+        trigger={
+          <button
+            type="button"
+            className={TRIGGER[variant]}
+            aria-label={appCopy.entry.moreActions}
+            title={appCopy.entry.moreActions}
+          >
+            <MoreIcon size={variant === 'row' ? 16 : 14} />
+          </button>
         }
-        setOpen(next)
-      }}
-      align={variant === 'row' ? 'end' : 'center'}
-      trigger={
-        <button
-          type="button"
-          className={TRIGGER[variant]}
-          aria-label={appCopy.entry.moreActions}
-          title={appCopy.entry.moreActions}
-        >
-          <MoreIcon size={variant === 'row' ? 16 : 14} />
-        </button>
-      }
-    >
-      {view === 'piles' ? (
-        <ActionMenuPanel>
-          <div className="flex flex-col gap-2">
-            <ActionMenuBack onClick={() => setView('menu')} />
-            <EntryPiles entry={entry} />
-          </div>
-        </ActionMenuPanel>
-      ) : view === 'confirm' ? (
-        <ActionMenuConfirm
-          title={appCopy.entry.removeTitle}
-          body={appCopy.entry.removeBody}
-          confirmLabel={appCopy.entry.removeConfirm}
-          pending={remove.isPending}
-          onCancel={() => setView('menu')}
-          onConfirm={() => remove.mutate(entry.id)}
-        />
-      ) : (
-        <>
-          {/* **Primeiro, e é um LINK** (pedido do dono, 07/09/2026).
-           *
-           * A carta salva linka só pelo TÍTULO, porque a camada de atalhos é
-           * `inset-0` e usa `opacity` — um link esticado por baixo dela seria
-           * bloqueado no clique. A carta de resultado de busca, que não tem
-           * essa camada, é link inteiro. **As duas se comportam diferente, e
-           * este item é o que dá à salva um caminho até o detalhe que não seja
-           * um alvo de texto pequeno** — no toque, onde os atalhos aparecem sem
-           * hover, ele é o caminho mais óbvio que existe.
-           *
-           * Ele passa no teste que derrubou o `Duplicate` de `/piles`: item de
-           * menu nasce de ação, não de simetria de layout. E vem antes da
-           * divisória de tudo, porque ir a um lugar não é agir sobre a obra. */}
-          <ActionMenuLink
-            icon={<OpenIcon />}
-            to="/library/$entryId"
-            params={{ entryId: String(entry.id) }}
-          >
-            {appCopy.entry.viewDetails}
-          </ActionMenuLink>
-
-          <ActionMenuSeparator />
-
-          <ActionMenuItem
-            icon={<PileAddIcon />}
-            submenu
-            onClick={() => setView('piles')}
-          >
-            {appCopy.entry.addToPile}
-          </ActionMenuItem>
-
-          {/* Só existe DENTRO de uma pile, e some outside dela — item de menu
-           * nasce de ação, não de simetria de layout (design system, seção 5).
-           * Na Home e em `/library` não há pilha de onde tirar. */}
-          {pileId !== undefined && (
-            <ActionMenuItem
-              icon={<PileRemoveIcon />}
-              disabled={removeFromPile.isPending}
-              onClick={() => removeFromPile.mutate(entry.id)}
+      >
+        {view === 'piles' ? (
+          <ActionMenuPanel>
+            <div className="flex flex-col gap-2">
+              <ActionMenuBack onClick={() => setView('menu')} />
+              <EntryPiles entry={entry} />
+            </div>
+          </ActionMenuPanel>
+        ) : view === 'confirm' ? (
+          <ActionMenuConfirm
+            title={appCopy.entry.removeTitle}
+            body={appCopy.entry.removeBody}
+            confirmLabel={appCopy.entry.removeConfirm}
+            pending={remove.isPending}
+            onCancel={() => setView('menu')}
+            onConfirm={() => remove.mutate(entry.id)}
+          />
+        ) : (
+          <>
+            {/* **Primeiro, e é um LINK** (pedido do dono, 07/09/2026).
+             *
+             * A carta salva linka só pelo TÍTULO, porque a camada de atalhos é
+             * `inset-0` e usa `opacity` — um link esticado por baixo dela seria
+             * bloqueado no clique. A carta de resultado de busca, que não tem
+             * essa camada, é link inteiro. **As duas se comportam diferente, e
+             * este item é o que dá à salva um caminho até o detalhe que não seja
+             * um alvo de texto pequeno** — no toque, onde os atalhos aparecem sem
+             * hover, ele é o caminho mais óbvio que existe.
+             *
+             * Ele passa no teste que derrubou o `Duplicate` de `/piles`: item de
+             * menu nasce de ação, não de simetria de layout. E vem antes da
+             * divisória de tudo, porque ir a um lugar não é agir sobre a obra. */}
+            <ActionMenuLink
+              icon={<OpenIcon />}
+              to="/library/$entryId"
+              params={{ entryId: String(entry.id) }}
             >
-              {appCopy.entry.removeFromPile}
+              {appCopy.entry.viewDetails}
+            </ActionMenuLink>
+
+            <ActionMenuSeparator />
+
+            {/* Editar vem antes de empilhar porque fala da OBRA, e empilhar fala
+             * de onde ela está. Não é `submenu`: ela abre uma folha, não uma
+             * vista deste painel. */}
+            <ActionMenuItem
+              icon={<EditIcon />}
+              onClick={() => {
+                setOpen(false)
+                setEditing(true)
+              }}
+            >
+              {appCopy.entry.edit}
             </ActionMenuItem>
-          )}
 
-          <ActionMenuSeparator />
+            <ActionMenuItem
+              icon={<PileAddIcon />}
+              submenu
+              onClick={() => setView('piles')}
+            >
+              {appCopy.entry.addToPile}
+            </ActionMenuItem>
 
-          <ActionMenuItem
-            icon={<TrashIcon />}
-            tone="danger"
-            onClick={() => setView('confirm')}
-          >
-            {appCopy.entry.remove}
-          </ActionMenuItem>
-        </>
-      )}
-    </ActionMenu>
+            {/* Só existe DENTRO de uma pile, e some outside dela — item de menu
+             * nasce de ação, não de simetria de layout (design system, seção 5).
+             * Na Home e em `/library` não há pilha de onde tirar. */}
+            {pileId !== undefined && (
+              <ActionMenuItem
+                icon={<PileRemoveIcon />}
+                disabled={removeFromPile.isPending}
+                onClick={() => removeFromPile.mutate(entry.id)}
+              >
+                {appCopy.entry.removeFromPile}
+              </ActionMenuItem>
+            )}
+
+            <ActionMenuSeparator />
+
+            <ActionMenuItem
+              icon={<TrashIcon />}
+              tone="danger"
+              onClick={() => setView('confirm')}
+            >
+              {appCopy.entry.remove}
+            </ActionMenuItem>
+          </>
+        )}
+      </ActionMenu>
+
+      <EditEntrySheet entry={entry} open={editing} onOpenChange={setEditing} />
+    </>
   )
 }
