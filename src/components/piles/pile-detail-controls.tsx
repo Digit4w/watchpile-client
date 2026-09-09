@@ -1,6 +1,14 @@
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { MediaTypeIcon } from '@/components/media/media-type-icon'
+import { ActionMenuSeparator } from '@/components/menu/action-menu'
+import {
+  FilterAxisRow,
+  FilterRow,
+  FilterSectionLabel,
+  FilterSubview,
+  FilterViewRow,
+} from '@/components/menu/filter-menu'
 import { Input } from '@/components/ui/input'
 import {
   Popover,
@@ -15,7 +23,6 @@ import type {
   PileEntrySort,
 } from '@/domain/pile-detail-view'
 import { PILE_ENTRY_SORTS } from '@/domain/pile-detail-view'
-import { useMediaTypeName } from '@/hooks/queries/media-types/use-media-type-name'
 import { useOfferedMediaTypes } from '@/hooks/queries/media-types/use-offered-media-types'
 import { pileDetailCopy } from '@/routes/-pile-detail.copy'
 
@@ -43,55 +50,6 @@ function SearchIcon() {
   )
 }
 
-function Check() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="shrink-0"
-      aria-hidden="true"
-    >
-      <path d="M4.5 10.5 8 14 15.5 6" />
-    </svg>
-  )
-}
-
-function Row({
-  label,
-  on,
-  onSelect,
-  hint,
-}: {
-  label: string
-  on: boolean
-  onSelect: () => void
-  hint?: string
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      role="menuitemradio"
-      aria-checked={on}
-      title={hint}
-      className={`flex w-full items-center justify-between gap-2 rounded-sm px-2 py-2 text-left text-sm ${
-        on
-          ? 'text-ink'
-          : 'text-muted transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised hover:text-ink'
-      }`}
-    >
-      {label}
-      {on && <Check />}
-    </button>
-  )
-}
-
 type PileDetailMenuProps = {
   type: MediaType | null
   sort: PileEntrySort
@@ -110,6 +68,13 @@ type PileDetailMenuProps = {
  * já é visível na coluna da lista. Repetir os cinco status num menu de uma
  * pilha de doze itens seria inventário por simetria com a tela do lado, que é
  * exatamente o que a seção 5 rejeita.
+ *
+ * **O tipo abre em SUB-VISTA desde 08/09/2026**, com o resto inline — o padrão
+ * de `components/menu/filter-menu.tsx`, e pelo motivo de lá: tipo de mídia não
+ * tem teto (brief, 3.10), ordenação e modo têm. Aqui a lista plana custava
+ * mais que em `/library`, porque o painel abria com um cabeçalho de tipo e a
+ * ordenação — que é o que se troca numa pilha ordenada à mão — nascia empurrada
+ * pra baixo de todo o vocabulário da instalação.
  */
 function PileEntryMenu({
   type,
@@ -121,85 +86,98 @@ function PileEntryMenu({
   children,
 }: PileDetailMenuProps) {
   const mediaTypes = useOfferedMediaTypes(type)
-  const typeName = useMediaTypeName()
   const [open, setOpen] = useState(false)
+  const [typeOpen, setTypeOpen] = useState(false)
+
+  const choose = (apply: () => void) => () => {
+    apply()
+    setOpen(false)
+    setTypeOpen(false)
+  }
+
+  const current = mediaTypes.find((info) => info.slug === type)
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) {
+          setTypeOpen(false)
+        }
+        setOpen(next)
+      }}
+    >
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent align="end" sideOffset={8} className="w-64 p-2">
-        <p className="px-2 pt-1 pb-1 text-faint text-xs">
-          {pileDetailCopy.filters.sectionType}
-        </p>
-        <Row
-          label={pileDetailCopy.filters.anyType}
-          on={type === null}
-          onSelect={() => {
-            onType(null)
-            setOpen(false)
-          }}
-        />
-        {mediaTypes.map(({ slug: value }) => (
-          <Row
-            key={value}
-            label={typeName(value)}
-            on={type === value}
-            onSelect={() => {
-              onType(value)
-              setOpen(false)
-            }}
-          />
-        ))}
+        {typeOpen ? (
+          <FilterSubview
+            title={pileDetailCopy.filters.sectionType}
+            onBack={() => setTypeOpen(false)}
+          >
+            <FilterRow
+              label={pileDetailCopy.filters.anyType}
+              on={type === null}
+              onSelect={choose(() => onType(null))}
+            />
+            {mediaTypes.map((info) => (
+              <FilterRow
+                key={info.slug}
+                // O PLURAL, como em `/library`: a linha nomeia um conjunto de
+                // obras, não uma obra (design system, seção 8, sexta leva).
+                label={info.plural}
+                on={type === info.slug}
+                onSelect={choose(() => onType(info.slug))}
+              />
+            ))}
+          </FilterSubview>
+        ) : (
+          <>
+            <FilterAxisRow
+              label={pileDetailCopy.filters.sectionType}
+              // O tipo ativo pode não estar entre os OFERECIDOS enquanto a
+              // preferência não chegou (régua de 04/09) — o slug cru é feio, é
+              // verdade, e dura um quadro.
+              value={
+                type === null
+                  ? pileDetailCopy.filters.anyType
+                  : (current?.plural ?? type)
+              }
+              onOpen={() => setTypeOpen(true)}
+            />
 
-        <div className="my-1 border-line border-t" />
+            <ActionMenuSeparator />
 
-        <p className="px-2 pt-1 pb-1 text-faint text-xs">
-          {pileDetailCopy.filters.sectionSort}
-        </p>
-        {PILE_ENTRY_SORTS.map((value) => (
-          <Row
-            key={value}
-            label={pileDetailCopy.sorts[value]}
-            on={sort === value}
-            // A dica só existe nas ordens derivadas, e diz o que a alça sumida
-            // não consegue dizer sozinha: arrastar não quebrou, ele não se
-            // aplica a uma ordem que não é a da pilha.
-            hint={value === 'manual' ? undefined : pileDetailCopy.reorderHint}
-            onSelect={() => {
-              onSort(value)
-              setOpen(false)
-            }}
-          />
-        ))}
+            <FilterSectionLabel>
+              {pileDetailCopy.filters.sectionSort}
+            </FilterSectionLabel>
+            {PILE_ENTRY_SORTS.map((value) => (
+              <FilterRow
+                key={value}
+                label={pileDetailCopy.sorts[value]}
+                on={sort === value}
+                // A dica só existe nas ordens derivadas, e diz o que a alça
+                // sumida não consegue dizer sozinha: arrastar não quebrou, ele
+                // não se aplica a uma ordem que não é a da pilha.
+                hint={
+                  value === 'manual' ? undefined : pileDetailCopy.reorderHint
+                }
+                onSelect={choose(() => onSort(value))}
+              />
+            ))}
 
-        <div className="my-1 border-line border-t" />
+            <ActionMenuSeparator />
 
-        <p className="px-2 pt-1 pb-1 text-faint text-xs">
-          {pileDetailCopy.filters.sectionView}
-        </p>
-        <div className="flex items-center gap-1 px-1 pb-1">
-          {VIEW_MODES.map((value) => (
-            <button
-              key={value}
-              type="button"
-              role="menuitemradio"
-              aria-checked={view === value}
-              title={pileDetailCopy.views[value]}
-              aria-label={pileDetailCopy.views[value]}
-              onClick={() => {
-                onView(value)
-                setOpen(false)
-              }}
-              className={`flex size-9 items-center justify-center rounded-sm ${
-                view === value
-                  ? 'bg-ink text-surface'
-                  : 'text-muted transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised hover:text-ink'
-              }`}
-            >
-              <ViewModeIcon mode={value} />
-            </button>
-          ))}
-        </div>
+            <FilterSectionLabel>
+              {pileDetailCopy.filters.sectionView}
+            </FilterSectionLabel>
+            <FilterViewRow
+              modes={VIEW_MODES}
+              value={view}
+              label={(mode) => pileDetailCopy.views[mode]}
+              onSelect={(mode) => choose(() => onView(mode))()}
+            />
+          </>
+        )}
       </PopoverContent>
     </Popover>
   )
@@ -238,7 +216,15 @@ export function PileDetailControls({
   onSort,
   onView,
 }: PileDetailControlsProps) {
-  const typeName = useMediaTypeName()
+  /**
+   * O chip diz o PLURAL, e dizia o singular até 08/09/2026 — `useMediaTypeName`
+   * devolve `name`, e a régua de 01/09 é que a tela usa o plural quando o
+   * rótulo descreve um CONJUNTO. `/library` já fazia assim nos dois lugares; a
+   * varredura dos menus achou esta tela dizendo `Manga` onde a irmã diz
+   * `Mangas`, e o menu logo acima passaria a discordar do próprio chip.
+   */
+  const offered = useOfferedMediaTypes(type)
+  const activeType = offered.find((info) => info.slug === type)
   const field = (height: string) => (
     <div className="relative min-w-0 flex-1">
       <SearchIcon />
@@ -313,7 +299,7 @@ export function PileDetailControls({
             className="flex h-11 shrink-0 items-center gap-1.5 rounded-sm border border-ink bg-ink px-3 text-sm text-surface md:h-9"
           >
             <MediaTypeIcon type={type} size={14} />
-            {typeName(type)}
+            {activeType?.plural ?? type}
             <svg
               width="12"
               height="12"
