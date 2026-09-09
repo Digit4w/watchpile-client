@@ -69,7 +69,7 @@ type PileDetailMenuProps = {
  * pilha de doze itens seria inventário por simetria com a tela do lado, que é
  * exatamente o que a seção 5 rejeita.
  *
- * **O tipo abre em SUB-VISTA desde 08/09/2026**, com o resto inline — o padrão
+ * **O tipo abre em SUB-VISTA desde 09/09/2026**, com o resto inline — o padrão
  * de `components/menu/filter-menu.tsx`, e pelo motivo de lá: tipo de mídia não
  * tem teto (brief, 3.10), ordenação e modo têm. Aqui a lista plana custava
  * mais que em `/library`, porque o painel abria com um cabeçalho de tipo e a
@@ -217,7 +217,7 @@ export function PileDetailControls({
   onView,
 }: PileDetailControlsProps) {
   /**
-   * O chip diz o PLURAL, e dizia o singular até 08/09/2026 — `useMediaTypeName`
+   * O chip diz o PLURAL, e dizia o singular até 09/09/2026 — `useMediaTypeName`
    * devolve `name`, e a régua de 01/09 é que a tela usa o plural quando o
    * rótulo descreve um CONJUNTO. `/library` já fazia assim nos dois lugares; a
    * varredura dos menus achou esta tela dizendo `Manga` onde a irmã diz
