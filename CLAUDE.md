@@ -1128,28 +1128,92 @@ O `.vscode/settings.json` daqui ensina o Tailwind CSS IntelliSense a enxergar cl
 
 ## Testes
 
-**Vitest**, instalado em 28/08/2026 junto com o primeiro domínio que valia testar.
-Config própria em `vitest.config.ts` — não reusa `vite.config.ts` porque os
-testes de hoje são de `domain/`, que é puro por regra, e carregar os plugins do
-React e do Router pra rodá-los só custa tempo. Precisar testar componente um dia
-significa `environment: 'jsdom'` e os plugins, aí sim.
+**Vitest**, instalado em 28/08/2026 junto com o primeiro domínio que valia
+testar. **Desde 09/09/2026 ele tem DOIS projetos**, e a divisão é a mesma que
+sempre existiu — o que mudou é que agora os dois rodam.
 
-`.spec.ts` é teste unitário, mesma convenção do `server/`, onde `.test.ts` fica
-reservado pro e2e que sobe a app. `pre-push` do lefthook roda a suíte.
+| Projeto | Ambiente | Glob | Cobre |
+| --- | --- | --- | --- |
+| `domain` | `node` | `src/**/*.spec.ts` | regra pura, sem mock nenhum |
+| `components` | `jsdom` | `src/**/*.spec.tsx` | o que um componente DECIDE |
 
-**O que vale testar:** `domain/`. Ele é puro por construção — o `biome.json`
-bloqueia React, Router e Query lá dentro —, então é o único lugar testável sem
-mock nenhum. Hoje são três módulos: `widget-fit.ts` (o modelo de layout),
-`home-metrics.ts` (o encaixe da carta) e `pile-view.ts` (os níveis de identidade
-do ladrilho de pilha — o caso que o teste existe pra fixar é o de duas ou três
-obras: mosaico com buraco fica pior que uma peça só, então elas caem no desenho
-de uma obra só). O segundo tem um teste que não é sobre
-comportamento e sim sobre **invariante**: ele falha se alguém mudar o padding do
-widget, a altura da carta ou o gap da grade pra um valor que não feche a
-divisão. É o tipo de quebra que some em silêncio até alguém reparar na fileira
-cortada. Adaptador de biblioteca (`fit-compactor.ts`, `resize-constraint.ts`)
-não tem teste: o que dava pra afirmar sobre eles só se prova mexendo no
-navegador, e foi assim que os bugs de verdade apareceram.
+**O sufixo já separava os dois, e ninguém precisou inventar um:** `.spec.ts` é
+regra pura, `.spec.tsx` é componente. A extensão que o JSX já obriga é o glob,
+então não há convenção nova a lembrar e um arquivo não tem como cair no projeto
+errado. `.test.ts` continua reservado pro e2e que sobe a app, como no `server/`.
+`pre-push` do lefthook roda a suíte inteira.
+
+**O domínio continua sem plugins**, e é por isso que são dois projetos e não uma
+config: `domain/` é puro por regra (o `biome.json` bloqueia React, Router, Query
+e o `httpClient` lá dentro), e carregar o plugin do React mais um DOM inteiro pra
+rodá-lo só custa tempo.
+
+### Componente novo nasce com teste — decisão do dono, 09/09/2026
+
+**Vale para o componente que DECIDE**: o que tem ramo condicional, estado
+próprio, ou que dispara escrita. Composição pura — `RailBox`, `Panel`, o wrapper
+que só junta classes — fica **fora**, e isso não é preguiça: testá-la afirma
+classe de Tailwind, que é o ruído que a régua abaixo já existe pra evitar.
+
+**A ordem é esta, e o primeiro passo quase sempre resolve:**
+
+1. **A decisão dá pra extrair para `domain/`?** Então extrai e testa lá. É o que
+   `chip-fit`, `home-metrics`, `initial-total`, `search-refusal`, `shows-counter`
+   e mais uma dúzia de módulos são — e cada um deles nasceu de uma decisão que
+   estava dentro de um componente
+2. **Não dá?** Aí o teste é de componente. É o caso da decisão que depende de uma
+   CONSULTA (o tipo trancado por vínculo, em `edit-entry-sheet`), de composição
+   entre dois hooks, e do que só existe em movimento
+
+**O corte é em `services/`, nunca no hook.** `services/` é a única camada que
+fala com a API — é o que a tabela de camadas promete —, então é ali que
+`vi.mock` entra. Acima do corte tudo roda de verdade: o TanStack Query, a
+invalidação, os `useMemo` e as regras de `domain/` que o hook consome. **Fingir o
+HOOK seria testar outra coisa**: `useOfferedMediaTypes` combina duas consultas e
+aplica `offeredTypes`, e trocá-lo por um valor pronto apaga exatamente a parte
+que decide — o teste passaria a afirmar que o componente renderiza o array que o
+próprio teste escreveu. *Corta-se na fronteira que a arquitetura já declarou, não
+na mais próxima.*
+
+**O modelo está escrito, e se copia:** `src/test/render.tsx` (o `render` com
+`QueryClient` novo por teste — compartilhar um faz a ORDEM DOS ARQUIVOS decidir o
+resultado, que é a intermitência mais cara que existe, porque some quando se roda
+o teste sozinho) e `src/test/setup.ts` (matchers de DOM, `cleanup`, e os stubs de
+`matchMedia` e `ResizeObserver`, que o jsdom não tem porque os dois dependem de
+layout). O piloto é
+`src/components/library/edit-entry-sheet.spec.tsx`.
+
+**Duas coisas que valem em todo teste de componente:**
+
+- **Afirme COMPORTAMENTO, não estrutura.** `expect(botão).toBeDisabled()` diz o
+  que a pessoa vive; `expect(node.getAttribute('disabled')).toBe('')` diz como o
+  React escreveu. Consultar por `role` e por texto visível é a mesma régua: o que
+  quebra o teste tem que ser o que quebraria pra quem usa
+- **Confira que ele FALHA.** Um teste que passa por acidente é pior que nenhum,
+  porque cobra manutenção e não protege nada. Quebre a regra de propósito, veja
+  vermelho, desfaça — foi assim que o piloto foi validado
+
+**E o `tsc` cobre os specs, o que NÃO é de graça:** `tsconfig.app.json` inclui
+`src` inteiro sem excluir teste, então `bun run build` os typecheca junto com o
+código. É a rede que o `server/` descobriu não ter em 07/09/2026, quando uma
+coluna nova passou pelo `tsc` porque o `tsconfig` de lá exclui `*.test.ts` — e os
+seis `insert` de teste falharam só em runtime. **Excluir teste do `tsconfig` é
+tirar essa rede.**
+
+### O que já está coberto, e a dívida
+
+`domain/` tem **dezessete** módulos com spec. Um deles não é sobre comportamento
+e sim sobre **invariante**: `home-metrics` falha se alguém mudar o padding do
+widget, a altura da carta ou o gap da grade pra um valor que não feche a divisão
+— o tipo de quebra que some em silêncio até alguém reparar na fileira cortada.
+Adaptador de biblioteca (`fit-compactor.ts`, `resize-constraint.ts`) não tem
+teste: o que dava pra afirmar sobre eles só se prova mexendo no navegador, e foi
+assim que os bugs de verdade apareceram.
+
+**Do lado do componente a dívida é quase tudo**: são 92 arquivos em
+`components/`, e um só tem spec. A regra acima vale daqui pra frente; **cobrir o
+que já existe é item próprio do handoff**, e não se faz em varredura — o critério
+é o mesmo, e componente que só compõe continua fora.
 
 ## Convenções
 
