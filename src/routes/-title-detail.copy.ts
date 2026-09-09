@@ -153,7 +153,19 @@ export const titleDetailCopy = {
     format: 'Format',
     firstAired: 'First aired',
     seasons: 'Seasons',
-    episodes: 'Episodes',
+    /**
+     * **O rótulo do total NÃO se escreve aqui — 09/09/2026.** Ele era
+     * `'Episodes'`, e a tabela o usava pra todo tipo de mídia: num mangá a
+     * seção logo acima dizia `PROGRESS · CHAPTERS`, certo, e dois blocos
+     * abaixo a tabela dizia `Episodes 999`.
+     *
+     * A resposta estava na mesma tela: `progressUnit`, que chega plural e
+     * traduzida do servidor e é o que faz o cabeçalho de cima acertar. **A
+     * lição já estava registrada e não tinha sido aplicada aqui** — o
+     * `client/CLAUDE.md` escreve, sobre o título da seção de unidades, que
+     * "escrever 'Episodes' erraria em mangá". Foi aplicado lá e a tabela ficou
+     * de fora: a mesma correção com duas cópias, e uma delas não recebeu.
+     */
     year: 'Year',
   },
 

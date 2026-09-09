@@ -58,6 +58,7 @@ import {
 import { useDelayedPending } from '@/hooks/use-delayed-pending'
 import { useGoBack } from '@/hooks/use-go-back'
 import { useRequireSession } from '@/hooks/use-require-session'
+import { appCopy } from '@/lib/copy'
 import { formatDate } from '@/lib/format'
 import type { EntryLink } from '@/services/entries'
 import { titleDetailCopy } from './-title-detail.copy'
@@ -284,7 +285,19 @@ function EntryDetailRoute() {
                   value: groups.filter(({ number }) => number >= 1).length,
                 },
                 {
-                  label: titleDetailCopy.fields.episodes,
+                  /**
+                   * O rótulo sai da unidade do TIPO, não de `Episodes`
+                   * cravado: ela chega plural e traduzida do servidor, e é a
+                   * mesma que nomeia a seção de progresso acima.
+                   *
+                   * Reusa a frase do campo de total em vez de pôr a unidade
+                   * nua na coluna — ela já existe, já resolve a maiúscula
+                   * inicial numa frase que se traduz inteira, e é a mesma
+                   * frase que a folha de criar obra usa pro mesmo dado.
+                   */
+                  label: type?.progressUnit
+                    ? appCopy.totals.withUnit(type.progressUnit)
+                    : appCopy.totals.generic,
                   value: effectiveTotal,
                 },
               ]}

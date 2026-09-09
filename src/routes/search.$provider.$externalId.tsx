@@ -36,6 +36,7 @@ import { useProviderUnits } from '@/hooks/queries/titles/use-title-units'
 import { useDelayedPending } from '@/hooks/use-delayed-pending'
 import { useGoBack } from '@/hooks/use-go-back'
 import { useRequireSession } from '@/hooks/use-require-session'
+import { appCopy } from '@/lib/copy'
 import { titleDetailCopy } from './-title-detail.copy'
 
 export const Route = createFileRoute('/search/$provider/$externalId')({
@@ -87,7 +88,7 @@ function ProviderTitleRoute() {
   const logout = useLogout()
   const [adding, setAdding] = useState(false)
   const [group, setGroup] = useState<number | null>(null)
-  const typeUnit = useProgressUnit()
+  const unitOf = useProgressUnit()
 
   const details = useProviderTitleDetails(provider, externalId, type)
   const isLoading = useDelayedPending(details.isPending)
@@ -178,9 +179,7 @@ function ProviderTitleRoute() {
     // Mesma regra da tela de dentro: com grupos o nome é do provedor, sem
     // grupos é a unidade de progresso do tipo, que já vem plural e traduzida.
     const groupName =
-      groups.find(({ number }) => number === active)?.name ??
-      typeUnit(type) ??
-      ''
+      groups.find(({ number }) => number === active)?.name ?? unitOf(type) ?? ''
 
     return (
       <TitleDetail
@@ -252,7 +251,14 @@ function ProviderTitleRoute() {
                   label: titleDetailCopy.fields.seasons,
                   value: groups.filter(({ number }) => number >= 1).length,
                 },
-                { label: titleDetailCopy.fields.episodes, value: data.total },
+                {
+                  // A MESMA linha da tela de dentro: o molde é um só, e foi
+                  // linha a linha que as duas divergiram.
+                  label: unitOf(type)
+                    ? appCopy.totals.withUnit(unitOf(type) ?? '')
+                    : appCopy.totals.generic,
+                  value: data.total,
+                },
               ]}
             />
             <LinksBox links={data.links} />
