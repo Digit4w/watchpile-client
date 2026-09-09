@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { MediaTypeIcon } from '@/components/media/media-type-icon'
+import { ActionMenuSeparator } from '@/components/menu/action-menu'
 import {
   Popover,
   PopoverContent,
@@ -312,9 +313,7 @@ export function SearchScope({
          * vazia com título é chrome que não faz nada. */}
         {withoutSource.length > 0 && (
           <>
-            {withSource.length > 0 && (
-              <div className="my-1 border-line border-t" />
-            )}
+            {withSource.length > 0 && <ActionMenuSeparator />}
             <p className="px-2 pt-1 pb-1 text-faint text-xs">
               {searchCopy.scope.noSource}
             </p>
