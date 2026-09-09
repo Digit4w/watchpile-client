@@ -9,7 +9,6 @@ import {
   SearchGrid,
   SearchGridSkeleton,
   SearchResultsHeader,
-  SearchSourceField,
 } from '@/components/search/search-results'
 import {
   SearchError,
@@ -135,19 +134,16 @@ function SearchRoute() {
   const refusalVisible = withoutSource ?? refusal
 
   /**
-   * A fonte que ESTA consulta usa, e as outras que o tipo tem — a saída da
-   * recusa (09/09/2026).
+   * A fonte que ESTA consulta usa, e as opções do tipo — o que alimenta a
+   * faixa de fonte (09/09/2026).
    *
-   * Sai de `sourceByType`, não da resposta: quando a busca recusa não há
-   * resposta nenhuma, e é justamente aí que o controle precisa existir. `null`
-   * em `querySource` só acontece em tipo sem fonte, onde `alternates` já é
-   * vazio pela ausência da chave no mapa.
+   * Sai de `sourceByType`, não da resposta: na recusa e no vazio não há
+   * resposta nenhuma, e é justamente aí que o controle precisa existir. Quando
+   * a resposta chega, ela vence — quem respondeu é fato, e o efetivo é
+   * previsão.
    */
   const typeSources = scope ? (sourceByType.get(scope) ?? null) : null
   const querySource = effectiveSource(typeSources, provider)
-  const alternates = (typeSources?.options ?? []).filter(
-    (option) => option.slug !== querySource?.slug,
-  )
 
   const data = searchQuery.data
   /**
@@ -197,35 +193,31 @@ function SearchRoute() {
          * (design system, seção 8): **o que ela já sabe, ela diz**. Primeiro a
          * recusa que a própria tela responde — tipo sem fonte —, depois a que
          * veio do servidor, depois o erro, e só então o vazio e a espera. */}
+        {/* **A faixa de fonte fica ACIMA de todos os estados, e é a mesma em
+         * todos** — 09/09/2026, decisão do dono. Ela vivia dentro do ramo
+         * `data && …`, então o único controle rotulado da fonte sumia
+         * exatamente na recusa (onde trocar de fonte é o que resolve) e no
+         * vazio (onde se escolhe a fonte antes de digitar).
+         *
+         * Ela some sozinha em tipo SEM fonte, porque aí `options` é vazio e
+         * não há nome a dizer. */}
+        <SearchResultsHeader
+          total={data && !refusalVisible ? data.results.length : null}
+          attribution={data?.provider.attribution ?? null}
+          sources={typeSources?.options ?? []}
+          current={data?.provider.slug ?? querySource?.slug ?? ''}
+          onSource={(slug) => setSearch({ provider: slug })}
+        />
+
         {refusalVisible && scope && (
-          <>
-            {/* **O controle de fonte SOBREVIVE à recusa — 09/09/2026.** Ele
-             * vivia só no cabeçalho de resultados, dentro do ramo `data && …`,
-             * então sumia exatamente quando a fonte falha — e a única menção ao
-             * provedor que caiu virava a frase de erro, que é prosa e não
-             * controle.
-             *
-             * Só quando há o que trocar: com uma fonte só, `Source AniList`
-             * acima de um painel que já nomeia o AniList seria rótulo sem
-             * saída. */}
-            {alternates.length > 0 && querySource && (
-              <div className="mb-3 flex justify-end">
-                <SearchSourceField
-                  sources={sourceByType.get(scope)?.options ?? []}
-                  current={querySource.slug}
-                  onSource={(slug) => setSearch({ provider: slug })}
-                />
-              </div>
-            )}
-            <SearchRefused
-              refusal={refusalVisible}
-              type={typeLabel}
-              term={q}
-              isAdmin={user.isAdmin}
-              onManual={() => setManual(true)}
-              onRetry={() => searchQuery.refetch()}
-            />
-          </>
+          <SearchRefused
+            refusal={refusalVisible}
+            type={typeLabel}
+            term={q}
+            isAdmin={user.isAdmin}
+            onManual={() => setManual(true)}
+            onRetry={() => searchQuery.refetch()}
+          />
         )}
 
         {!withoutSource && searchQuery.isError && !refusal && (
@@ -248,32 +240,23 @@ function SearchRoute() {
           !withoutSource &&
           !searchQuery.isError &&
           q.trim() !== '' &&
-          !isLoading && (
-            <>
-              <SearchResultsHeader
-                total={data.results.length}
-                provider={data.provider}
-                sources={data.sources}
-                onSource={(slug) => setSearch({ provider: slug })}
-              />
-              {data.results.length > 0 ? (
-                <SearchGrid
-                  results={data.results}
-                  owned={data.owned}
-                  // Há resultados, logo houve escopo: a busca é POR TIPO e o
-                  // servidor recusa sem ele. O `??` é só o compilador.
-                  type={scope ?? ''}
-                />
-              ) : (
-                <SearchNoResults
-                  term={term}
-                  source={data.provider.name}
-                  type={typeLabel}
-                  onManual={() => setManual(true)}
-                />
-              )}
-            </>
-          )}
+          !isLoading &&
+          (data.results.length > 0 ? (
+            <SearchGrid
+              results={data.results}
+              owned={data.owned}
+              // Há resultados, logo houve escopo: a busca é POR TIPO e o
+              // servidor recusa sem ele. O `??` é só o compilador.
+              type={scope ?? ''}
+            />
+          ) : (
+            <SearchNoResults
+              term={term}
+              source={data.provider.name}
+              type={typeLabel}
+              onManual={() => setManual(true)}
+            />
+          ))}
       </div>
 
       {/* Só o caminho MANUAL abre folha aqui. O preenchido mudou de endereço:

@@ -4,72 +4,76 @@ import { SourcePicker } from '@/components/search/search-scope'
 import type { Source } from '@/domain/search-scope'
 import { countOf } from '@/lib/format'
 import { searchCopy } from '@/routes/-search.copy'
-import type { SearchResult, SearchSource } from '@/services/search'
+import type { SearchResult } from '@/services/search'
 
 /**
- * O rótulo `Source` mais o controle — e ele é peça própria desde 09/09/2026,
- * porque passou a aparecer em DOIS estados da tela.
+ * A faixa acima dos resultados, e ela é a MESMA em todos os estados da tela —
+ * 09/09/2026, decisão do dono.
  *
- * Ele vivia dentro do cabeçalho de resultados, que só existe no ramo em que a
- * busca voltou com dados — então ele sumia exatamente quando a fonte falha,
- * que é o único momento em que trocar de fonte é a coisa que resolve. A
- * recusa renderiza este mesmo campo acima do painel.
- */
-export function SearchSourceField({
-  sources,
-  current,
-  onSource,
-}: {
-  sources: readonly Source[]
-  current: string
-  onSource: (slug: string) => void
-}) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-faint text-xs">{searchCopy.source}</span>
-      <SourcePicker sources={sources} current={current} onSource={onSource} />
-    </div>
-  )
-}
-
-/**
- * A linha de resultados é CONTEÚDO, não uma terceira faixa de chrome: ela rola
- * junto. Aqui moram a contagem, a **atribuição** — que é condição de uso do
- * TMDB e não cortesia (brief, 3.10) — e a troca de fonte.
+ * ── Por que ela deixou de morar no ramo `data` ─────────────────────────────
+ * O `Source` é o controle que se aprende a usar: rotulado, sempre no mesmo
+ * canto. Ele vivia dentro do ramo em que a busca voltou com dados, então sumia
+ * na recusa — e sumia também no vazio, que é onde alguém escolhe a fonte
+ * ANTES de digitar. **Controle que muda de existência conforme o estado da
+ * tela é controle que não se aprende**, e a frase do vazio ("Anime are
+ * searched on MyAnimeList") diz a mesma coisa sem ser um alvo.
+ *
+ * ── O que varia é o CONTEÚDO, nunca a posição ──────────────────────────────
+ * A contagem só aparece quando há o que contar, e a atribuição só quando o
+ * provedor que respondeu exige uma — mas as duas ausências não movem o
+ * `Source`, que é o que faz dele uma âncora.
  *
  * A atribuição vem do provedor que respondeu, nunca escrita aqui: o TMDB exige
  * a frase, AniList e Open Library não exigem nenhuma, e uma tela que
  * escrevesse a do TMDB fixa creditaria o provedor errado no dia em que outro
  * respondesse (design system, seção 8, sétima leva).
+ *
+ * **Com uma fonte só o controle vira TEXTO** (`SourcePicker`), e mesmo assim
+ * fica: um seletor de uma opção mente sobre ter escolha, mas o nome da fonte
+ * continua sendo a resposta de "onde isto vai procurar". Só sai quando o tipo
+ * não tem fonte nenhuma — aí não há nome a dizer, e a tela inteira já está
+ * explicando isso.
  */
 export function SearchResultsHeader({
   total,
-  provider,
+  attribution,
   sources,
+  current,
   onSource,
 }: {
-  total: number
-  provider: { slug: string; name: string; attribution: string | null }
-  sources: SearchSource[]
+  /** Quantos resultados voltaram. Nulo antes de haver resposta. */
+  total: number | null
+  attribution: string | null
+  sources: readonly Source[]
+  current: string
   onSource: (slug: string) => void
 }) {
+  if (sources.length === 0) {
+    return null
+  }
+
   return (
     <>
-      <div className="mb-1 flex items-center justify-between gap-3">
-        <p className="text-faint text-sm tabular-nums">
-          {countOf(total, searchCopy.results)}
-        </p>
-        <SearchSourceField
-          sources={sources}
-          current={provider.slug}
-          onSource={onSource}
-        />
+      <div className="mb-1 flex min-h-9 items-center justify-between gap-3">
+        {total === null ? (
+          <span />
+        ) : (
+          <p className="text-faint text-sm tabular-nums">
+            {countOf(total, searchCopy.results)}
+          </p>
+        )}
+        <div className="flex items-center gap-1.5">
+          <span className="text-faint text-xs">{searchCopy.source}</span>
+          <SourcePicker
+            sources={sources}
+            current={current}
+            onSource={onSource}
+          />
+        </div>
       </div>
 
-      {provider.attribution && (
-        <p className="mb-4 text-faint text-xs">{provider.attribution}</p>
-      )}
-      {!provider.attribution && <div className="mb-4" />}
+      {attribution && <p className="mb-4 text-faint text-xs">{attribution}</p>}
+      {!attribution && <div className="mb-4" />}
     </>
   )
 }
