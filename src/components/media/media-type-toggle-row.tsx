@@ -62,10 +62,20 @@ export function MediaTypeToggleRow({
         checked={on}
         onCheckedChange={onToggle}
         disabled={disabled}
-        aria-labelledby={labelId}
+        /**
+         * **Aponta pro `sr-only` abaixo, não pro nome do tipo.** Escrito como
+         * `aria-labelledby={labelId}`, o switch se chamava só `Anime` — e o
+         * `Show Anime` do `sr-only` ficava ÓRFÃO: texto solto na linha, sem
+         * nada apontando pra ele, que nenhuma ferramenta acusa porque o
+         * controle TEM nome acessível. Só que o nome dele não dizia o que ele
+         * faz. Achado em 10/09/2026, escrevendo o teste desta seção.
+         */
+        aria-labelledby={`${labelId}-action`}
         aria-describedby={disabled && reason ? `${labelId}-reason` : undefined}
       />
-      <span className="sr-only">{toggleLabel(type.name)}</span>
+      <span id={`${labelId}-action`} className="sr-only">
+        {toggleLabel(type.name)}
+      </span>
       {disabled && reason && (
         <span id={`${labelId}-reason`} className="sr-only">
           {reason}
