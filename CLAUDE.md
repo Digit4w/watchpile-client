@@ -929,6 +929,106 @@ o clique exatamente quando alguém clica.
   furado estava escrito duas vezes, aqui e no componente, **concordando**, o que
   é o que impede uma cópia de denunciar a outra
 
+## O tema se declara em `color-scheme`, e o `<select>` nativo morreu — 09/09/2026
+
+Relato do dono: na folha de vincular provedor, a lista aberta do dropdown vinha
+com o texto invisível. **A causa não era a cor do texto nem a do fundo — ninguém
+tinha contado ao navegador que este app é escuro.** `grep -rn "color-scheme"` em
+`src/styles/` e no `index.html` não devolvia nada.
+
+O design system decidiu *dark only* em 22/08 e escreveu só a metade visível
+(*"não escreva `dark:` em classe nenhuma"*). **A outra metade nunca tinha sido
+escrita**, e sem ela toda superfície desenhada pelo AGENTE DE USUÁRIO renderiza
+no padrão claro. No print isso é aritmética: o `<option>` herda o `color` quase
+branco do `<select>` e pousa no fundo **branco** do popup do sistema — o item
+destacado é o único legível, e por acidente.
+
+- **Uma linha no `:root`**, em `design/tokens.css` **e** na cópia de
+  `src/styles/tokens.css`, conserta seis superfícies: o menu do `<select>`, o
+  botão de escolher arquivo do CSV no import, o mesmo botão na capa de pilha, as
+  setinhas do `type="number"` do progresso exato, o autofill da senha no login, e
+  a barra de rolagem mais o cursor de texto do app inteiro
+- **Os quatro `<select>` nativos morreram no mesmo ciclo, e os dois consertos não
+  se substituem.** `components/menu/choice-picker.tsx` é a peça: os quatro sítios
+  faziam a mesma escolha de um entre N com painéis escritos à mão, que é a régua
+  do `⋯` na terceira família de menus. Mesmo com a declaração, o `<select>`
+  continuaria sendo o único controle do app desenhado pelo sistema operacional
+- **O que cada chamador guarda é o que é DA TELA dele**, e é a divisão que
+  `action-menu.tsx` fixou (padroniza-se o painel, nunca o gatilho): com uma opção
+  só, `/search` mostra o nome como TEXTO — o rótulo `Source` ao lado explica a
+  palavra — e a folha de vincular esconde tudo, porque ali não há rótulo e
+  palavra solta no meio de um formulário não se explica
+- **O `Check` estava desenhado três vezes, idêntico — DUAS delas dentro do
+  próprio `components/menu/`**, a pasta criada pra tirar exatamente essa
+  divergência. Ele e o `Chevron` subiram pro `menu-icons.tsx`: *componente
+  compartilhado não impede a duplicação um nível abaixo dele*
+- **Trocar o alvo quebra o `<label htmlFor>` em silêncio.** As duas linhas do
+  widget eram `<label htmlFor={id}>`; o alvo virou gatilho de popover e o
+  `htmlFor` passou a apontar pra id inexistente — **a11y quebrada sem aviso de
+  ferramenta nenhuma**. Viraram `<div>`, com o nome acessível vindo do `ariaLabel`
+  da peça. **Ao trocar o ELEMENTO de um controle, conferir quem apontava pra
+  ele** — e o `disabled`, que vinha de graça no `<select>`, teve que ser devolvido
+  à peça nova
+
+## A folha de EDITAR obra, e o tipo que TRANCA — 09/09/2026
+
+`components/library/edit-entry-sheet.tsx`, decisão do dono entre folha própria e
+campos editáveis no lugar. Três colunas que a folha de criar escreve não tinham
+como ser corrigidas depois — `total`, `title` e `mediaType` —, e **o servidor já
+aceitava as três desde sempre**: `UpdateBodySchema` é o corpo de criação
+`.partial()`, e nenhuma tela chamava assim.
+
+- **Ela é OUTRO schema, não a de criar com um modo.** Criar escreve seis coisas,
+  editar escreve **três**, porque as outras já têm endereço: status é o
+  `StatusButton` de toda carta e toda linha, pilhas são o `PilePicker` e o
+  `EntryPiles`, procedência é a caixa de `Sources`. **Campo que já tem lugar não
+  ganha um segundo**
+- **O tipo não se troca quando a obra tem VÍNCULO**, e é consequência da régua de
+  07/09 (`external_ids.media_type`): o id do provedor é único **dentro** do tipo,
+  então trocar só o da obra deixa os dois discordando e trocar os dois produz uma
+  identidade externa **falsa**. O campo nasce livre e tranca, com a recusa
+  nomeando o provedor **antes do clique** — o app não tem toast
+- **Essa decisão não tem como morar em `domain/`**, porque depende de uma
+  consulta (`useEntryLinks`), e é por isso que ela virou o **piloto** da suíte de
+  teste de componente
+
+## O que a fila de bugs rendeu em `/search` — 09/09/2026
+
+Dois relatos do dono no mesmo dia, e as duas regras valem em qualquer tela.
+
+- **Controle cuja EXISTÊNCIA depende do estado da tela é controle que não se
+  aprende.** O `Source` vivia dentro do ramo `data && …`, então sumia na
+  **recusa** — onde trocar de fonte é a única coisa que resolve — e no **vazio**,
+  onde se escolhe a fonte antes de digitar. Ele subiu para acima de todos os
+  estados: **o que varia é o CONTEÚDO, nunca a posição**. Com uma fonte só ele
+  FICA, como texto; o único caso em que não existe se resolve sozinho, porque
+  tipo sem fonte nenhuma não tem nome a dizer
+- **A recusa não ganha um botão por alternativa.** A primeira versão listava
+  `Search on <fonte>` para cada opção; na tela **anime é servido por quatro
+  provedores**, e o painel saiu com cinco ações, com `Try again` — a única que não
+  resolve — no mesmo peso das três que resolvem. O dono derrubou os botões no
+  mesmo minuto. **Argumento que se apoia numa CONTAGEM se desmente no dia em que
+  a contagem muda**, e o inventário do próprio app não é mais estável que o de
+  terceiros
+- **`Try again` num beco é a repetição do beco.** A API do AniList está em 403, e
+  `Search your library instead` responde outra pergunta — quem está em `/search`
+  quer ADICIONAR. É *a saída faz parte da recusa* (02/09) na forma que aquele
+  conserto não cobriu: lá a saída era **errada**, aqui estava **faltando**
+- **O total que o provedor sabe tem que chegar até a tela.** `EntryPick` não tinha
+  `total`, então toda obra vinda da busca nascia com o denominador vazio — o
+  `12 / ?` da 3.11, que é o estado de *não se sabe*, virava o estado de quase
+  tudo. E **o placeholder do campo era `28`**, um literal que foi lido como dado:
+  número cinza em campo numérico é indistinguível de campo preenchido e
+  desabilitado. O dono escolheu **nenhum placeholder** — a dica de baixo faz o
+  trabalho sozinha (design system, seção 7)
+- **A mesma correção com duas cópias, e uma delas não recebeu.** Este arquivo já
+  dizia, sobre o título da seção de unidades, que *"escrever 'Episodes' erraria em
+  mangá"*. Foi aplicado lá e **a tabela de detalhes ficou de fora**, dizendo
+  `Episodes 999` num mangá dois blocos abaixo de `PROGRESS · CHAPTERS` — e as duas
+  telas de detalhe são um molde só, que **divergiu linha a linha**. O rótulo do
+  GRUPO (`Seasons`) tem o mesmo defeito e continua aberto: ele não sai da
+  `progressUnit`, que é a unidade do item
+
 ## Sobre vidro, `raised` é tingimento — e a correção é de UMA regra
 
 01/09/2026, apontado pelo dono na tela rodando. `--color-raised` **não tem
@@ -1004,6 +1104,19 @@ Decisões do brief que a tela sente direto:
   o contador é controle de ESCRITA e um quadro dele num filme deixa um clique
   gravar o que o modelo diz não existir. O total inicial de uma obra nova sai de
   `domain/initial-total.ts`, que tem os três casos com specs
+- **Duas escritas que mexem no mesmo campo de uma resposta precisam invalidar as
+  MESMAS chaves — 09/09/2026.** `owned` e `ownedEntryId` vêm dentro da resposta de
+  busca, e **quatro** mutações mexem nas linhas de `external_ids` que os produzem:
+  apagar uma obra, apagar todas, **vincular** e **desvincular**. Só
+  `useCreateEntry` avisava a busca — então remover uma obra e procurá-la de novo
+  a mostrava como `Already in your library`. **A assimetria não aparece em teste
+  de unidade nenhum, porque cada hook está certo sozinho**, e é por isso que o
+  spec afirma a REGRA sobre as quatro num arquivo só
+  (`hooks/mutations/entries/owned-invalidation.spec.tsx`). A régua que generaliza:
+  **descoberta a assimetria, procurar quem MAIS escreve naquele campo** — é a de
+  07/09 (*régua aprendida numa tabela não viaja sozinha pras vizinhas*) aplicada a
+  hooks. E `useUpdateEntry` **não** precisou: a folha de editar tranca o tipo
+  quando há vínculo, e obra sem vínculo não tem linha para envelhecer
 - **Widget da home tem fonte, filtro e lugar** (3.15). Três coisas que não se
   confundem: pile é playlist manual, o **filtro é do widget**, e **widget sem pile
   mostra a biblioteca inteira** — `library` é o conjunto de OBRAS, não de pilhas
@@ -1210,10 +1323,22 @@ Adaptador de biblioteca (`fit-compactor.ts`, `resize-constraint.ts`) não tem
 teste: o que dava pra afirmar sobre eles só se prova mexendo no navegador, e foi
 assim que os bugs de verdade apareceram.
 
-**Do lado do componente a dívida é quase tudo**: são 92 arquivos em
-`components/`, e um só tem spec. A regra acima vale daqui pra frente; **cobrir o
-que já existe é item próprio do handoff**, e não se faz em varredura — o critério
-é o mesmo, e componente que só compõe continua fora.
+**Do lado do componente a dívida é quase tudo**: são 93 arquivos em
+`components/`, e **dois** têm spec (`edit-entry-sheet`, `choice-picker`). A regra
+acima vale daqui pra frente; **cobrir o que já existe é item próprio do
+handoff**, e não se faz em varredura — o critério é o mesmo, e componente que só
+compõe continua fora.
+
+**Há um terceiro `.spec.tsx` que não é de componente, e ele é o modelo de um
+caso** (`hooks/mutations/entries/owned-invalidation.spec.tsx`): ele afirma uma
+regra sobre **quatro mutações irmãs** num arquivo só, porque quatro arquivos
+separados reproduziriam a forma do defeito — cada peça certa sozinha. **Uma
+armadilha do harness fica registrada nele:** `createTestQueryClient` tem
+`gcTime: 0`, que é o certo pra teste de componente (o cache não vaza de um teste
+pro outro), mas num teste em que a ENTRADA de cache é o sujeito ela é coletada no
+mesmo instante em que `setQueryData` a cria, porque nenhum componente a observa —
+e `getQueryState` devolve `undefined`. O cliente daquele arquivo é montado à mão,
+com o porquê ao lado.
 
 ## Convenções
 
