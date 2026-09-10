@@ -123,7 +123,7 @@ O que estiver escrito abaixo é **intenção registrada** para o que ainda não 
 | Estado de UI | **A URL.** Zustand só quando aparecer caso real |
 | Componentes | shadcn/ui |
 | Estilo | Tailwind |
-| Reordenar item (drag-and-drop) | `dnd-kit` (brief, 3.14) — **instalado em 28/08/2026, ainda sem uso**: `widget_entry_order` existe no servidor e a leitura respeita, mas nada escreve nele a partir daqui |
+| Reordenar item (drag-and-drop) | `dnd-kit` (brief, 3.14) — **em uso**: reordena obra dentro de widget da Home (`useMoveWidgetEntry`, escrevendo `widget_entry_order`) e dentro de `/piles/:id`. **Esta linha dizia "ainda sem uso" até 10/09/2026**, e era verdade em agosto — a correção veio ao responder a decisão em aberto 16, cuja pergunta tinha sido feita com essa premissa. *A parte de uma justificativa que envelhece é a que fala do vizinho*, e aqui o vizinho era o estado de outra camada |
 | Layout de widgets da home (drag/resize/colisão) | `react-grid-layout` (brief, 3.15) — **instalado e em uso** desde 28/08/2026 |
 
 ### Onde cada estado mora — a tabela que evita a maior parte dos erros
@@ -897,8 +897,11 @@ nem oferecia nada.
 - **Os 56px não se movem** — uma linha de lista é uma linha de grade
   (`domain/home-metrics.ts`) —, e o alvo de 44px da decisão #8 cabe neles
 - **A grade e a rolagem do widget continuam arrastando pela carta inteira**, e
-  desde que a carta virou link isso é a **decisão em aberto 16** do design
-  system. Não resolver por conta própria
+  desde que a carta virou link isso foi a **decisão em aberto 16** do design
+  system — **fechada em 10/09/2026: uma AÇÃO de reordenar, por widget**.
+  Enquanto ela está ligada os atalhos da carta dão lugar ao arrasto e a carta
+  deixa de ser link, o que dissolve o conflito em vez de arbitrá-lo: em modo de
+  reordenar não há navegação a disputar, e a alça pode tomar a carta inteira
 
 ## A carta INTEIRA é o link, e o que bloqueava não era o `opacity` — 07/09/2026
 
@@ -928,6 +931,316 @@ o clique exatamente quando alguém clica.
   plausíveis, o que está na documentação pode ser o errado**: o diagnóstico
   furado estava escrito duas vezes, aqui e no componente, **concordando**, o que
   é o que impede uma cópia de denunciar a outra
+
+## O tema se declara em `color-scheme`, e o `<select>` nativo morreu — 09/09/2026
+
+Relato do dono: na folha de vincular provedor, a lista aberta do dropdown vinha
+com o texto invisível. **A causa não era a cor do texto nem a do fundo — ninguém
+tinha contado ao navegador que este app é escuro.** `grep -rn "color-scheme"` em
+`src/styles/` e no `index.html` não devolvia nada.
+
+O design system decidiu *dark only* em 22/08 e escreveu só a metade visível
+(*"não escreva `dark:` em classe nenhuma"*). **A outra metade nunca tinha sido
+escrita**, e sem ela toda superfície desenhada pelo AGENTE DE USUÁRIO renderiza
+no padrão claro. No print isso é aritmética: o `<option>` herda o `color` quase
+branco do `<select>` e pousa no fundo **branco** do popup do sistema — o item
+destacado é o único legível, e por acidente.
+
+- **Uma linha no `:root`**, em `design/tokens.css` **e** na cópia de
+  `src/styles/tokens.css`, conserta seis superfícies: o menu do `<select>`, o
+  botão de escolher arquivo do CSV no import, o mesmo botão na capa de pilha, as
+  setinhas do `type="number"` do progresso exato, o autofill da senha no login, e
+  a barra de rolagem mais o cursor de texto do app inteiro
+- **Os quatro `<select>` nativos morreram no mesmo ciclo, e os dois consertos não
+  se substituem.** `components/menu/choice-picker.tsx` é a peça: os quatro sítios
+  faziam a mesma escolha de um entre N com painéis escritos à mão, que é a régua
+  do `⋯` na terceira família de menus. Mesmo com a declaração, o `<select>`
+  continuaria sendo o único controle do app desenhado pelo sistema operacional
+- **O que cada chamador guarda é o que é DA TELA dele**, e é a divisão que
+  `action-menu.tsx` fixou (padroniza-se o painel, nunca o gatilho): com uma opção
+  só, `/search` mostra o nome como TEXTO — o rótulo `Source` ao lado explica a
+  palavra — e a folha de vincular esconde tudo, porque ali não há rótulo e
+  palavra solta no meio de um formulário não se explica
+- **O `Check` estava desenhado três vezes, idêntico — DUAS delas dentro do
+  próprio `components/menu/`**, a pasta criada pra tirar exatamente essa
+  divergência. Ele e o `Chevron` subiram pro `menu-icons.tsx`: *componente
+  compartilhado não impede a duplicação um nível abaixo dele*
+- **Trocar o alvo quebra o `<label htmlFor>` em silêncio.** As duas linhas do
+  widget eram `<label htmlFor={id}>`; o alvo virou gatilho de popover e o
+  `htmlFor` passou a apontar pra id inexistente — **a11y quebrada sem aviso de
+  ferramenta nenhuma**. Viraram `<div>`, com o nome acessível vindo do `ariaLabel`
+  da peça. **Ao trocar o ELEMENTO de um controle, conferir quem apontava pra
+  ele** — e o `disabled`, que vinha de graça no `<select>`, teve que ser devolvido
+  à peça nova
+
+## A folha de EDITAR obra, e o tipo que TRANCA — 09/09/2026
+
+`components/library/edit-entry-sheet.tsx`, decisão do dono entre folha própria e
+campos editáveis no lugar. Três colunas que a folha de criar escreve não tinham
+como ser corrigidas depois — `total`, `title` e `mediaType` —, e **o servidor já
+aceitava as três desde sempre**: `UpdateBodySchema` é o corpo de criação
+`.partial()`, e nenhuma tela chamava assim.
+
+- **Ela é OUTRO schema, não a de criar com um modo.** Criar escreve seis coisas,
+  editar escreve **três**, porque as outras já têm endereço: status é o
+  `StatusButton` de toda carta e toda linha, pilhas são o `PilePicker` e o
+  `EntryPiles`, procedência é a caixa de `Sources`. **Campo que já tem lugar não
+  ganha um segundo**
+- **O tipo não se troca quando a obra tem VÍNCULO**, e é consequência da régua de
+  07/09 (`external_ids.media_type`): o id do provedor é único **dentro** do tipo,
+  então trocar só o da obra deixa os dois discordando e trocar os dois produz uma
+  identidade externa **falsa**. O campo nasce livre e tranca, com a recusa
+  nomeando o provedor **antes do clique** — o app não tem toast
+- **Essa decisão não tem como morar em `domain/`**, porque depende de uma
+  consulta (`useEntryLinks`), e é por isso que ela virou o **piloto** da suíte de
+  teste de componente
+
+## O que a fila de bugs rendeu em `/search` — 09/09/2026
+
+Dois relatos do dono no mesmo dia, e as duas regras valem em qualquer tela.
+
+- **Controle cuja EXISTÊNCIA depende do estado da tela é controle que não se
+  aprende.** O `Source` vivia dentro do ramo `data && …`, então sumia na
+  **recusa** — onde trocar de fonte é a única coisa que resolve — e no **vazio**,
+  onde se escolhe a fonte antes de digitar. Ele subiu para acima de todos os
+  estados: **o que varia é o CONTEÚDO, nunca a posição**. Com uma fonte só ele
+  FICA, como texto; o único caso em que não existe se resolve sozinho, porque
+  tipo sem fonte nenhuma não tem nome a dizer
+- **A recusa não ganha um botão por alternativa.** A primeira versão listava
+  `Search on <fonte>` para cada opção; na tela **anime é servido por quatro
+  provedores**, e o painel saiu com cinco ações, com `Try again` — a única que não
+  resolve — no mesmo peso das três que resolvem. O dono derrubou os botões no
+  mesmo minuto. **Argumento que se apoia numa CONTAGEM se desmente no dia em que
+  a contagem muda**, e o inventário do próprio app não é mais estável que o de
+  terceiros
+- **`Try again` num beco é a repetição do beco.** A API do AniList está em 403, e
+  `Search your library instead` responde outra pergunta — quem está em `/search`
+  quer ADICIONAR. É *a saída faz parte da recusa* (02/09) na forma que aquele
+  conserto não cobriu: lá a saída era **errada**, aqui estava **faltando**
+- **O total que o provedor sabe tem que chegar até a tela.** `EntryPick` não tinha
+  `total`, então toda obra vinda da busca nascia com o denominador vazio — o
+  `12 / ?` da 3.11, que é o estado de *não se sabe*, virava o estado de quase
+  tudo. E **o placeholder do campo era `28`**, um literal que foi lido como dado:
+  número cinza em campo numérico é indistinguível de campo preenchido e
+  desabilitado. O dono escolheu **nenhum placeholder** — a dica de baixo faz o
+  trabalho sozinha (design system, seção 7)
+- **A mesma correção com duas cópias, e uma delas não recebeu.** Este arquivo já
+  dizia, sobre o título da seção de unidades, que *"escrever 'Episodes' erraria em
+  mangá"*. Foi aplicado lá e **a tabela de detalhes ficou de fora**, dizendo
+  `Episodes 999` num mangá dois blocos abaixo de `PROGRESS · CHAPTERS` — e as duas
+  telas de detalhe são um molde só, que **divergiu linha a linha**. O rótulo do
+  GRUPO (`Seasons`) tem o mesmo defeito e continua aberto: ele não sai da
+  `progressUnit`, que é a unidade do item
+
+## Tempo investido não é progresso — 10/09/2026
+
+`components/media/title-state.tsx` (`TimeBox`), decisão do dono. O pedido era
+*"jogo registra horas"*, e a leitura fácil era ligar o contador de `game` de
+volta — revertendo a decisão de três dias antes. **As duas não cabiam juntas
+porque são duas perguntas:** *quanto do acervo você percorreu* tem unidade,
+denominador e fim; *quanto tempo você investiu* não tem nenhum dos três.
+
+- **A caixa fica AO LADO do contador, nunca no lugar.** Quem decide se ela existe
+  é o TIPO (`useTracksTime`), como decide o contador — e num tipo que faz as
+  duas, as duas aparecem
+- **DUAS caixas (`h` e `min`), e a razão é aritmética.** Uma caixa de horas
+  obrigaria a aceitar `38,5`, e aí a fração volta na tela com um round-trip que
+  perde: `2h05` são 2,083 horas, e devolver `2,1` seria a tela mentindo sobre o
+  que está gravado. A regra é pura (`domain/time-spent.ts`), com um teste de
+  **ida e volta** que é exatamente o que a caixa decimal não passaria
+- **O blur é do GRUPO, não de cada caixa** — e isso apareceu escrevendo o teste.
+  Com `onBlur` em cada `input`, digitar `38` e tabular gravava `38h00`, e sair
+  dos minutos gravava `38h30`: **duas escritas para uma edição, e a primeira um
+  valor que ninguém quis**. O elemento é `<fieldset>` e não `<div>`, e não por
+  lint: é o elemento que significa *"estas caixas são um grupo"*, que é a
+  afirmação que o handler faz
+- **`formatMinutes` mora em `lib/` e não é `Intl`.** `unit: 'hour'` diria "2,5 h",
+  que é o número certo na forma errada, e `DurationFormat` ainda não está no Node
+  do Electron. Os sufixos ficam parametrizados pro dia em que houver catálogo. E
+  **`2h` e não `2h00`**, porque o `00` só existe pra encher casa; **`2h05` com
+  duas casas**, porque ali o minuto é a fração
+
+## O contador da tela de detalhe é um CAMPO — 10/09/2026
+
+Voltar de um mangá no capítulo 364 para o 12 são 352 cliques no `−`, e o atalho
+existia desde 28/08 **só no hover da carta**. Grava no **blur**, como a nota, e
+pelo mesmo motivo: `1` a caminho de `12` é um número válido e viraria uma
+escrita. **Continua sendo evento de progresso e não reescrita do contador.**
+
+**A regra saiu para `domain/progress-target.ts` no caminho**, porque o popover da
+carta já tinha uma cópia e esta seria a segunda — *duas contas da mesma coisa é
+como uma fica pra trás*, e aqui o que ficaria pra trás é **a regra que decide se
+uma escrita acontece**. Ela ganhou um teto que a cópia antiga não tinha: alvo
+acima do total é recusa, não uma escrita que o servidor apara.
+
+## O cabeçalho dos grupos vem do PAR, e a regra é COMPARTILHADA — 10/09/2026
+
+`domain/unit-groups.ts`. `Seasons` estava escrito em código e usado para todo
+tipo de mídia, enquanto o nome de cada grupo já vinha do provedor.
+
+**A regra virou função e não dois `&&` em duas telas, e o motivo é recente:** as
+duas telas de detalhe são um molde só e **divergiram nesta linha exata um dia
+antes** — em 09/09 o rótulo de unidades foi corrigido em `/library/:id` e ficou
+torto em `/search/:provider/:id`, com o mesmo literal nos dois. Corrigir de novo
+em dois lugares repetiria o defeito na mesma semana.
+
+- **Três estados, e o do meio surpreende:** sem grupos, nada; com grupos e **sem
+  rótulo**, nada também; com os dois, seção e linha. A tela **não inventa um
+  coletivo** — cabeçalho que o produto escreveu sobre lista que o provedor
+  organizou é a mesma mentira com outra palavra
+- **O grupo ZERO fica fora da contagem** (especiais voltam como `0`), **mas um
+  grupo zero sozinho ainda dá seção**: ele existe na lista e pode ser aberto; o
+  que ele não faz é entrar na conta
+
+## Quais provedores servem um tipo — `TypeProvidersField`, 10/09/2026
+
+`components/settings/type-providers-field.tsx`, e ele destrava a metade que
+faltava de "criar tipo próprio": a junção era só lida, então tipo criado pelo
+admin ficava sem fonte e **nada na tela dizia isso**.
+
+- **Vincular tem DOIS passos**, e o segundo não pode ser escondido: a junção
+  carrega a receita (corpo da busca, mapa de campos, token), e quem escolhe um
+  provedor está escolhendo um provedor **e um jeito de falar com ele**
+- **Sub-vista no lugar**, como `Add to pile`, o seletor de fonte de `/search` e o
+  menu de filtro — submenu ancorado numa linha teria conteúdo elástico acima
+- **A recusa mora na LINHA que a causou**, e a frase diz a **consequência** em
+  vez de repetir o número: sem a receita, arte e detalhe param de carregar
+- `domain/provider-recipes.ts` tem as duas regras puras — o que se pode oferecer,
+  e como ler a contagem de dentro da recusa (*ler o corpo de uma recusa é regra
+  decidível*, mesma divisão de `search-refusal.ts`)
+
+## A grade de `/piles/:id` reordena — e a decisão de 31/08 reabriu — 10/09/2026
+
+`domain/pile-detail-view.ts`, `reorderAffordance`. Aquela decisão tirou o arrasto
+dos modos de grade com **dois argumentos, e os dois eram sobre uma alça
+PERMANENTE**: os quatro cantos da carta ocupados, e `touch-none` numa tela cheia
+de cartas engolindo a rolagem do dedo.
+
+O **modo** que a Home estreou horas antes desfaz os dois — não há alça a
+encaixar porque **ela é a carta**, e `touch-none` só vale enquanto se reordena,
+que é quando ninguém está rolando. *O argumento de uma decisão pode ser sobre
+COMPETIÇÃO por espaço, e quando a competição acaba a decisão não vale mais.*
+
+- **O que NÃO mudou** é o argumento que nunca foi sobre espaço: **ordem derivada
+  recusa**, porque arrastar numa lista por título seria promessa que o servidor
+  não cumpre
+- **Três respostas e não um booleano** (`none | handle | mode`): quem chama
+  precisa saber **qual peça desenhar**, e as duas são diferentes — a linha tem
+  lugar óbvio pra alça e a mostra sempre, a carta depende do modo. Um booleano
+  faria cada chamador reabrir a pergunta do modo, que é como duas telas com a
+  mesma regra divergem
+- **A peça da grade é a MESMA da Home** — mesma classe, mesmo gatilho no menu da
+  obra, mesmo `wp-card-moving`. Estas duas telas já divergiram na mesma linha
+  duas vezes nesta semana
+
+## O reordenar otimista é UM hook — `hooks/use-reorderable.ts`
+
+10/09/2026. Ele estava escrito **duas vezes, linha a linha** — no widget da Home
+e na lista de `/piles/:id` —, e a grade da pilha seria a terceira cópia. O que
+fica pra trás numa cópia dessas não é um rótulo: é **a escrita otimista**, o
+**`after`** que o servidor espera (o cliente nunca vê nem manda `position`), e a
+**distância de ativação** que decide se um clique vira arrasto.
+
+O que difere entre os três é a **chave do cache** e a **mutação**, que são
+parâmetros. O resto era cópia.
+
+## As pilhas FIXADAS no menu de conta do celular — 10/09/2026
+
+Decisão do dono, fechando a pergunta em aberto #10. Fixar sempre esteve
+disponível no telefone, porque a preferência é da **conta** e vale no desktop da
+pessoa — mas quem fixava **não via o resultado ali**.
+
+**O que desfez a assimetria foi notar que o celular já tem onde a periferia
+mora**: `Settings` foi pro menu de conta em 29/08 pelo mesmo motivo. Nenhum
+chrome novo nasceu, e a barra de abas continua selecionando por hábito, sem aba
+"More".
+
+**A ordem virou regra pura** (`domain/pinned-piles.ts`) porque agora duas telas
+precisam da mesma resposta — e o que divergiria é justamente a ORDEM, que não
+pode dançar entre uma tela e outra. Ela é a de FIXAÇÃO, crescente: ordenar por
+nome pareceria mais previsível e seria pior, porque renomear mudaria de lugar um
+alvo que a pessoa já sabia onde estava.
+
+## A fileira de idiomas: a decisão fechou, a máquina espera — 10/09/2026
+
+A decisão em aberto 13 fechou com **a fileira se MEDE**, como a de `/library`.
+**Não há máquina de medir em `/setup`, e isso é medido**: o catálogo tem DOIS
+idiomas, e `flex-wrap` nunca quebra linha com dois.
+
+A conta que decide o transbordo já existe pronta (`domain/chip-fit.ts`), e a peça
+que a alimenta são **243 linhas acopladas aos filtros de `/library`**. Construí-la
+agora seria máquina inerte para um estado que não existe. **Quando o terceiro
+idioma entrar, o que se faz é extrair aquela peça, não escrever outra** — e a
+nota está no próprio `/setup`, que é onde quem for mexer vai olhar.
+
+## A fonte da busca fica SALVA, e é preferência de CONTA — 10/09/2026
+
+Decisão do dono: o seletor de `/search` deixou de ser por consulta.
+
+- **A precedência inteira mora no SERVIDOR**, e a tela lê o mapa
+  (`useSearchSources`) **só pra desenhar o valor atual do seletor** antes de a
+  primeira busca voltar. `?provider=` continua na URL e significa *desta vez,
+  outra fonte*; a consulta **não** carrega a preferência, porque
+  `chooseSearchProvider` já a lê — *duas contas da mesma coisa é como uma fica
+  pra trás*
+- **A preferência entrou em `sourcesByType`, e foi a MESMA armadilha pela
+  terceira vez.** O cabeçalho daquela função já registra o defeito de 02/09 —
+  *o menu dizia Jikan e o Kitsu respondia* —, e o servidor acabara de ganhar um
+  degrau novo. `preferred` é **parâmetro** e não leitura de dentro: a regra
+  segue pura, e quem a alimenta é a tela que tem as consultas na mão
+- **Enquanto a preferência não chega, o mapa é VAZIO e não é o padrão do
+  admin.** Com o padrão, o seletor mostraria uma fonte por um quadro e trocaria
+  sozinho — *peça que sai sozinha se lê como defeito* (04/09). É a mesma régua
+  de `useOfferedMediaTypes`, e a tela cai no caminho que ela já tem pra "ainda
+  não sei quais tipos existem"
+- **A memória de aparelho ficou só com o TIPO** (`use-remembered-type.ts`). A
+  divisão é por significado: *em que tipo eu estava* é hábito daquele navegador,
+  da família da sidebar recolhida; *com que fonte eu busco mangá* é escolha
+  sobre o acervo, vale nos dois aparelhos e é **uma por tipo** — coisa que o par
+  guardado nunca conseguiu. Ela **lê o formato antigo** pra não mandar de volta
+  ao padrão quem o remendo veio servir, e **descarta a fonte que vinha nele**:
+  aquela era do aparelho, e promovê-la escreveria na conta uma escolha feita
+  noutro navegador
+- **A escrita é otimista**, e aqui isso é mais forte que no toggle de
+  Preferences: ela acontece **no mesmo gesto que dispara uma busca**, e o
+  seletor voltando ao valor antigo por um quadro apareceria em cima do resultado
+  chegando. **Falhar não desfaz a busca** — perder a preferência tem conserto,
+  recusar a busca seria a peça errada pagando
+
+## `THIS INSTANCE / Updates` — 10/09/2026
+
+A décima seção do modo Settings, do admin. **A versão que todo mundo lê fica em
+`About`**, por `GET /api/meta` — e aquela seção passou semanas sem número
+nenhum, com o próprio componente explicando por quê.
+
+- **A tela não compara versão nem detecta ambiente.** `updateAvailable` e
+  `canInstall` chegam prontos: comparar é conhecimento de quem emite o formato,
+  e perguntar se estamos dentro do Electron é o que o cliente **não pode** fazer
+  (brief, 3.4). Um spec afirma isso dando um `latest` mais VELHO que `current`
+  enquanto o servidor diz que há atualização — se a tela comparasse, renderizaria
+  o outro ramo
+- **A barra de progresso é exceção registrada.** A regra de 06/09 carrega o
+  próprio teste — *o denominador é conhecido E o numerador anda de um em um?* —,
+  e um download responde não a ele. Sem `Content-Length` a barra fica
+  **indeterminada** e o texto diz só quanto veio
+- **A seção não é condicional**, ao contrário de `Network`: no container ela
+  responde a pergunta mostrando o comando. **O que some é o BOTÃO, não a seção**
+- **Sem selo na coluna.** Versão nova é `info`, o sino já anunciou, e um segundo
+  sinal permanente pra algo que funciona é a régua do sinal virada contra si
+  mesma
+- **A frase de como termina vem do SERVIDOR** (`installHint`), porque as três
+  plataformas terminam diferente e escolher a certa exigiria detectar o ambiente
+- **`Check now` e o toggle ficam em todos os estados**, e o botão desabilitado
+  com a checagem desligada **fica** em vez de sumir: escondê-lo tiraria a única
+  coisa que explica por que nada acontece
+
+> **A régua de a11y de 10/09 cobrou na mesma semana**, e é a terceira ocorrência
+> da família. `aria-label` no `Switch`, que declara só `aria-labelledby`, é
+> **descartado pela peça** — `tsc -b` limpo, nenhum lint, nenhum sintoma visível.
+> Quem o pegou foi um teste que procura o controle **pelo nome**. Junto de
+> `htmlFor` apontando pra id inexistente (07/09) e do `aria-describedby`
+> descartado (10/09): *atributo de a11y é uma ponta só até alguém conferir a
+> outra*.
 
 ## Sobre vidro, `raised` é tingimento — e a correção é de UMA regra
 
@@ -1004,6 +1317,19 @@ Decisões do brief que a tela sente direto:
   o contador é controle de ESCRITA e um quadro dele num filme deixa um clique
   gravar o que o modelo diz não existir. O total inicial de uma obra nova sai de
   `domain/initial-total.ts`, que tem os três casos com specs
+- **Duas escritas que mexem no mesmo campo de uma resposta precisam invalidar as
+  MESMAS chaves — 09/09/2026.** `owned` e `ownedEntryId` vêm dentro da resposta de
+  busca, e **quatro** mutações mexem nas linhas de `external_ids` que os produzem:
+  apagar uma obra, apagar todas, **vincular** e **desvincular**. Só
+  `useCreateEntry` avisava a busca — então remover uma obra e procurá-la de novo
+  a mostrava como `Already in your library`. **A assimetria não aparece em teste
+  de unidade nenhum, porque cada hook está certo sozinho**, e é por isso que o
+  spec afirma a REGRA sobre as quatro num arquivo só
+  (`hooks/mutations/entries/owned-invalidation.spec.tsx`). A régua que generaliza:
+  **descoberta a assimetria, procurar quem MAIS escreve naquele campo** — é a de
+  07/09 (*régua aprendida numa tabela não viaja sozinha pras vizinhas*) aplicada a
+  hooks. E `useUpdateEntry` **não** precisou: a folha de editar tranca o tipo
+  quando há vínculo, e obra sem vínculo não tem linha para envelhecer
 - **Widget da home tem fonte, filtro e lugar** (3.15). Três coisas que não se
   confundem: pile é playlist manual, o **filtro é do widget**, e **widget sem pile
   mostra a biblioteca inteira** — `library` é o conjunto de OBRAS, não de pilhas
@@ -1076,13 +1402,17 @@ Decisões do brief que a tela sente direto:
   `Button` usa ele, e é o **único** preenchimento sólido de `danger` no app —
   quem vive dentro de popover de vidro (`ActionMenuConfirm`, `widget-remove`)
   continua sendo véu, porque opaco sobre translúcido anula o translúcido
-  **O que ficou em aberto é o DESABILITADO dele** (decisão em aberto 14 do design
-  system): com `--opacity-disabled` em 0.7 o par cai a **3,97**, porque o que
-  decide num sólido é a distância do preenchimento até a cor da página — `ink`
-  está a 16,93 e aguenta a desbotada, `danger` está a 6,96 e não. Nenhuma
-  opacidade que ainda leia como inerte o salva. **Não consertar por conta
-  própria com um `disabled:` à mão** — é decisão de sistema, e escrever
-  opacidade solta é o que o ciclo de 04/09 acabou de tirar do app
+  **O DESABILITADO dele foi a decisão em aberto 14, FECHADA em 10/09/2026:** o
+  `destructive` **sai do vocabulário de RECUSA**. Com `--opacity-disabled` em
+  0.7 o par cai a **3,97**, porque o que decide num sólido é a distância do
+  preenchimento até a cor da página — `ink` está a 16,93 e aguenta a desbotada,
+  `danger` está a 6,96 e não, e nenhuma opacidade que ainda leia como inerte o
+  salva. A saída **não isenta nada, remove o caso**: aquele botão só fica
+  desabilitado enquanto a mutação está no ar, e isso é **espera, não recusa** —
+  espera tem outras formas (o rótulo troca, a peça fica inerte sem desbotar).
+  **Continua valendo não consertar com um `disabled:` à mão**, e um
+  `--color-danger-disabled` foi descartado: seria token pra um caso, contra a
+  regra de que **desabilitado é opacidade, não cor**
 - **A RECOMENDAÇÃO reusa a peça e NÃO funde o conceito — 03/09/2026.** Ela tem
   exatamente os mesmos campos do vínculo, então grade e carta são compartilhadas
   de verdade (`RelationGrid`), não copiadas. O que **não** é compartilhado é a
@@ -1128,28 +1458,178 @@ O `.vscode/settings.json` daqui ensina o Tailwind CSS IntelliSense a enxergar cl
 
 ## Testes
 
-**Vitest**, instalado em 28/08/2026 junto com o primeiro domínio que valia testar.
-Config própria em `vitest.config.ts` — não reusa `vite.config.ts` porque os
-testes de hoje são de `domain/`, que é puro por regra, e carregar os plugins do
-React e do Router pra rodá-los só custa tempo. Precisar testar componente um dia
-significa `environment: 'jsdom'` e os plugins, aí sim.
+**Vitest**, instalado em 28/08/2026 junto com o primeiro domínio que valia
+testar. **Desde 09/09/2026 ele tem DOIS projetos**, e a divisão é a mesma que
+sempre existiu — o que mudou é que agora os dois rodam.
 
-`.spec.ts` é teste unitário, mesma convenção do `server/`, onde `.test.ts` fica
-reservado pro e2e que sobe a app. `pre-push` do lefthook roda a suíte.
+| Projeto | Ambiente | Glob | Cobre |
+| --- | --- | --- | --- |
+| `domain` | `node` | `src/**/*.spec.ts` | regra pura, sem mock nenhum |
+| `components` | `jsdom` | `src/**/*.spec.tsx` | o que um componente DECIDE |
 
-**O que vale testar:** `domain/`. Ele é puro por construção — o `biome.json`
-bloqueia React, Router e Query lá dentro —, então é o único lugar testável sem
-mock nenhum. Hoje são três módulos: `widget-fit.ts` (o modelo de layout),
-`home-metrics.ts` (o encaixe da carta) e `pile-view.ts` (os níveis de identidade
-do ladrilho de pilha — o caso que o teste existe pra fixar é o de duas ou três
-obras: mosaico com buraco fica pior que uma peça só, então elas caem no desenho
-de uma obra só). O segundo tem um teste que não é sobre
-comportamento e sim sobre **invariante**: ele falha se alguém mudar o padding do
-widget, a altura da carta ou o gap da grade pra um valor que não feche a
-divisão. É o tipo de quebra que some em silêncio até alguém reparar na fileira
-cortada. Adaptador de biblioteca (`fit-compactor.ts`, `resize-constraint.ts`)
-não tem teste: o que dava pra afirmar sobre eles só se prova mexendo no
-navegador, e foi assim que os bugs de verdade apareceram.
+**O sufixo já separava os dois, e ninguém precisou inventar um:** `.spec.ts` é
+regra pura, `.spec.tsx` é componente. A extensão que o JSX já obriga é o glob,
+então não há convenção nova a lembrar e um arquivo não tem como cair no projeto
+errado. `.test.ts` continua reservado pro e2e que sobe a app, como no `server/`.
+`pre-push` do lefthook roda a suíte inteira.
+
+**O domínio continua sem plugins**, e é por isso que são dois projetos e não uma
+config: `domain/` é puro por regra (o `biome.json` bloqueia React, Router, Query
+e o `httpClient` lá dentro), e carregar o plugin do React mais um DOM inteiro pra
+rodá-lo só custa tempo.
+
+### Componente novo nasce com teste — decisão do dono, 09/09/2026
+
+**Vale para o componente que DECIDE**: o que tem ramo condicional, estado
+próprio, ou que dispara escrita. Composição pura — `RailBox`, `Panel`, o wrapper
+que só junta classes — fica **fora**, e isso não é preguiça: testá-la afirma
+classe de Tailwind, que é o ruído que a régua abaixo já existe pra evitar.
+
+**A ordem é esta, e o primeiro passo quase sempre resolve:**
+
+1. **A decisão dá pra extrair para `domain/`?** Então extrai e testa lá. É o que
+   `chip-fit`, `home-metrics`, `initial-total`, `search-refusal`, `shows-counter`
+   e mais uma dúzia de módulos são — e cada um deles nasceu de uma decisão que
+   estava dentro de um componente
+2. **Não dá?** Aí o teste é de componente. É o caso da decisão que depende de uma
+   CONSULTA (o tipo trancado por vínculo, em `edit-entry-sheet`), de composição
+   entre dois hooks, e do que só existe em movimento
+
+**O corte é em `services/`, nunca no hook.** `services/` é a única camada que
+fala com a API — é o que a tabela de camadas promete —, então é ali que
+`vi.mock` entra. Acima do corte tudo roda de verdade: o TanStack Query, a
+invalidação, os `useMemo` e as regras de `domain/` que o hook consome. **Fingir o
+HOOK seria testar outra coisa**: `useOfferedMediaTypes` combina duas consultas e
+aplica `offeredTypes`, e trocá-lo por um valor pronto apaga exatamente a parte
+que decide — o teste passaria a afirmar que o componente renderiza o array que o
+próprio teste escreveu. *Corta-se na fronteira que a arquitetura já declarou, não
+na mais próxima.*
+
+**O modelo está escrito, e se copia:** `src/test/render.tsx` (o `render` com
+`QueryClient` novo por teste — compartilhar um faz a ORDEM DOS ARQUIVOS decidir o
+resultado, que é a intermitência mais cara que existe, porque some quando se roda
+o teste sozinho) e `src/test/setup.ts` (matchers de DOM, `cleanup`, e os stubs de
+`matchMedia` e `ResizeObserver`, que o jsdom não tem porque os dois dependem de
+layout). O piloto é
+`src/components/library/edit-entry-sheet.spec.tsx`.
+
+**Duas coisas que valem em todo teste de componente:**
+
+- **Afirme COMPORTAMENTO, não estrutura.** `expect(botão).toBeDisabled()` diz o
+  que a pessoa vive; `expect(node.getAttribute('disabled')).toBe('')` diz como o
+  React escreveu. Consultar por `role` e por texto visível é a mesma régua: o que
+  quebra o teste tem que ser o que quebraria pra quem usa
+- **Confira que ele FALHA.** Um teste que passa por acidente é pior que nenhum,
+  porque cobra manutenção e não protege nada. Quebre a regra de propósito, veja
+  vermelho, desfaça — foi assim que o piloto foi validado.
+
+  **E isso não é formalidade: em 10/09/2026 pegou DOIS testes verdes que não
+  afirmavam nada.** O primeiro era sobre a fonte da URL valer só no tipo ativo,
+  e a fixture dava fontes **disjuntas** a cada tipo — quebrando a regra, a fonte
+  errada chegava a `effectiveSource`, não estava nas opções daquele tipo e caía
+  na efetiva, **mascarando o defeito com o valor certo**. Só um tipo vizinho que
+  ACEITA o mesmo slug separa as duas implementações. A régua: *dado de exemplo
+  que não distingue as duas implementações não confere regra nenhuma* — é a
+  irmã, dentro do teste, de *dado de exemplo que imita o caso removido não
+  confere o conserto* (07/09).
+
+  **E a quebra também erra:** a segunda vez, a quebra escolhida para o rollback
+  otimista (`hidden.slice(0, -1)`) produzia **por acaso** exatamente o retrato
+  anterior. Teste verde ali não dizia nada sobre o teste. *Quando a quebra não
+  fica vermelha, desconfie das duas pontas antes de acusar o teste*.
+
+  **A terceira, no mesmo dia, é a forma mais fácil de errar:** o teste de
+  `library-menu` afirmava que escolher FECHA o painel pela ausência de
+  `Sort by` — só que, sem fechar, a tela fica na **sub-vista**, onde `Sort by`
+  também não está. A asserção não distinguia *"fechou"* de *"continua onde
+  estava"*. **Ausência só prova o que se quer quando a outra hipótese a
+  contradiz** — aqui o que distingue são as linhas de escolha, presentes nos
+  dois estados do painel aberto e em nenhum do fechado
+
+**Uma coisa que este bloco de testes NÃO afirma, e é decisão** (10/09/2026):
+as regras de **geometria** de `pile-picker` — chips sob o gatilho, `side="top"`
+fixo — só existem em movimento, e o jsdom não faz layout. Afirmar `side="top"`
+seria afirmar uma prop; afirmar "o botão não se moveu" seria afirmar uma classe.
+**A terceira daquela leva é comportamento e está coberta**: criar FECHA o painel.
+*O que dava pra testar sem virar teste de estrutura está no arquivo; o resto se
+prova no navegador, e foi lá que as três apareceram.*
+
+**Duas coisas que escrever esses três testes ACHOU, e as duas são de a11y que
+nenhuma ferramenta acusa** (10/09/2026):
+
+- **`Switch` não repassava `aria-describedby`.** `media-type-toggle-row` o
+  escrevia desde 04/09 pra prender o motivo da recusa ao controle, e o primitivo
+  o descartava — o `<span>` com o motivo ficava órfão, e o toggle desabilitado
+  não dizia por quê pra quem usa leitor de tela. **`tsc -b --force` sai limpo com
+  o atributo desconhecido ali**: atributo `aria-*` escrito num componente que não
+  o declara some sem erro, sem lint e sem sintoma visível
+- **O switch se chamava `Anime` e não `Show Anime`.** `aria-labelledby` apontava
+  pro nome do tipo, e o `sr-only` com a ação era texto solto na linha. **Nenhuma
+  ferramenta acusa**, porque o controle TEM nome acessível — ele só não dizia o
+  que faz
+
+As duas são a mesma família do `<label htmlFor>` apontando pra id inexistente
+(07/09), e juntas dão a régua: **atributo de a11y é uma ponta só até alguém
+conferir a outra** — quem escreve `aria-*` não é avisado se o destino não existe
+ou se a peça não o repassa.
+
+**E o `tsc` cobre os specs, o que NÃO é de graça:** `tsconfig.app.json` inclui
+`src` inteiro sem excluir teste, então `bun run build` os typecheca junto com o
+código. É a rede que o `server/` descobriu não ter em 07/09/2026, quando uma
+coluna nova passou pelo `tsc` porque o `tsconfig` de lá exclui `*.test.ts` — e os
+seis `insert` de teste falharam só em runtime. **Excluir teste do `tsconfig` é
+tirar essa rede.**
+
+### O que já está coberto, e a dívida
+
+`domain/` tem **vinte e três** módulos com spec — seis nasceram em 10/09/2026, e cinco deles são a metade decidível de uma peça de tela, que é o primeiro passo da régua. Um deles não é sobre comportamento
+e sim sobre **invariante**: `home-metrics` falha se alguém mudar o padding do
+widget, a altura da carta ou o gap da grade pra um valor que não feche a divisão
+— o tipo de quebra que some em silêncio até alguém reparar na fileira cortada.
+Adaptador de biblioteca (`fit-compactor.ts`, `resize-constraint.ts`) não tem
+teste: o que dava pra afirmar sobre eles só se prova mexendo no navegador, e foi
+assim que os bugs de verdade apareceram.
+
+**Do lado do componente a dívida é quase tudo**: são 93 arquivos em
+`components/`, e **nove** têm spec — `edit-entry-sheet` e `choice-picker`, mais
+`entry-progress`, `search-scope`, `preferences-section`, `pile-picker`,
+`library-menu`, `type-providers-field` e `time-box`, que entraram em 10/09/2026 —
+os cinco primeiros esgotaram a ordem de risco do item 27, e os dois últimos
+nasceram junto das peças, que é a regra daqui pra frente. A regra
+acima vale daqui pra frente; **cobrir o que já existe é item próprio do
+handoff**, e não se faz em varredura — o critério é o mesmo, e componente que só
+compõe continua fora.
+
+**Há um terceiro `.spec.tsx` que não é de componente, e ele é o modelo de um
+caso** (`hooks/mutations/entries/owned-invalidation.spec.tsx`): ele afirma uma
+regra sobre **quatro mutações irmãs** num arquivo só, porque quatro arquivos
+separados reproduziriam a forma do defeito — cada peça certa sozinha. **Uma
+armadilha do harness fica registrada nele:** `createTestQueryClient` tem
+`gcTime: 0`, que é o certo pra teste de componente (o cache não vaza de um teste
+pro outro), mas num teste em que a ENTRADA de cache é o sujeito ela é coletada no
+mesmo instante em que `setQueryData` a cria, porque nenhum componente a observa —
+e `getQueryState` devolve `undefined`. O cliente daquele arquivo é montado à mão,
+com o porquê ao lado.
+
+## O README é bilíngue, e o INGLÊS é o canônico
+
+10/09/2026, decisão do dono, e vale igual no `server/`. `README.md` em inglês,
+`README.pt-BR.md` ao lado, cada um com uma linha no topo apontando pro outro —
+**o GitHub não serve README por idioma do navegador**, então sem o seletor a
+tradução é invisível.
+
+- **Toda mudança futura nasce no INGLÊS**, e a tradução corre atrás: `README.md`
+  é o que o GitHub mostra, então deixá-lo correr atrás faria o arquivo mais
+  visível ser o que envelhece. **Tradução desatualizada é pior que ausência**
+- **Este repositório não tinha README nenhum até 10/09/2026**, e é público. O
+  dele é curto de propósito e **não repete instalação** — quem instala Watchpile
+  instala o servidor, que já traz este cliente buildado dentro. O que ele explica
+  é o que só se sabe daqui: que a SPA não roda sozinha, e que **o contrato
+  gerado faz este repo quebrar em RUNTIME e não em build** quando o servidor
+  muda — que é o que alguém precisa saber antes de abrir um bug
+- **A regra de idioma do projeto não mudou** (`../CLAUDE.md`, e a decisão de
+  08/09/2026): código em inglês, documentação e comentários em **português**. O
+  que ganha inglês é a superfície pública, e ela é só o README
 
 ## Convenções
 

@@ -121,3 +121,46 @@ export function formatBytes(bytes: number): string {
     unitDisplay: 'short',
   }).format(bytes)
 }
+
+/**
+ * Minutos como a pessoa lê — `47m`, `2h30`, `2h`.
+ *
+ * ── Por que o dado é minuto e a leitura é hora ──────────────────────────────
+ * `entries.time_spent` é inteiro em minutos (brief, 3.12, 10/09/2026), e a
+ * divisão é da TELA. Guardar decimal seria a primeira fração do schema, e ela
+ * viria só por causa da unidade escolhida na exibição — 3,5 horas e 210 minutos
+ * são o mesmo fato.
+ *
+ * ── Por que não é `Intl` ────────────────────────────────────────────────────
+ * `Intl.NumberFormat` com `unit: 'hour'` diria "2,5 h", que é o número certo na
+ * forma errada: ninguém escreve o tempo jogado assim. `Intl.DurationFormat`
+ * resolveria e **ainda não está no Node do Electron**. Então isto é uma junção
+ * de dois números, e é por isso que os SUFIXOS ficam parametrizados: no dia em
+ * que houver catálogo, quem chama passa os dele.
+ *
+ * ── `2h` e não `2h00` ───────────────────────────────────────────────────────
+ * Zero minuto não é informação: o `00` só existe pra encher a casa, e a régua
+ * do app é a mesma do `12 / ?` — o que não se sabe ou não existe não ganha
+ * dígito de enfeite.
+ */
+export function formatMinutes(
+  minutes: number,
+  suffix: { hour: string; minute: string } = { hour: 'h', minute: 'm' },
+): string {
+  const safe = Math.max(0, Math.trunc(minutes))
+  const hours = Math.floor(safe / 60)
+  const rest = safe % 60
+
+  if (hours === 0) {
+    return `${safe}${suffix.minute}`
+  }
+  if (rest === 0) {
+    return `${hours}${suffix.hour}`
+  }
+  /**
+   * Os minutos vão com dois dígitos **dentro** de uma hora — `2h05`, nunca
+   * `2h5`: ali eles são a fração, e fração sem casa fixa se lê como outro
+   * número. Sozinhos (`5m`) não vão, porque ali são o valor inteiro.
+   */
+  return `${hours}${suffix.hour}${String(rest).padStart(2, '0')}`
+}

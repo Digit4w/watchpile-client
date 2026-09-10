@@ -28,9 +28,21 @@ import { MediaTypeIcon } from './media-type-icon'
 export function EntryCard({
   entry,
   pileId,
+  reorder,
   className,
 }: {
   entry: Entry
+  /**
+   * Reordenar esta obra no widget que a contém — só a Home passa, e só ela tem
+   * ordem manual de carta (medido em 10/09/2026: `/library` e a grade de
+   * `/piles/:id` renderizam esta mesma carta sem embrulhá-la em nada
+   * arrastável).
+   *
+   * **Ele viaja pro menu e o desenho da carta não muda** — que é a decisão de
+   * reuso da seção 4: a carta é a MESMA em toda tela. Quem muda o desenho é a
+   * classe que o invólucro põe enquanto o modo está ligado.
+   */
+  reorder?: { on: boolean; toggle: () => void }
   /**
    * Quando a carta é mostrada dentro de uma pilha. Só serve pra o menu ganhar
    * `Remove from pile` — o desenho da carta não muda em nada, que é a decisão
@@ -81,7 +93,7 @@ export function EntryCard({
         className="absolute inset-0 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ink/70 focus-visible:ring-inset"
       />
 
-      <EntryActions entry={entry} pileId={pileId} />
+      <EntryActions entry={entry} pileId={pileId} reorder={reorder} />
 
       {/* O type de mídia, em selo de vidro no canto (design system, seção 2 —
        * decisão fechada em 29/08/2026). Sem provedor de metadados a arte é a

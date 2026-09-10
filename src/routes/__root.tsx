@@ -85,7 +85,11 @@ function RootComponent() {
         <FirstRunGate>
           <Outlet />
         </FirstRunGate>
-        {import.meta.env.DEV && (
+        {/* As duas overlays desenham um botão flutuante no canto, e ele entra
+            em todo print da tela. `VITE_DEVTOOLS=false` num `.env.local` as
+            apaga sem ninguém precisar comentar código. O padrão é LIGADO —
+            só perde as devtools quem escreve a variável. */}
+        {import.meta.env.DEV && import.meta.env.VITE_DEVTOOLS !== 'false' && (
           <>
             <TanStackRouterDevtools />
             <ReactQueryDevtools />

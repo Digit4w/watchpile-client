@@ -39,4 +39,25 @@ export const mediaTypesService = {
   update: (slug: string, patch: MediaTypePatch) =>
     httpClient.patch<MediaTypeInfo>(`/api/media-types/${slug}`, patch),
   remove: (slug: string) => httpClient.delete<void>(`/api/media-types/${slug}`),
+  /**
+   * Que este provedor sirva este tipo, **copiando a receita** de um tipo que
+   * ele já serve (brief, 3.10, 10/09/2026).
+   *
+   * `copyFrom` não é conveniência: a junção carrega `search_body`, `field_map`,
+   * `detail_path` e o token do provedor, e a linha em branco cai no endpoint do
+   * PROVEDOR — que no AniList busca `ANIME` para tudo. Um tipo novo ligado
+   * assim devolveria anime para toda busca de light novel, sem erro nenhum.
+   *
+   * Devolve o tipo já atualizado, então quem chama remenda o cache no lugar.
+   */
+  linkProvider: (slug: string, provider: string, copyFrom: string) =>
+    httpClient.put<MediaTypeInfo>(
+      `/api/media-types/${slug}/providers/${provider}`,
+      { copyFrom },
+    ),
+  /** E que ele pare. O servidor recusa com a contagem se houver obra apontando. */
+  unlinkProvider: (slug: string, provider: string) =>
+    httpClient.delete<MediaTypeInfo>(
+      `/api/media-types/${slug}/providers/${provider}`,
+    ),
 }

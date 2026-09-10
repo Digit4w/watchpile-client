@@ -50,6 +50,7 @@ export function TemplatePicker({
   onPick: (draft: {
     icon: IconName
     countsProgress: boolean
+    tracksTime: boolean
     names: NameDraftMap
   }) => void
   onScratch: () => void
@@ -70,6 +71,10 @@ export function TemplatePicker({
     onPick({
       icon: template.icon,
       countsProgress: template.countsProgress,
+      // O template PREENCHE o formulário, então ele traz o campo junto — sem
+      // isto, escolher `Game` abriria a folha com o tempo desligado, que é o
+      // oposto do que o produto embarca.
+      tracksTime: template.tracksTime,
       names,
     })
   }

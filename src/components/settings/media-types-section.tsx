@@ -78,6 +78,8 @@ export function MediaTypesSection({ isAdmin }: { isAdmin: boolean }) {
       mode: 'create',
       icon: null,
       countsProgress: true,
+      // Desligado, como a coluna: a maioria dos tipos não registra tempo.
+      tracksTime: false,
       names: {},
     })
   }

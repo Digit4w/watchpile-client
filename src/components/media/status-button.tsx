@@ -43,14 +43,32 @@ function Glyph({ d, size = 15 }: { d: string; size?: number }) {
  * contador (`entry-progress.tsx`): 44+4+80+4+44 no toque, 28+4+80+4+28 no
  * ponteiro.
  */
-type StatusVariant = 'rail' | 'card' | 'row' | 'row-dense'
+type StatusVariant = 'rail' | 'card' | 'row' | 'row-dense' | 'cell'
 
 const SHELL: Record<StatusVariant, string> = {
+  /**
+   * A coluna `Status` das listas — 10/09/2026, decisão do dono.
+   *
+   * Ela era rótulo de LEITURA, e desde o conserto de 07/09 um filme ou jogo em
+   * modo lista **não tinha como mudar de status sem abrir a obra**. Agora a
+   * coluna inteira é o controle, em TODAS as linhas: duas coisas diferentes na
+   * mesma coluna é exatamente a confusão que aquele conserto tirou.
+   *
+   * `w-20` porque é a largura que a coluna já tinha — a peça entra no ritmo da
+   * linha, não o contrário (design system, seção 8, quarta leva).
+   */
+  cell: 'h-7 w-20 justify-start gap-1 rounded-sm text-faint text-xs hover:bg-raised hover:text-ink',
   rail: 'h-11 w-full justify-center gap-2 rounded-md bg-ink font-medium text-sm text-surface hover:opacity-90',
   card: 'h-7 w-full justify-center gap-1 rounded-sm text-[11px] text-muted hover:bg-raised hover:text-ink',
   row: 'h-11 w-44 justify-center gap-1 rounded-sm text-faint text-xs hover:bg-raised hover:text-ink sm:h-7 sm:w-36',
+  /**
+   * A compacta ganhou o alvo de toque em 10/09/2026, junto com o `+`/`−` que
+   * ela substitui — as duas peças ocupam a mesma célula, e uma largura
+   * diferente faria a coluna `Progress` deixar de ser coluna numa lista de
+   * tipo misto.
+   */
   'row-dense':
-    'h-7 w-36 justify-center gap-1 rounded-sm text-faint text-xs hover:bg-raised hover:text-ink',
+    'h-11 w-44 justify-center gap-1 rounded-sm text-faint text-xs hover:bg-raised hover:text-ink sm:h-7 sm:w-36',
 }
 
 /**

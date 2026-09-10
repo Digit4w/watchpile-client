@@ -37,6 +37,41 @@ describe('quais fontes servem cada tipo', () => {
     expect(map.get('anime')?.current.slug).toBe('kitsu')
   })
 
+  it('a preferência de quem busca vence o padrão do admin', () => {
+    // O mesmo defeito de 02/09 um degrau acima: o servidor ganhou a
+    // preferência e passou a responder com ela, e um menu que só lesse o
+    // efetivo voltaria a prometer uma fonte e outra responder.
+    const map = sourcesByType(
+      [type('anime', ['jikan', 'kitsu'], 'kitsu')],
+      [provider('jikan', 'Jikan'), provider('kitsu', 'Kitsu')],
+      { anime: 'jikan' },
+    )
+    expect(map.get('anime')?.current.slug).toBe('jikan')
+  })
+
+  it('preferência de OUTRO tipo não atravessa', () => {
+    // O slug de um provedor só é legível dentro do par (brief, 3.10) — é por
+    // isso que o mapa é por tipo em vez de um valor só.
+    const map = sourcesByType(
+      [type('anime', ['jikan', 'kitsu'], 'kitsu')],
+      [provider('jikan', 'Jikan'), provider('kitsu', 'Kitsu')],
+      { manga: 'jikan' },
+    )
+    expect(map.get('anime')?.current.slug).toBe('kitsu')
+  })
+
+  it('preferência por um provedor que não serve o tipo cai no efetivo', () => {
+    // Ela chega validada do servidor, mas a regra é pura e não pode depender
+    // disso: uma preferência órfã aqui apontaria o menu pra um provedor que
+    // não está na lista, e o controle ficaria sem valor atual nenhum.
+    const map = sourcesByType(
+      [type('anime', ['jikan', 'kitsu'], 'kitsu')],
+      [provider('jikan', 'Jikan'), provider('kitsu', 'Kitsu')],
+      { anime: 'igdb' },
+    )
+    expect(map.get('anime')?.current.slug).toBe('kitsu')
+  })
+
   it('sem provedor padrão, o primeiro por SLUG — que é onde o servidor também cai', () => {
     const map = sourcesByType(
       [type('anime', ['kitsu', 'jikan'], null)],

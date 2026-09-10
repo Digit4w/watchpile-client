@@ -287,3 +287,39 @@
 /* A tampa da lixeira NÃO entra na regra acima de propósito: é transição de
  * estado, e a seção 11 diz que essas ficam. Cortá-la deixaria o botão sem
  * nenhum sinal de que abriu alguma coisa. */
+
+/* A carta enquanto se reordena — 10/09/2026, decisão do dono (design system,
+ * decisão em aberto 16).
+ *
+ * ── O que ela deixa de ser ────────────────────────────────────────────────
+ * Um LINK e um alvo de atalhos. Enquanto o modo está ligado, a carta inteira é
+ * a alça — e é isso que dissolve a disputa entre navegar e arrastar em vez de
+ * arbitrá-la: **em modo de reordenar não há navegação a disputar**, então a
+ * alça pode tomar os 133px inteiros, que era o espaço que faltava pra resolver
+ * isso do jeito da linha (07/09).
+ *
+ * ── `pointer-events` e não `z-index` ──────────────────────────────────────
+ * A lição de 07/09 ao contrário: pintar por cima não impede nada, **capturar
+ * impede**. O `<a>` e os dois atalhos param de capturar; quem recebe o
+ * `pointerdown` é o `<li>` que o dnd-kit escuta.
+ *
+ * O `⋯` continua vivo de propósito: é ele que DESLIGA o modo, e um modo sem
+ * saída visível é a armadilha que a decisão de 31/08 chama de affordance
+ * mentindo.
+ */
+.wp-card-moving a,
+.wp-card-moving .wp-card-shortcut {
+  pointer-events: none;
+}
+
+/* O anel diz qual widget está em modo de reordenar, e ele é do CONTORNO e não
+ * de fundo: `ring` não sai de dentro da altura (design system, seção 4), e a
+ * carta de 200px é exata na grade. */
+.wp-card-moving {
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+/* Feedback pontual de interação é justamente o uso que a seção 2 aprovou pro
+ * accent — o mesmo do ghost de resize e de drop de widget. Ele NÃO pousa sobre
+ * a arte: fica no contorno, fora dela. */

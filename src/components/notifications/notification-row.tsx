@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Download, Images, KeyRound, X } from 'lucide-react'
+import { ArrowUpCircle, Download, Images, KeyRound, X } from 'lucide-react'
 import { formatRelativeTime } from '@/lib/format'
 import {
   notificationsCopy,
@@ -31,6 +31,13 @@ const GLYPHS: Record<NotificationKind, typeof KeyRound> = {
   'provider-missing-key': KeyRound,
   'provider-embedded-key': KeyRound,
   'art-cache-full': Images,
+  /**
+   * A seta pra baixo do import diz *chegou alguma coisa*; esta diz *há aonde
+   * ir*. Reusar `Download` poria a versão nova e o import terminado com o mesmo
+   * glifo, e os dois convivem no painel — o que separa dois avisos num mesmo
+   * lugar tem que ser o glifo, porque a severidade dos dois é `info`.
+   */
+  'update-available': ArrowUpCircle,
   /**
    * Os dois do import usam o MESMO glifo, e o que os separa é o tom que o
    * `Slot` já aplica pela severidade — `info` neutro, `warning` tingido. Um

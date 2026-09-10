@@ -40,6 +40,13 @@ export type TypeSources = { current: Source; options: Source[] }
  * aconteceu** — com Jikan e Kitsu servindo anime, o menu dizia "Jikan" e o
  * Kitsu respondia.
  *
+ * **E aconteceu de novo em 10/09/2026, um degrau acima:** o servidor ganhou a
+ * preferência de quem busca (`preferred_search_sources`), que vence o efetivo.
+ * Sem ela aqui, o menu voltaria a dizer o padrão do admin enquanto a busca
+ * responderia com a fonte escolhida. **Por isso `preferred` é parâmetro e não
+ * uma leitura de dentro:** a regra é pura, e quem a alimenta é a tela que já
+ * tem as duas consultas na mão.
+ *
  * A régua: **onde o servidor decide, a tela lê a decisão — não a reimplementa.**
  * `effectiveProvider` já vem resolvido no `GET /api/media-types`, e o alfabeto
  * sobra só pro caso em que ele é nulo, que é exatamente onde o servidor também
@@ -50,6 +57,7 @@ export type TypeSources = { current: Source; options: Source[] }
 export function sourcesByType(
   types: readonly MediaTypeInfo[],
   providers: readonly Provider[],
+  preferred: Readonly<Record<string, string>> = {},
 ): Map<string, TypeSources> {
   const nameBySlug = new Map(providers.map((p) => [p.slug, p.name]))
   const map = new Map<string, TypeSources>()
@@ -83,8 +91,19 @@ export function sourcesByType(
       continue
     }
 
+    /**
+     * A precedência é a MESMA do servidor, e por isso ela é lida em vez de
+     * inventada — ver o cabeçalho do tipo: quando as duas contas divergiram,
+     * o menu prometeu uma fonte e outra respondeu.
+     *
+     * `chooseSearchProvider` tem quatro degraus: o pedido explícito (que é o
+     * `?provider=` e não passa por aqui), **a preferência de quem busca**, o
+     * efetivo do admin, e o primeiro por slug. Os três últimos são estes.
+     */
     const current =
-      options.find((option) => option.slug === type.effectiveProvider) ?? first
+      options.find((option) => option.slug === preferred[type.slug]) ??
+      options.find((option) => option.slug === type.effectiveProvider) ??
+      first
 
     map.set(type.slug, { current, options })
   }

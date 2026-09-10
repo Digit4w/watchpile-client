@@ -62,7 +62,15 @@ export const libraryCopy = {
     titleField: 'Title',
     titlePlaceholder: "Frieren: Beyond Journey's End",
     status: 'Status',
-    totalPlaceholder: '28',
+    /**
+     * **O campo de total NÃO tem placeholder** — 09/09/2026, decisão do dono.
+     * Ele era `'28'`, um exemplo escrito à mão que nunca mudava porque nunca
+     * foi valor, e foi lido como dado: número cinza dentro de campo numérico é
+     * indistinguível de campo preenchido e desabilitado, e a dica logo abaixo
+     * reforçava a leitura de que alguém já tinha preenchido. **Placeholder de
+     * campo numérico não pode ser um número plausível**, porque o campo não
+     * tem nenhum outro sinal de vazio — e vazio é o estado que a dica descreve.
+     */
     // "Ainda em publicação" é caso normal, não erro: mangá em publicação não
     // tem último capítulo (brief, 3.12), e a carta já desenha "12 / ?".
     totalHint: 'Leave it empty if it is still running.',
@@ -97,6 +105,32 @@ export const libraryCopy = {
       /** O chip já mostra o nome; isto é o que o leitor de tela anuncia. */
       remove: (name: string) => `Remove ${name}`,
     },
+  },
+
+  /**
+   * A folha de EDITAR obra — 09/09/2026.
+   *
+   * A copy dela é curta de propósito: quem chega aqui já sabe qual obra é (o
+   * menu abriu a partir dela) e o que quer arrumar. O corpo diz o RECORTE, que
+   * é o que não é óbvio — status, nota e pilhas continuam onde sempre
+   * estiveram, e uma folha que os prometesse mandaria procurar aqui o que já
+   * está a um clique na tela de trás.
+   */
+  edit: {
+    title: 'Edit this title',
+    body: 'Fix what you typed in. Status, score and piles stay where they are.',
+    submit: 'Save changes',
+    failed: 'Could not save the changes. Try again.',
+    /**
+     * A recusa, com o motivo e ANTES do clique — o app não tem toast.
+     *
+     * Nomeia o provedor porque é ele que a causou: **a recusa mora na peça que
+     * a causou**, e o alcance visual dela é o alcance real (régua de 06/09). O
+     * id de um provedor só é único dentro do tipo, então trocar o tipo aqui
+     * deixaria o vínculo apontando pra outra obra.
+     */
+    typeLocked: (provider: string) =>
+      `The type came from ${provider} and cannot change while the link exists.`,
   },
   empty: {
     title: 'Your library is empty',

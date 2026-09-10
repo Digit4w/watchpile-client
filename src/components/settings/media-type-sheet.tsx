@@ -25,6 +25,7 @@ import { countOf } from '@/lib/format'
 import { settingsCopy } from '@/routes/-settings.copy'
 import { DefaultProviderField } from './default-provider-field'
 import { IconPicker } from './icon-picker'
+import { TypeProvidersField } from './type-providers-field'
 
 const copy = settingsCopy.mediaTypes
 
@@ -38,18 +39,21 @@ export type SheetTarget =
       mode: 'create'
       icon: IconName | null
       countsProgress: boolean
+      tracksTime: boolean
       names: NameDraftMap
     }
 
 function draftFrom(target: SheetTarget): {
   icon: IconName | null
   countsProgress: boolean
+  tracksTime: boolean
   names: NameDraftMap
 } {
   if (target.mode === 'create') {
     return {
       icon: target.icon,
       countsProgress: target.countsProgress,
+      tracksTime: target.tracksTime,
       names: target.names,
     }
   }
@@ -70,6 +74,7 @@ function draftFrom(target: SheetTarget): {
   return {
     icon: target.type.icon as IconName,
     countsProgress: target.type.countsProgress,
+    tracksTime: target.type.tracksTime,
     names,
   }
 }
@@ -203,6 +208,9 @@ export function MediaTypeSheet({
 }) {
   const [icon, setIcon] = useState<IconName | null>(null)
   const [countsProgress, setCountsProgress] = useState(true)
+  // Padrão desligado, ao contrário do contador: a maioria dos tipos não tem
+  // tempo a registrar.
+  const [tracksTime, setTracksTime] = useState(false)
   const [names, setNames] = useState<NameDraftMap>({})
   const [language, setLanguage] = useState<string>('en')
 
@@ -233,6 +241,7 @@ export function MediaTypeSheet({
     const initial = draftFrom(target)
     setIcon(initial.icon)
     setCountsProgress(initial.countsProgress)
+    setTracksTime(initial.tracksTime)
     setNames(initial.names)
     setLanguage('en')
     update.reset()
@@ -258,7 +267,7 @@ export function MediaTypeSheet({
       return
     }
 
-    const body = { icon, countsProgress, names: toNameMap(names) }
+    const body = { icon, countsProgress, tracksTime, names: toNameMap(names) }
 
     if (target.mode === 'edit') {
       update.mutate(body, { onSuccess: () => onOpenChange(false) })
@@ -357,14 +366,52 @@ export function MediaTypeSheet({
                   aria-labelledby="media-type-counts-progress"
                 />
               </div>
+
+              {/* **O irmão, e as duas perguntas convivem** — 10/09/2026. O
+               * contador responde *quanto do acervo você percorreu*; este
+               * responde *quanto você investiu*, e não tem unidade,
+               * denominador nem fim. Jogo é o caso que as separou: ele não
+               * conta e registra tempo.
+               *
+               * Ele fica DEPOIS do contador porque é o menos comum — só um
+               * dos seis embarcados nasce ligado —, e a ordem de um formulário
+               * é do mais comum para o menos. */}
+              <div className="flex items-start justify-between gap-3">
+                <span className="flex min-w-0 flex-col gap-1">
+                  <span
+                    id="media-type-tracks-time"
+                    className="text-ink text-sm"
+                  >
+                    {copy.sheet.tracksTime}
+                  </span>
+                  <span className="max-w-[15rem] text-faint text-xs leading-relaxed">
+                    {tracksTime
+                      ? copy.sheet.tracksTimeBody
+                      : copy.sheet.tracksTimeOffBody}
+                  </span>
+                </span>
+                <Switch
+                  checked={tracksTime}
+                  onCheckedChange={setTracksTime}
+                  aria-labelledby="media-type-tracks-time"
+                />
+              </div>
             </div>
 
-            {/* De qual provedor vêm título e campos deste type. Só ao EDITAR:
-             * um tipo que ainda não existe não tem provedor associado, e a
-             * associação não é escolha desta folha — ela vem da definição do
-             * provedor (brief, 3.10). */}
+            {/* Quais provedores servem este tipo, e só depois qual deles
+             * RESPONDE a busca — escolher a fonte antes de haver fonte é
+             * escolher entre nada.
+             *
+             * **Só ao EDITAR**, e o motivo mudou em 10/09/2026: era "a
+             * associação não é escolha desta folha, ela vem da definição do
+             * provedor", e agora ela É escolha desta folha (brief, 3.10). O que
+             * segura é outra coisa — um tipo que ainda não existe não tem slug
+             * a que vincular, e o slug só nasce ao salvar. */}
             {target?.mode === 'edit' && (
-              <DefaultProviderField type={target.type} />
+              <>
+                <TypeProvidersField type={target.type} />
+                <DefaultProviderField type={target.type} />
+              </>
             )}
 
             {/* Apagar só existe ao editar: não há o que apagar num type que

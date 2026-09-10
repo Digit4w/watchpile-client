@@ -1310,6 +1310,7 @@ export interface paths {
             rating?: number | null
             notes?: string | null
             total?: number | null
+            timeSpent?: number | null
           }
         }
       }
@@ -1983,6 +1984,7 @@ export interface paths {
                 count: number | null
                 art: string | null
               }[]
+              unitGroupLabel: string | null
               hasUnits: boolean
               snapshot: {
                 fetchedAt: string
@@ -3112,6 +3114,7 @@ export interface paths {
               slug: string
               icon: string
               countsProgress: boolean
+              tracksTime: boolean
               entryCount: number
               name: string
               plural: string
@@ -3250,6 +3253,8 @@ export interface paths {
               | 'tag'
             /** @default true */
             countsProgress?: boolean
+            /** @default false */
+            tracksTime?: boolean
             names: {
               [key: string]: {
                 name: string
@@ -3271,6 +3276,7 @@ export interface paths {
               slug: string
               icon: string
               countsProgress: boolean
+              tracksTime: boolean
               entryCount: number
               name: string
               plural: string
@@ -3438,6 +3444,7 @@ export interface paths {
                 | 'box'
                 | 'tag'
               countsProgress: boolean
+              tracksTime: boolean
               names: {
                 [key: string]: {
                   name: string
@@ -3668,6 +3675,8 @@ export interface paths {
               | 'tag'
             /** @default true */
             countsProgress?: boolean
+            /** @default false */
+            tracksTime?: boolean
             names?: {
               [key: string]: {
                 name: string
@@ -3690,6 +3699,7 @@ export interface paths {
               slug: string
               icon: string
               countsProgress: boolean
+              tracksTime: boolean
               entryCount: number
               name: string
               plural: string
@@ -3752,6 +3762,243 @@ export interface paths {
         }
       }
     }
+    trace?: never
+  }
+  '/api/media-types/{slug}/providers/{provider}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put: {
+      parameters: {
+        query?: never
+        header?: never
+        path: {
+          slug: string
+          provider: string
+        }
+        cookie?: never
+      }
+      requestBody?: {
+        content: {
+          'application/json': {
+            copyFrom: string
+          }
+        }
+      }
+      responses: {
+        /** @description The provider now serves this media type */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              slug: string
+              icon: string
+              countsProgress: boolean
+              tracksTime: boolean
+              entryCount: number
+              name: string
+              plural: string
+              progressUnit: string | null
+              providers: string[]
+              effectiveProvider: string | null
+              names: {
+                [key: string]: {
+                  name: string
+                  plural: string
+                  progressUnit?: string | null
+                }
+              }
+            }
+          }
+        }
+        /** @description There is no recipe to copy from */
+        400: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description Only an admin sets the vocabulary of this server */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description Media type or provider not found */
+        404: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    post?: never
+    delete: {
+      parameters: {
+        query?: never
+        header?: never
+        path: {
+          slug: string
+          provider: string
+        }
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description The provider no longer serves this media type */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              slug: string
+              icon: string
+              countsProgress: boolean
+              tracksTime: boolean
+              entryCount: number
+              name: string
+              plural: string
+              progressUnit: string | null
+              providers: string[]
+              effectiveProvider: string | null
+              names: {
+                [key: string]: {
+                  name: string
+                  plural: string
+                  progressUnit?: string | null
+                }
+              }
+            }
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description Only an admin sets the vocabulary of this server */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description That provider does not serve this media type */
+        404: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description Titles of this type already point at this provider */
+        409: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+              entryCount: number
+            }
+          }
+        }
+      }
+    }
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/meta': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description Facts about the server answering this request */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ServerMeta']
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
     trace?: never
   }
   '/api/network': {
@@ -4172,6 +4419,128 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/preferences/search-sources': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description The search source this user prefers for each media type */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['SearchSources']
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/preferences/search-sources/{mediaType}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put: {
+      parameters: {
+        query?: never
+        header?: never
+        path: {
+          mediaType: string
+        }
+        cookie?: never
+      }
+      requestBody?: {
+        content: {
+          'application/json': {
+            provider: string | null
+          }
+        }
+      }
+      responses: {
+        /** @description The preference was saved */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['SearchSources']
+          }
+        }
+        /** @description That provider does not serve that media type */
+        400: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description No media type with that slug */
+        404: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/providers': {
     parameters: {
       query?: never
@@ -4568,6 +4937,7 @@ export interface paths {
                 | 'provider-refused'
                 | 'provider-down'
                 | 'unreachable'
+              providerMessage: string | null
             }
           }
         }
@@ -4652,6 +5022,7 @@ export interface paths {
                 count: number | null
                 art: string | null
               }[]
+              unitGroupLabel: string | null
               hasUnits: boolean
               snapshot: {
                 fetchedAt: string
@@ -4978,6 +5349,316 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/updates': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description What this installation knows about newer versions */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['UpdateState']
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description This is for the admin of this server */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/updates/check': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: {
+        content: {
+          'application/json': {
+            enabled: boolean
+          }
+        }
+      }
+      responses: {
+        /** @description The choice was saved */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['UpdateState']
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description This is for the admin of this server */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    post: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description The check ran, whether or not it found anything */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['UpdateState']
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description This is for the admin of this server */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description Update checking is turned off on this server */
+        409: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/updates/download': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description The download started, or was already running */
+        202: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['UpdateState']
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description This is for the admin of this server */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description There is nothing to download, or this install cannot apply one */
+        409: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/updates/install': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description The installer was handed to the system */
+        202: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description This is for the admin of this server */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description Nothing has been downloaded, or this install cannot apply one */
+        409: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
 export type webhooks = Record<string, never>
 export interface components {
@@ -5011,6 +5692,7 @@ export interface components {
       notes: string | null
       progress: number
       total: number | null
+      timeSpent: number | null
       /** Format: date-time */
       createdAt: string
       /** Format: date-time */
@@ -5079,6 +5761,9 @@ export interface components {
         [key: string]: string | number
       }
     }
+    ServerMeta: {
+      version: string | null
+    }
     NetworkSettings: {
       host: string
       allowsRemote: boolean
@@ -5109,6 +5794,7 @@ export interface components {
         | 'art-cache-full'
         | 'import-finished'
         | 'import-failed'
+        | 'update-available'
       params: {
         [key: string]: string | number
       }
@@ -5118,6 +5804,11 @@ export interface components {
     }
     MediaTypeVisibility: {
       hidden: string[]
+    }
+    SearchSources: {
+      sources: {
+        [key: string]: string
+      }
     }
     StorageUsage: {
       providerCache: components['schemas']['ProviderCacheUsage']
@@ -5131,6 +5822,26 @@ export interface components {
       files: number
       bytes: number
       limitBytes: number
+    }
+    UpdateState: {
+      current: string | null
+      enabled: boolean
+      latest: string | null
+      latestUrl: string | null
+      checkedAt: string | null
+      updateAvailable: boolean
+      canInstall: boolean
+      installHint: string | null
+      download: components['schemas']['UpdateDownload']
+    }
+    UpdateDownload: {
+      /** @enum {string} */
+      state: 'idle' | 'downloading' | 'ready' | 'failed'
+      version: string | null
+      received: number | null
+      total: number | null
+      /** @enum {string|null} */
+      reason: 'no-asset' | 'no-release' | 'failed' | null
     }
   }
   responses: never

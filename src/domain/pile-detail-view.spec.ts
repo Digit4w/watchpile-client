@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Entry } from './media'
-import { canReorder, orderedIds } from './pile-detail-view'
+import { canReorder, orderedIds, reorderAffordance } from './pile-detail-view'
 
 describe('canReorder', () => {
   it('allows dragging in the two list modes, in manual order', () => {
@@ -37,6 +37,40 @@ describe('canReorder', () => {
   })
 })
 
+describe('reorderAffordance', () => {
+  it('a linha mostra a ALÇA, sempre', () => {
+    // Ela tem lugar óbvio pra alça, e o gesto é 1-D — que é o que a ordem
+    // manual de fato é.
+    expect(reorderAffordance('manual', 'list')).toBe('handle')
+    expect(reorderAffordance('manual', 'compact-list')).toBe('handle')
+  })
+
+  it('a grade reordena por MODO, e isso reabre a decisão de 31/08', () => {
+    // Ela excluiu a grade por dois argumentos, e os dois eram sobre uma alça
+    // PERMANENTE: os cantos da carta ocupados, e `touch-none` engolindo a
+    // rolagem. Com um modo transitório os dois caem juntos — não há alça a
+    // encaixar, porque ela é a carta.
+    expect(reorderAffordance('manual', 'grid')).toBe('mode')
+    expect(reorderAffordance('manual', 'compact-grid')).toBe('mode')
+  })
+
+  it('ordem derivada não reordena de jeito nenhum', () => {
+    // O argumento que NÃO era sobre espaço, e por isso não mudou: numa lista
+    // ordenada por título, arrastar seria uma promessa que o servidor não pode
+    // cumprir.
+    for (const view of [
+      'list',
+      'compact-list',
+      'grid',
+      'compact-grid',
+    ] as const) {
+      expect(reorderAffordance('title', view)).toBe('none')
+      expect(reorderAffordance('added', view)).toBe('none')
+      expect(reorderAffordance('rating', view)).toBe('none')
+    }
+  })
+})
+
 function entry(over: Partial<Entry> & { id: number }): Entry {
   return {
     mediaType: 'tv',
@@ -46,6 +80,7 @@ function entry(over: Partial<Entry> & { id: number }): Entry {
     notes: null,
     progress: 0,
     total: null,
+    timeSpent: null,
     art: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',

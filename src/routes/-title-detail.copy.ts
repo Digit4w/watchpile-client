@@ -20,7 +20,22 @@ export const titleDetailCopy = {
    * A COLUNA ESQUERDA. Rótulos curtos porque a coluna tem 200px — e curto
    * também aguenta o português, que ocupa ~30% mais.
    */
+  /** O rótulo acessível de cada caixa: `38` sozinho não diz de quê. */
+  timeHours: 'Hours spent',
+  timeMinutes: 'Minutes spent',
+  /**
+   * As unidades, curtas porque a caixa tem 200px — e parametrizadas porque no
+   * dia em que houver catálogo elas mudam de idioma junto com o resto.
+   */
+  timeHourUnit: 'h',
+  timeMinuteUnit: 'm',
   rail: {
+    /**
+     * A caixa de tempo investido — 10/09/2026. **`Time played` seria copy de
+     * jogo**, e a caixa é do TIPO: audiolivro e podcast têm o mesmo formato, e
+     * "played" mentiria nos dois. `Time spent` atravessa todos.
+     */
+    timeSpent: 'Time spent',
     details: 'Details',
     links: 'Links',
     /**
@@ -94,6 +109,11 @@ export const titleDetailCopy = {
      */
     unlinkBody: 'Only the link goes. Everything you tracked stays.',
     unlinkConfirm: 'Unlink',
+    /**
+     * A espera se diz no RÓTULO — o botão vermelho não desbota (ver
+     * `ui/button.tsx`), então é a palavra que conta que a escrita está no ar.
+     */
+    unlinkPending: 'Unlinking…',
     unlinkFrom: (provedor: string) => `Unlink from ${provedor}`,
 
     /**
@@ -152,12 +172,29 @@ export const titleDetailCopy = {
      */
     format: 'Format',
     firstAired: 'First aired',
-    seasons: 'Seasons',
-    episodes: 'Episodes',
+    /**
+     * **`seasons` saiu daqui em 10/09/2026.** Ele nomeava o CONJUNTO de grupos,
+     * e o produto não decide como o agrupamento se chama — o provedor decide, e
+     * agora ele declara (`unitGroupLabel`, no par). Escrito aqui, ele diria
+     * "Seasons" sobre uma lista de volumes no dia em que um par de mangá
+     * agrupasse.
+     */
+    /**
+     * **O rótulo do total NÃO se escreve aqui — 09/09/2026.** Ele era
+     * `'Episodes'`, e a tabela o usava pra todo tipo de mídia: num mangá a
+     * seção logo acima dizia `PROGRESS · CHAPTERS`, certo, e dois blocos
+     * abaixo a tabela dizia `Episodes 999`.
+     *
+     * A resposta estava na mesma tela: `progressUnit`, que chega plural e
+     * traduzida do servidor e é o que faz o cabeçalho de cima acertar. **A
+     * lição já estava registrada e não tinha sido aplicada aqui** — o
+     * `client/CLAUDE.md` escreve, sobre o título da seção de unidades, que
+     * "escrever 'Episodes' erraria em mangá". Foi aplicado lá e a tabela ficou
+     * de fora: a mesma correção com duas cópias, e uma delas não recebeu.
+     */
     year: 'Year',
   },
 
-  seasons: 'Seasons',
   recommendations: 'Recommendations',
 
   /**

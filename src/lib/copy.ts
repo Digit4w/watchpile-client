@@ -119,6 +119,32 @@ export const appCopy = {
     moreActions: 'More actions',
     /** O destino, não a ação — o item que abre a obra. */
     viewDetails: 'View details',
+    /**
+     * Reordenar a obra DENTRO do widget — 10/09/2026, decisão do dono
+     * (design system, decisão em aberto 16).
+     *
+     * ── Por que o rótulo nomeia o ESCOPO ──────────────────────────────────
+     * `Reorder` sozinho não diz reordenar o quê, e a resposta errada é cara:
+     * a mesma obra aparece na biblioteca, em pilhas e em outros widgets, e
+     * nenhum deles muda. **A ordem é de (widget, obra)** — quem reordena, muda
+     * este widget e só ele.
+     *
+     * **`widget` é palavra que a UI já usa** (`Add widget`, `Remove this
+     * widget?`), então nomear o escopo não introduz vocabulário: ela pega a
+     * palavra que a pessoa acabou de ler no menu de layout.
+     *
+     * `Reorder` e não `Move`: o segundo descreve o gesto e o primeiro descreve
+     * a intenção — e é a intenção que a pessoa tem ao abrir o menu.
+     */
+    reorderInWidget: 'Reorder in this widget',
+    /** O estado ligado, no mesmo item: sair é tão explícito quanto entrar. */
+    reorderDone: 'Done reordering',
+    /**
+     * Abre a folha de editar (09/09/2026). Diz `title` e não `entry` porque é
+     * a palavra que a tela usa em todo lugar — a copy do produto fala de obra,
+     * e `entry` é o nome da tabela.
+     */
+    edit: 'Edit title',
     addToPile: 'Add to pile',
     savedIn: 'Saved in',
     findPile: 'Find a pile',

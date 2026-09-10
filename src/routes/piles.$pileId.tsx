@@ -26,6 +26,7 @@ import {
   DEFAULT_PILE_ENTRY_SORT,
   orderedIds,
   PILE_ENTRY_SORTS,
+  reorderAffordance,
 } from '@/domain/pile-detail-view'
 import { useLogout } from '@/hooks/mutations/auth/use-logout'
 import { usePile } from '@/hooks/queries/piles/use-pile'
@@ -181,9 +182,24 @@ function PileDetailRoute() {
 
         {visible.length > 0 && (
           <>
-            {view === 'grid' && <PileEntryGrid entries={visible} pileId={id} />}
+            {/* **A grade reordena desde 10/09/2026** — a decisão de 31/08 a
+             * excluía por argumentos sobre uma alça PERMANENTE, e o modo do
+             * menu os desfaz. Quem decide COMO é `reorderAffordance`; a
+             * ordenação continua mandando, porque arrastar numa ordem derivada
+             * seria promessa que o servidor não cumpre. */}
+            {view === 'grid' && (
+              <PileEntryGrid
+                entries={visible}
+                pileId={id}
+                reorderable={reorderAffordance(sort, view) === 'mode'}
+              />
+            )}
             {view === 'compact-grid' && (
-              <PileEntryCompactGrid entries={visible} pileId={id} />
+              <PileEntryCompactGrid
+                entries={visible}
+                pileId={id}
+                reorderable={reorderAffordance(sort, view) === 'mode'}
+              />
             )}
             {(view === 'list' || view === 'compact-list') && (
               <PileEntryList

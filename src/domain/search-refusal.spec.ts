@@ -73,3 +73,37 @@ describe('a recusa da busca', () => {
     expect(searchRefusalOf(new HttpError(503, 'x', null))).toBeNull()
   })
 })
+
+describe('a frase do provedor', () => {
+  const recusa = (body: unknown) =>
+    searchRefusalOf(new HttpError(503, 'nossa copy', body))
+
+  it('vem junto quando o provedor escreveu uma', () => {
+    // Ela NÃO se junta ao `message`: a nossa copy passa pelo catálogo e esta vem
+    // em inglês. Separada, a tela pode atribuí-la.
+    expect(
+      recusa({
+        reason: 'provider-refused',
+        providerMessage: 'Ensure you are sending Authorization',
+      }),
+    ).toMatchObject({
+      message: 'nossa copy',
+      providerMessage: 'Ensure you are sending Authorization',
+    })
+  })
+
+  it('é NULA quando o servidor não a mandou', () => {
+    // Instalação com o servidor atrasado devolve o corpo sem o campo — o caso
+    // que a régua de 3.7 diz quebrar em runtime e não em build.
+    expect(recusa({ reason: 'provider-down' })?.providerMessage).toBeNull()
+  })
+
+  it('é NULA quando vem vazia ou não é texto', () => {
+    for (const providerMessage of ['', '   ', 42, null, {}]) {
+      expect(
+        recusa({ reason: 'provider-refused', providerMessage })
+          ?.providerMessage,
+      ).toBeNull()
+    }
+  })
+})

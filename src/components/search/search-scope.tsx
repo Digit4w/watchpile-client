@@ -1,60 +1,20 @@
 import { useState } from 'react'
 import { MediaTypeIcon } from '@/components/media/media-type-icon'
+import { ActionMenuSeparator } from '@/components/menu/action-menu'
+import { ChoicePicker } from '@/components/menu/choice-picker'
+import { CheckIcon, ChevronIcon } from '@/components/menu/menu-icons'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
 import type { MediaTypeInfo } from '@/domain/media-type'
-import { effectiveSource, type TypeSources } from '@/domain/search-scope'
+import {
+  effectiveSource,
+  type Source,
+  type TypeSources,
+} from '@/domain/search-scope'
 import { searchCopy } from '@/routes/-search.copy'
-
-function Chevron({
-  size = 14,
-  open = false,
-}: {
-  size?: number
-  /** Gira 180° quando a lista abaixo está aberta — a única dica de estado. */
-  open?: boolean
-}) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={`shrink-0 text-faint transition-transform duration-[var(--motion-micro)] ease-chrome ${
-        open ? 'rotate-180' : ''
-      }`}
-      aria-hidden="true"
-    >
-      <path d="M6.5 8.5 10 12l3.5-3.5" />
-    </svg>
-  )
-}
-
-function Check() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="shrink-0"
-      aria-hidden="true"
-    >
-      <path d="M4.5 10.5 8 14 15.5 6" />
-    </svg>
-  )
-}
 
 /**
  * Uma linha do menu — e ela tem DOIS alvos quando o tipo tem mais de uma fonte.
@@ -153,7 +113,7 @@ function Row({
               className="flex max-w-[45%] items-center gap-1 rounded-sm px-2 py-2 text-faint text-xs transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised hover:text-ink"
             >
               <span className="min-w-0 truncate">{label}</span>
-              <Chevron size={12} open={expanded} />
+              <ChevronIcon size={12} open={expanded} />
             </button>
           ) : (
             <span className="max-w-[45%] truncate px-2 text-faint text-xs">
@@ -163,7 +123,7 @@ function Row({
 
         {active && (
           <span className="shrink-0 pr-2">
-            <Check />
+            <CheckIcon />
           </span>
         )}
       </div>
@@ -184,12 +144,58 @@ function Row({
               }`}
             >
               <span className="min-w-0 flex-1 truncate">{option.name}</span>
-              {option.slug === selected && <Check />}
+              {option.slug === selected && <CheckIcon />}
             </button>
           ))}
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * A troca de fonte FORA do menu de escopo — a peça do cabeçalho de resultados.
+ *
+ * **Ela era um `<select>` NATIVO até 09/09/2026**, e foi o último do app a ser
+ * desenhado pelo sistema operacional numa tela de lançamento: a lista abria
+ * com a estética do SO no meio de um app que resolve escolha com popover em
+ * todo lugar. Trocá-la aqui não é enfeite — é o mesmo controle passando a
+ * aparecer também sob a RECUSA, que é onde ele mais importa.
+ *
+ * **Mora neste arquivo de propósito.** Ela e o menu de escopo escrevem o mesmo
+ * par de parâmetros da consulta.
+ *
+ * **O painel virou `ChoicePicker` quando ganhou o quarto irmão** (09/09/2026):
+ * a folha de vincular e os dois controles do widget da Home faziam a mesma
+ * escolha de um entre N, e a régua do `⋯` vale aqui igual — peça que aparece em
+ * três telas para de ser markup. O que fica aqui é o que é DESTA tela: com uma
+ * fonte só ela é TEXTO, porque um seletor de uma opção é um controle que mente
+ * sobre ter escolha, e o rótulo `Source` ao lado já diz o que aquela palavra é.
+ */
+export function SourcePicker({
+  sources,
+  current,
+  onSource,
+}: {
+  sources: readonly Source[]
+  current: string
+  onSource: (slug: string) => void
+}) {
+  if (sources.length <= 1) {
+    const label = sources.find((source) => source.slug === current)?.name ?? ''
+    return <span className="text-ink text-sm">{label}</span>
+  }
+
+  return (
+    <ChoicePicker
+      options={sources.map((source) => ({
+        value: source.slug,
+        label: source.name,
+      }))}
+      value={current}
+      onSelect={onSource}
+      ariaLabel={searchCopy.changeSource}
+    />
   )
 }
 
@@ -277,7 +283,7 @@ export function SearchScope({
             <MediaTypeIcon type={active.slug} size={14} strokeWidth={1.7} />
           )}
           <span className="max-w-32 truncate">{active?.plural ?? ''}</span>
-          <Chevron />
+          <ChevronIcon />
         </button>
       </PopoverTrigger>
 
@@ -312,9 +318,7 @@ export function SearchScope({
          * vazia com título é chrome que não faz nada. */}
         {withoutSource.length > 0 && (
           <>
-            {withSource.length > 0 && (
-              <div className="my-1 border-line border-t" />
-            )}
+            {withSource.length > 0 && <ActionMenuSeparator />}
             <p className="px-2 pt-1 pb-1 text-faint text-xs">
               {searchCopy.scope.noSource}
             </p>

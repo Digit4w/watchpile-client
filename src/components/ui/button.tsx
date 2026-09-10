@@ -10,8 +10,28 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: 'bg-ink text-surface hover:bg-ink/90',
+        /**
+         * **`destructive` NÃO desbota ao ser desabilitado** — 10/09/2026,
+         * decisão do dono (design system, decisão em aberto 14, fechada).
+         *
+         * Medido em 04/09: com `--opacity-disabled` o par cai a **3,97:1**,
+         * abaixo do mínimo da seção 9, e nenhuma opacidade que ainda leia como
+         * inerte o salva — `danger` está a 6,96 da cor da página contra os 16,93
+         * do `ink`, então a desbotada o consome.
+         *
+         * A saída **não foi isentar**: foi tirar o `destructive` do vocabulário
+         * de RECUSA. Ele só fica desabilitado enquanto a escrita está no ar, e
+         * **isso é ESPERA, não recusa** — espera se diz trocando o rótulo, não
+         * apagando a peça. Com o preenchimento cheio, o contraste nunca sai de
+         * onde foi medido.
+         *
+         * **Consequência que vale antes do próximo uso:** se um dia um botão
+         * `destructive` precisar ficar desabilitado por RECUSA, ele não é a peça
+         * certa — a recusa se anuncia com a peça inerte e o motivo ao lado
+         * (design system, seção 5), e não com um vermelho apagado.
+         */
         destructive:
-          'bg-danger text-danger-ink hover:bg-danger/90 focus-visible:ring-danger/20',
+          'bg-danger text-danger-ink hover:bg-danger/90 focus-visible:ring-danger/20 disabled:opacity-100',
         outline:
           'border border-line bg-surface shadow-xs hover:bg-raised hover:text-ink',
         secondary: 'bg-raised text-ink hover:bg-raised/80',

@@ -11,6 +11,17 @@ import { httpClient } from '@/infra/lib/http-client'
 export type MediaTypeVisibility =
   paths['/api/preferences/media-types']['get']['responses'][200]['content']['application/json']
 
+/**
+ * A fonte que ESTE usuário prefere para buscar cada tipo.
+ *
+ * **Um mapa, e a ausência de uma chave é o padrão da instância** — não há
+ * entrada nula: quem nunca escolheu não aparece, e a busca cai no que o admin
+ * definiu. O que volta já está validado contra a associação tipo↔provedor, e é
+ * por isso que a tela não precisa conferir de novo.
+ */
+export type SearchSources =
+  paths['/api/preferences/search-sources']['get']['responses'][200]['content']['application/json']
+
 export const preferencesService = {
   mediaTypes: () =>
     httpClient.get<MediaTypeVisibility>('/api/preferences/media-types'),
@@ -22,4 +33,17 @@ export const preferencesService = {
     httpClient.put<MediaTypeVisibility>('/api/preferences/media-types', {
       hidden,
     }),
+  searchSources: () =>
+    httpClient.get<SearchSources>('/api/preferences/search-sources'),
+  /**
+   * A escrita é de UM tipo, ao contrário da de visibilidade: *substituir o
+   * conjunto inteiro exige mostrar o conjunto inteiro*, e `/search` mostra um
+   * tipo por vez. `null` desfaz a escolha em vez de gravar "nenhuma" — não ter
+   * fonte preferida já tem representação, que é a linha não existir.
+   */
+  setSearchSource: (mediaType: string, provider: string | null) =>
+    httpClient.put<SearchSources>(
+      `/api/preferences/search-sources/${encodeURIComponent(mediaType)}`,
+      { provider },
+    ),
 }

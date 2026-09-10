@@ -27,6 +27,7 @@ export const settingsCopy = {
     providers: 'Providers',
     network: 'Network',
     storage: 'Storage',
+    updates: 'Updates',
     about: 'About',
   },
   /**
@@ -237,8 +238,75 @@ export const settingsCopy = {
     failed: "Couldn't save. Nothing changed.",
   },
 
+  updates: {
+    body: 'Whether this server looks for a newer version, and how to get it.',
+    /** O rótulo diz de QUEM é a versão: num self-hosted a pergunta é sempre
+     * sobre o servidor, e o cliente pode ser qualquer um (brief, 3.7). */
+    installed: 'This server',
+    unknownVersion: 'Unknown',
+    /**
+     * Duas frases, e a diferença entre elas é o que a tela SABE. "Nunca
+     * conferido" não é o mesmo que "conferido e nada novo", e o segundo é o
+     * que tranquiliza.
+     */
+    upToDate: 'This is the newest version published.',
+    neverChecked: 'This server has not looked for a newer version yet.',
+    checkedAt: (when: string) => `Last checked ${when}.`,
+    checkNow: 'Check now',
+    checking: 'Checking…',
+    checkFailed: 'Could not reach the release feed. Try again later.',
+    available: (version: string) => `Watchpile ${version} is available.`,
+    releaseNotes: 'Release notes',
+    /**
+     * **A recusa mora na peça que a causou** (design system, seção 5): quando
+     * esta instalação não sabe se atualizar, a frase fica ao lado do que a
+     * substituiria, não num banner acima da seção.
+     */
+    cannotInstall:
+      'This installation cannot update itself. Update it the way you started it.',
+    dockerHint: 'docker compose pull && docker compose up -d',
+    download: 'Download',
+    downloading: 'Downloading…',
+    /**
+     * Barra E número, e o número NÃO se repete dentro da barra — a barra
+     * responde *falta quanto*, o texto responde *quanto é*. Formatados por
+     * `Intl`, porque tamanho é número (brief, 3.8).
+     */
+    progress: (received: string, total: string) => `${received} of ${total}`,
+    progressUnknown: (received: string) => `${received} downloaded`,
+    install: 'Install',
+    /** Frases de FALHA, por `kind` — quem escreve a copy é a tela. */
+    failed: {
+      'no-asset':
+        'This release has no installer for this platform. Download it from the release page.',
+      'no-release': 'Could not find a newer release to download.',
+      failed: 'The download did not finish. Try again.',
+    },
+    retry: 'Try again',
+    checkToggle: {
+      title: 'Check for updates',
+      /**
+       * Diz **o que sai da máquina**, que é a pergunta real de quem hospeda
+       * — e diz o que NÃO sai, porque é isso que a frase existe pra prometer.
+       */
+      body: 'Once a day this server asks GitHub for the latest release. Your library and your version are never sent.',
+    },
+  },
   about: {
     body: 'A self-hosted tracker for the things you watch, read and play.',
+    version: 'Version',
+    /**
+     * Diz de QUEM é a versão. Num produto self-hosted a pergunta "qual versão
+     * eu tenho?" é sempre sobre o servidor — ele é quem guarda o dado e quem se
+     * atualiza —, e o cliente pode ser qualquer um (brief, 3.7).
+     */
+    versionBody: 'The version of the server answering this app.',
+    /**
+     * Sem artigo e sem interpolar nada: o servidor responde nulo quando o
+     * layout que o empacotou não trouxe o `package.json`, e "não sei" é um
+     * estado, não uma falha que a pessoa possa consertar.
+     */
+    versionUnknown: 'Unknown',
     license: 'License',
     licenseBody:
       'AGPL-3.0. You run this yourself, and the source stays open to whoever you share it with.',
@@ -382,6 +450,39 @@ export const settingsCopy = {
     noProvider:
       'No provider serves this type, so titles are added by typing them in. Searching says so out loud instead of coming back empty.',
   },
+  /**
+   * Quais provedores servem este tipo — o controle que faltava (brief, 3.10,
+   * 10/09/2026).
+   *
+   * **A copy tem que dizer que se COPIA uma receita**, e não que se marca uma
+   * caixa, porque é isso que o gesto faz: a junção carrega o corpo da busca, o
+   * mapa de campos e o token do provedor, e a linha em branco cai no endpoint
+   * do provedor. Esconder isso deixaria a pessoa achar que escolheu um provedor
+   * quando escolheu um provedor **e um jeito de falar com ele**.
+   */
+  typeProviders: {
+    add: 'Add a provider',
+    /** O segundo passo, e o cabeçalho dele nomeia o provedor escolhido. */
+    copyFrom: (provider: string) => `Serve it like — ${provider}`,
+    /**
+     * A frase do segundo passo. Ela diz o mecanismo porque o mecanismo é a
+     * promessa: a receita que já responde por outro tipo é uma receita provada.
+     */
+    copyHint:
+      'It will talk to this provider the same way one of these types already does.',
+    remove: (provider: string) => `Stop using ${provider}`,
+    /**
+     * A recusa vem do servidor com a contagem, e a frase diz a CONSEQUÊNCIA em
+     * vez de repetir o número: sem a receita, arte e detalhe param de funcionar
+     * para essas obras, e nada na tela diria por quê.
+     */
+    inUse: (count: string) =>
+      `${count} already point at it. Unlink them from those titles first — without this provider, their artwork and details stop loading.`,
+    failed: "That didn't save. Try again.",
+    /** Nenhum provedor tem receita a emprestar: todos estão ociosos. */
+    nothingToAdd:
+      'No provider serves any type yet, so there is no recipe to copy.',
+  },
   mediaTypes: {
     body: 'The kinds of media this server can track. Everyone on this server shares them.',
     add: 'Add type',
@@ -445,6 +546,19 @@ export const settingsCopy = {
        */
       countsProgressOffBody:
         'Off, the status is the whole story: a title is done, or it is not.',
+      /**
+       * O irmão do contador, e a copy tem que dizer que são DUAS perguntas —
+       * senão o segundo toggle se lê como uma variação do primeiro.
+       *
+       * **`Track time` e não `Hours played`:** a caixa é do TIPO, e audiolivro,
+       * podcast e curso têm o mesmo formato. "Played" seria copy de jogo num
+       * campo que não é de jogo.
+       */
+      tracksTime: 'Track time spent',
+      tracksTimeBody:
+        'On, a title also records how long you spent on it — hours and minutes, with no total to reach.',
+      tracksTimeOffBody:
+        'Off, nothing asks how long. This is separate from counting: a type can do both, one, or neither.',
       save: 'Save',
       create: 'Create type',
       cancel: 'Cancel',
@@ -473,13 +587,26 @@ export const settingsCopy = {
     iconPicker: {
       search: 'Search icons',
       /**
-       * A busca é por nome de glifo em INGLÊS, e ele não se traduz — quem usa a
-       * UI em pt-BR procura "livro" e não acha `book`. Das duas saídas
-       * registradas (sinônimos por idioma, ou assumir inglês e DIZER isso), esta
-       * é a segunda: a decisão de sistema segue em aberto (#12).
+       * O rodapé diz o que o ACERVO é; o vazio diz por que a busca falhou. Uma
+       * linha não diz a mesma palavra duas vezes, e as duas respondem a
+       * perguntas diferentes.
        */
-      hint: 'English names, curated for legibility at badge size.',
-      noMatch: 'No icon by that name.',
+      hint: 'Curated for legibility at badge size.',
+      /**
+       * **A recusa explica, em vez de voltar vazia calada** — 10/09/2026,
+       * decisão do dono (design system, decisão em aberto 12, FECHADA).
+       *
+       * A busca é por nome de glifo, e nome de glifo é **identificador**, não
+       * copy: ele não passa pelo catálogo. Quem usa a UI em pt-BR procura
+       * "livro" e não acha `book` — e o defeito nunca foi a busca ser em inglês,
+       * foi ela **não dizer isso**. Sinônimos por idioma custariam 94 entradas
+       * escritas à mão que envelhecem quando o acervo crescer, para resolver o
+       * que uma frase resolve.
+       *
+       * O exemplo é parte da frase de propósito: dizer "está em inglês" sem
+       * mostrar como se procura deixa a pessoa no mesmo lugar.
+       */
+      noMatch: 'No icon by that name. Names are in English — try “book”.',
       empty: 'Pick an icon',
     },
     /**
