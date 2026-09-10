@@ -39,18 +39,21 @@ export type SheetTarget =
       mode: 'create'
       icon: IconName | null
       countsProgress: boolean
+      tracksTime: boolean
       names: NameDraftMap
     }
 
 function draftFrom(target: SheetTarget): {
   icon: IconName | null
   countsProgress: boolean
+  tracksTime: boolean
   names: NameDraftMap
 } {
   if (target.mode === 'create') {
     return {
       icon: target.icon,
       countsProgress: target.countsProgress,
+      tracksTime: target.tracksTime,
       names: target.names,
     }
   }
@@ -71,6 +74,7 @@ function draftFrom(target: SheetTarget): {
   return {
     icon: target.type.icon as IconName,
     countsProgress: target.type.countsProgress,
+    tracksTime: target.type.tracksTime,
     names,
   }
 }
@@ -204,6 +208,9 @@ export function MediaTypeSheet({
 }) {
   const [icon, setIcon] = useState<IconName | null>(null)
   const [countsProgress, setCountsProgress] = useState(true)
+  // Padrão desligado, ao contrário do contador: a maioria dos tipos não tem
+  // tempo a registrar.
+  const [tracksTime, setTracksTime] = useState(false)
   const [names, setNames] = useState<NameDraftMap>({})
   const [language, setLanguage] = useState<string>('en')
 
@@ -234,6 +241,7 @@ export function MediaTypeSheet({
     const initial = draftFrom(target)
     setIcon(initial.icon)
     setCountsProgress(initial.countsProgress)
+    setTracksTime(initial.tracksTime)
     setNames(initial.names)
     setLanguage('en')
     update.reset()
@@ -259,7 +267,7 @@ export function MediaTypeSheet({
       return
     }
 
-    const body = { icon, countsProgress, names: toNameMap(names) }
+    const body = { icon, countsProgress, tracksTime, names: toNameMap(names) }
 
     if (target.mode === 'edit') {
       update.mutate(body, { onSuccess: () => onOpenChange(false) })
@@ -356,6 +364,36 @@ export function MediaTypeSheet({
                   checked={countsProgress}
                   onCheckedChange={setCountsProgress}
                   aria-labelledby="media-type-counts-progress"
+                />
+              </div>
+
+              {/* **O irmão, e as duas perguntas convivem** — 10/09/2026. O
+               * contador responde *quanto do acervo você percorreu*; este
+               * responde *quanto você investiu*, e não tem unidade,
+               * denominador nem fim. Jogo é o caso que as separou: ele não
+               * conta e registra tempo.
+               *
+               * Ele fica DEPOIS do contador porque é o menos comum — só um
+               * dos seis embarcados nasce ligado —, e a ordem de um formulário
+               * é do mais comum para o menos. */}
+              <div className="flex items-start justify-between gap-3">
+                <span className="flex min-w-0 flex-col gap-1">
+                  <span
+                    id="media-type-tracks-time"
+                    className="text-ink text-sm"
+                  >
+                    {copy.sheet.tracksTime}
+                  </span>
+                  <span className="max-w-[15rem] text-faint text-xs leading-relaxed">
+                    {tracksTime
+                      ? copy.sheet.tracksTimeBody
+                      : copy.sheet.tracksTimeOffBody}
+                  </span>
+                </span>
+                <Switch
+                  checked={tracksTime}
+                  onCheckedChange={setTracksTime}
+                  aria-labelledby="media-type-tracks-time"
                 />
               </div>
             </div>

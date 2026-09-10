@@ -1310,6 +1310,7 @@ export interface paths {
             rating?: number | null
             notes?: string | null
             total?: number | null
+            timeSpent?: number | null
           }
         }
       }
@@ -3112,6 +3113,7 @@ export interface paths {
               slug: string
               icon: string
               countsProgress: boolean
+              tracksTime: boolean
               entryCount: number
               name: string
               plural: string
@@ -3250,6 +3252,8 @@ export interface paths {
               | 'tag'
             /** @default true */
             countsProgress?: boolean
+            /** @default false */
+            tracksTime?: boolean
             names: {
               [key: string]: {
                 name: string
@@ -3271,6 +3275,7 @@ export interface paths {
               slug: string
               icon: string
               countsProgress: boolean
+              tracksTime: boolean
               entryCount: number
               name: string
               plural: string
@@ -3438,6 +3443,7 @@ export interface paths {
                 | 'box'
                 | 'tag'
               countsProgress: boolean
+              tracksTime: boolean
               names: {
                 [key: string]: {
                   name: string
@@ -3668,6 +3674,8 @@ export interface paths {
               | 'tag'
             /** @default true */
             countsProgress?: boolean
+            /** @default false */
+            tracksTime?: boolean
             names?: {
               [key: string]: {
                 name: string
@@ -3690,6 +3698,7 @@ export interface paths {
               slug: string
               icon: string
               countsProgress: boolean
+              tracksTime: boolean
               entryCount: number
               name: string
               plural: string
@@ -3790,6 +3799,7 @@ export interface paths {
               slug: string
               icon: string
               countsProgress: boolean
+              tracksTime: boolean
               entryCount: number
               name: string
               plural: string
@@ -3875,6 +3885,7 @@ export interface paths {
               slug: string
               icon: string
               countsProgress: boolean
+              tracksTime: boolean
               entryCount: number
               name: string
               plural: string
@@ -5200,6 +5211,7 @@ export interface components {
       notes: string | null
       progress: number
       total: number | null
+      timeSpent: number | null
       /** Format: date-time */
       createdAt: string
       /** Format: date-time */

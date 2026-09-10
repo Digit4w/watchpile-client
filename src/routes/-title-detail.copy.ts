@@ -20,7 +20,22 @@ export const titleDetailCopy = {
    * A COLUNA ESQUERDA. Rótulos curtos porque a coluna tem 200px — e curto
    * também aguenta o português, que ocupa ~30% mais.
    */
+  /** O rótulo acessível de cada caixa: `38` sozinho não diz de quê. */
+  timeHours: 'Hours spent',
+  timeMinutes: 'Minutes spent',
+  /**
+   * As unidades, curtas porque a caixa tem 200px — e parametrizadas porque no
+   * dia em que houver catálogo elas mudam de idioma junto com o resto.
+   */
+  timeHourUnit: 'h',
+  timeMinuteUnit: 'm',
   rail: {
+    /**
+     * A caixa de tempo investido — 10/09/2026. **`Time played` seria copy de
+     * jogo**, e a caixa é do TIPO: audiolivro e podcast têm o mesmo formato, e
+     * "played" mentiria nos dois. `Time spent` atravessa todos.
+     */
+    timeSpent: 'Time spent',
     details: 'Details',
     links: 'Links',
     /**
