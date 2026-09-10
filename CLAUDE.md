@@ -1340,6 +1340,26 @@ mesmo instante em que `setQueryData` a cria, porque nenhum componente a observa 
 e `getQueryState` devolve `undefined`. O cliente daquele arquivo é montado à mão,
 com o porquê ao lado.
 
+## O README é bilíngue, e o INGLÊS é o canônico
+
+10/09/2026, decisão do dono, e vale igual no `server/`. `README.md` em inglês,
+`README.pt-BR.md` ao lado, cada um com uma linha no topo apontando pro outro —
+**o GitHub não serve README por idioma do navegador**, então sem o seletor a
+tradução é invisível.
+
+- **Toda mudança futura nasce no INGLÊS**, e a tradução corre atrás: `README.md`
+  é o que o GitHub mostra, então deixá-lo correr atrás faria o arquivo mais
+  visível ser o que envelhece. **Tradução desatualizada é pior que ausência**
+- **Este repositório não tinha README nenhum até 10/09/2026**, e é público. O
+  dele é curto de propósito e **não repete instalação** — quem instala Watchpile
+  instala o servidor, que já traz este cliente buildado dentro. O que ele explica
+  é o que só se sabe daqui: que a SPA não roda sozinha, e que **o contrato
+  gerado faz este repo quebrar em RUNTIME e não em build** quando o servidor
+  muda — que é o que alguém precisa saber antes de abrir um bug
+- **A regra de idioma do projeto não mudou** (`../CLAUDE.md`, e a decisão de
+  08/09/2026): código em inglês, documentação e comentários em **português**. O
+  que ganha inglês é a superfície pública, e ela é só o README
+
 ## Convenções
 
 - **Arquivo em `kebab-case`** em todo `src/` — `pile-card.tsx`, `use-piles.ts`, `piles.ts`. O identificador exportado do componente continua `PascalCase` (`export function PileCard()`): isso não é estilo, é regra do JSX — `<pileCard>` é lido como tag HTML nativa, não como componente. Hook exportado em `useCamelCase` pelo mesmo motivo (o React só reconhece hook pelo prefixo `use`)
