@@ -1304,7 +1304,41 @@ layout). O piloto é
   quebra o teste tem que ser o que quebraria pra quem usa
 - **Confira que ele FALHA.** Um teste que passa por acidente é pior que nenhum,
   porque cobra manutenção e não protege nada. Quebre a regra de propósito, veja
-  vermelho, desfaça — foi assim que o piloto foi validado
+  vermelho, desfaça — foi assim que o piloto foi validado.
+
+  **E isso não é formalidade: em 10/09/2026 pegou DOIS testes verdes que não
+  afirmavam nada.** O primeiro era sobre a fonte da URL valer só no tipo ativo,
+  e a fixture dava fontes **disjuntas** a cada tipo — quebrando a regra, a fonte
+  errada chegava a `effectiveSource`, não estava nas opções daquele tipo e caía
+  na efetiva, **mascarando o defeito com o valor certo**. Só um tipo vizinho que
+  ACEITA o mesmo slug separa as duas implementações. A régua: *dado de exemplo
+  que não distingue as duas implementações não confere regra nenhuma* — é a
+  irmã, dentro do teste, de *dado de exemplo que imita o caso removido não
+  confere o conserto* (07/09).
+
+  **E a quebra também erra:** a segunda vez, a quebra escolhida para o rollback
+  otimista (`hidden.slice(0, -1)`) produzia **por acaso** exatamente o retrato
+  anterior. Teste verde ali não dizia nada sobre o teste. *Quando a quebra não
+  fica vermelha, desconfie das duas pontas antes de acusar o teste*
+
+**Duas coisas que escrever esses três testes ACHOU, e as duas são de a11y que
+nenhuma ferramenta acusa** (10/09/2026):
+
+- **`Switch` não repassava `aria-describedby`.** `media-type-toggle-row` o
+  escrevia desde 04/09 pra prender o motivo da recusa ao controle, e o primitivo
+  o descartava — o `<span>` com o motivo ficava órfão, e o toggle desabilitado
+  não dizia por quê pra quem usa leitor de tela. **`tsc -b --force` sai limpo com
+  o atributo desconhecido ali**: atributo `aria-*` escrito num componente que não
+  o declara some sem erro, sem lint e sem sintoma visível
+- **O switch se chamava `Anime` e não `Show Anime`.** `aria-labelledby` apontava
+  pro nome do tipo, e o `sr-only` com a ação era texto solto na linha. **Nenhuma
+  ferramenta acusa**, porque o controle TEM nome acessível — ele só não dizia o
+  que faz
+
+As duas são a mesma família do `<label htmlFor>` apontando pra id inexistente
+(07/09), e juntas dão a régua: **atributo de a11y é uma ponta só até alguém
+conferir a outra** — quem escreve `aria-*` não é avisado se o destino não existe
+ou se a peça não o repassa.
 
 **E o `tsc` cobre os specs, o que NÃO é de graça:** `tsconfig.app.json` inclui
 `src` inteiro sem excluir teste, então `bun run build` os typecheca junto com o
@@ -1324,7 +1358,9 @@ teste: o que dava pra afirmar sobre eles só se prova mexendo no navegador, e fo
 assim que os bugs de verdade apareceram.
 
 **Do lado do componente a dívida é quase tudo**: são 93 arquivos em
-`components/`, e **dois** têm spec (`edit-entry-sheet`, `choice-picker`). A regra
+`components/`, e **cinco** têm spec — `edit-entry-sheet` e `choice-picker`, mais
+`entry-progress`, `search-scope` e `preferences-section`, que entraram em
+10/09/2026 na ordem de risco do item 27. A regra
 acima vale daqui pra frente; **cobrir o que já existe é item próprio do
 handoff**, e não se faz em varredura — o critério é o mesmo, e componente que só
 compõe continua fora.
