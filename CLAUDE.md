@@ -1029,6 +1029,83 @@ Dois relatos do dono no mesmo dia, e as duas regras valem em qualquer tela.
   GRUPO (`Seasons`) tem o mesmo defeito e continua aberto: ele não sai da
   `progressUnit`, que é a unidade do item
 
+## Tempo investido não é progresso — 10/09/2026
+
+`components/media/title-state.tsx` (`TimeBox`), decisão do dono. O pedido era
+*"jogo registra horas"*, e a leitura fácil era ligar o contador de `game` de
+volta — revertendo a decisão de três dias antes. **As duas não cabiam juntas
+porque são duas perguntas:** *quanto do acervo você percorreu* tem unidade,
+denominador e fim; *quanto tempo você investiu* não tem nenhum dos três.
+
+- **A caixa fica AO LADO do contador, nunca no lugar.** Quem decide se ela existe
+  é o TIPO (`useTracksTime`), como decide o contador — e num tipo que faz as
+  duas, as duas aparecem
+- **DUAS caixas (`h` e `min`), e a razão é aritmética.** Uma caixa de horas
+  obrigaria a aceitar `38,5`, e aí a fração volta na tela com um round-trip que
+  perde: `2h05` são 2,083 horas, e devolver `2,1` seria a tela mentindo sobre o
+  que está gravado. A regra é pura (`domain/time-spent.ts`), com um teste de
+  **ida e volta** que é exatamente o que a caixa decimal não passaria
+- **O blur é do GRUPO, não de cada caixa** — e isso apareceu escrevendo o teste.
+  Com `onBlur` em cada `input`, digitar `38` e tabular gravava `38h00`, e sair
+  dos minutos gravava `38h30`: **duas escritas para uma edição, e a primeira um
+  valor que ninguém quis**. O elemento é `<fieldset>` e não `<div>`, e não por
+  lint: é o elemento que significa *"estas caixas são um grupo"*, que é a
+  afirmação que o handler faz
+- **`formatMinutes` mora em `lib/` e não é `Intl`.** `unit: 'hour'` diria "2,5 h",
+  que é o número certo na forma errada, e `DurationFormat` ainda não está no Node
+  do Electron. Os sufixos ficam parametrizados pro dia em que houver catálogo. E
+  **`2h` e não `2h00`**, porque o `00` só existe pra encher casa; **`2h05` com
+  duas casas**, porque ali o minuto é a fração
+
+## O contador da tela de detalhe é um CAMPO — 10/09/2026
+
+Voltar de um mangá no capítulo 364 para o 12 são 352 cliques no `−`, e o atalho
+existia desde 28/08 **só no hover da carta**. Grava no **blur**, como a nota, e
+pelo mesmo motivo: `1` a caminho de `12` é um número válido e viraria uma
+escrita. **Continua sendo evento de progresso e não reescrita do contador.**
+
+**A regra saiu para `domain/progress-target.ts` no caminho**, porque o popover da
+carta já tinha uma cópia e esta seria a segunda — *duas contas da mesma coisa é
+como uma fica pra trás*, e aqui o que ficaria pra trás é **a regra que decide se
+uma escrita acontece**. Ela ganhou um teto que a cópia antiga não tinha: alvo
+acima do total é recusa, não uma escrita que o servidor apara.
+
+## O cabeçalho dos grupos vem do PAR, e a regra é COMPARTILHADA — 10/09/2026
+
+`domain/unit-groups.ts`. `Seasons` estava escrito em código e usado para todo
+tipo de mídia, enquanto o nome de cada grupo já vinha do provedor.
+
+**A regra virou função e não dois `&&` em duas telas, e o motivo é recente:** as
+duas telas de detalhe são um molde só e **divergiram nesta linha exata um dia
+antes** — em 09/09 o rótulo de unidades foi corrigido em `/library/:id` e ficou
+torto em `/search/:provider/:id`, com o mesmo literal nos dois. Corrigir de novo
+em dois lugares repetiria o defeito na mesma semana.
+
+- **Três estados, e o do meio surpreende:** sem grupos, nada; com grupos e **sem
+  rótulo**, nada também; com os dois, seção e linha. A tela **não inventa um
+  coletivo** — cabeçalho que o produto escreveu sobre lista que o provedor
+  organizou é a mesma mentira com outra palavra
+- **O grupo ZERO fica fora da contagem** (especiais voltam como `0`), **mas um
+  grupo zero sozinho ainda dá seção**: ele existe na lista e pode ser aberto; o
+  que ele não faz é entrar na conta
+
+## Quais provedores servem um tipo — `TypeProvidersField`, 10/09/2026
+
+`components/settings/type-providers-field.tsx`, e ele destrava a metade que
+faltava de "criar tipo próprio": a junção era só lida, então tipo criado pelo
+admin ficava sem fonte e **nada na tela dizia isso**.
+
+- **Vincular tem DOIS passos**, e o segundo não pode ser escondido: a junção
+  carrega a receita (corpo da busca, mapa de campos, token), e quem escolhe um
+  provedor está escolhendo um provedor **e um jeito de falar com ele**
+- **Sub-vista no lugar**, como `Add to pile`, o seletor de fonte de `/search` e o
+  menu de filtro — submenu ancorado numa linha teria conteúdo elástico acima
+- **A recusa mora na LINHA que a causou**, e a frase diz a **consequência** em
+  vez de repetir o número: sem a receita, arte e detalhe param de carregar
+- `domain/provider-recipes.ts` tem as duas regras puras — o que se pode oferecer,
+  e como ler a contagem de dentro da recusa (*ler o corpo de uma recusa é regra
+  decidível*, mesma divisão de `search-refusal.ts`)
+
 ## Sobre vidro, `raised` é tingimento — e a correção é de UMA regra
 
 01/09/2026, apontado pelo dono na tela rodando. `--color-raised` **não tem
@@ -1365,7 +1442,7 @@ tirar essa rede.**
 
 ### O que já está coberto, e a dívida
 
-`domain/` tem **dezessete** módulos com spec. Um deles não é sobre comportamento
+`domain/` tem **vinte e três** módulos com spec — seis nasceram em 10/09/2026, e cinco deles são a metade decidível de uma peça de tela, que é o primeiro passo da régua. Um deles não é sobre comportamento
 e sim sobre **invariante**: `home-metrics` falha se alguém mudar o padding do
 widget, a altura da carta ou o gap da grade pra um valor que não feche a divisão
 — o tipo de quebra que some em silêncio até alguém reparar na fileira cortada.
@@ -1374,10 +1451,11 @@ teste: o que dava pra afirmar sobre eles só se prova mexendo no navegador, e fo
 assim que os bugs de verdade apareceram.
 
 **Do lado do componente a dívida é quase tudo**: são 93 arquivos em
-`components/`, e **sete** têm spec — `edit-entry-sheet` e `choice-picker`, mais
-`entry-progress`, `search-scope`, `preferences-section`, `pile-picker` e
-`library-menu`, que entraram em 10/09/2026 na ordem de risco do item 27 e a
-esgotaram. A regra
+`components/`, e **nove** têm spec — `edit-entry-sheet` e `choice-picker`, mais
+`entry-progress`, `search-scope`, `preferences-section`, `pile-picker`,
+`library-menu`, `type-providers-field` e `time-box`, que entraram em 10/09/2026 —
+os cinco primeiros esgotaram a ordem de risco do item 27, e os dois últimos
+nasceram junto das peças, que é a regra daqui pra frente. A regra
 acima vale daqui pra frente; **cobrir o que já existe é item próprio do
 handoff**, e não se faz em varredura — o critério é o mesmo, e componente que só
 compõe continua fora.
