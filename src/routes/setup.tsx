@@ -115,7 +115,23 @@ function SetupRoute() {
           <h2 className="font-medium text-sm">{setupCopy.language.label}</h2>
           <p className="mt-1 text-faint text-xs">{setupCopy.language.hint}</p>
           {/* O código do idioma, não a bandeira — bandeira não é idioma. O nome
-           * inteiro vai no `title`, que é o que cabe numa fileira de chips. */}
+           * inteiro vai no `title`, que é o que cabe numa fileira de chips.
+           *
+           * ── A decisão em aberto 13 FECHOU em 10/09/2026 ──────────────────
+           * **A fileira se MEDE**, como a de `/library`, e não vira menu: o
+           * catálogo de idiomas tem teto DE PRODUTO — ele só cresce quando
+           * publicamos uma tradução —, exatamente um está ativo, e a escolha é
+           * obrigatória, que é formato de seletor e não de filtro. E o passo
+           * único de `/setup` depende de o idioma ficar **visível** enquanto os
+           * nomes dos tipos repintam três linhas abaixo.
+           *
+           * **Não há máquina de medir aqui, e isso é medido:** o catálogo tem
+           * DOIS idiomas, e `flex-wrap` nunca quebra linha com dois. A conta que
+           * decide o transbordo já existe pronta (`domain/chip-fit.ts`), e a
+           * peça que a alimenta são 243 linhas acopladas aos filtros de
+           * `/library` — construí-la agora seria máquina inerte para um estado
+           * que não existe. **Quando o terceiro idioma entrar**, o que se faz é
+           * extrair aquela peça, não escrever outra. */}
           <div className="mt-3 flex w-fit flex-wrap gap-0.5 rounded-md border border-line p-0.5">
             {Object.entries(appCopy.languages).map(([code, name]) => {
               const on = code === language
