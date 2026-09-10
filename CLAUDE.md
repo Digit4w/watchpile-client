@@ -897,8 +897,11 @@ nem oferecia nada.
 - **Os 56px não se movem** — uma linha de lista é uma linha de grade
   (`domain/home-metrics.ts`) —, e o alvo de 44px da decisão #8 cabe neles
 - **A grade e a rolagem do widget continuam arrastando pela carta inteira**, e
-  desde que a carta virou link isso é a **decisão em aberto 16** do design
-  system. Não resolver por conta própria
+  desde que a carta virou link isso foi a **decisão em aberto 16** do design
+  system — **fechada em 10/09/2026: uma AÇÃO de reordenar, por widget**.
+  Enquanto ela está ligada os atalhos da carta dão lugar ao arrasto e a carta
+  deixa de ser link, o que dissolve o conflito em vez de arbitrá-lo: em modo de
+  reordenar não há navegação a disputar, e a alça pode tomar a carta inteira
 
 ## A carta INTEIRA é o link, e o que bloqueava não era o `opacity` — 07/09/2026
 
@@ -1330,13 +1333,17 @@ Decisões do brief que a tela sente direto:
   `Button` usa ele, e é o **único** preenchimento sólido de `danger` no app —
   quem vive dentro de popover de vidro (`ActionMenuConfirm`, `widget-remove`)
   continua sendo véu, porque opaco sobre translúcido anula o translúcido
-  **O que ficou em aberto é o DESABILITADO dele** (decisão em aberto 14 do design
-  system): com `--opacity-disabled` em 0.7 o par cai a **3,97**, porque o que
-  decide num sólido é a distância do preenchimento até a cor da página — `ink`
-  está a 16,93 e aguenta a desbotada, `danger` está a 6,96 e não. Nenhuma
-  opacidade que ainda leia como inerte o salva. **Não consertar por conta
-  própria com um `disabled:` à mão** — é decisão de sistema, e escrever
-  opacidade solta é o que o ciclo de 04/09 acabou de tirar do app
+  **O DESABILITADO dele foi a decisão em aberto 14, FECHADA em 10/09/2026:** o
+  `destructive` **sai do vocabulário de RECUSA**. Com `--opacity-disabled` em
+  0.7 o par cai a **3,97**, porque o que decide num sólido é a distância do
+  preenchimento até a cor da página — `ink` está a 16,93 e aguenta a desbotada,
+  `danger` está a 6,96 e não, e nenhuma opacidade que ainda leia como inerte o
+  salva. A saída **não isenta nada, remove o caso**: aquele botão só fica
+  desabilitado enquanto a mutação está no ar, e isso é **espera, não recusa** —
+  espera tem outras formas (o rótulo troca, a peça fica inerte sem desbotar).
+  **Continua valendo não consertar com um `disabled:` à mão**, e um
+  `--color-danger-disabled` foi descartado: seria token pra um caso, contra a
+  regra de que **desabilitado é opacidade, não cor**
 - **A RECOMENDAÇÃO reusa a peça e NÃO funde o conceito — 03/09/2026.** Ela tem
   exatamente os mesmos campos do vínculo, então grade e carta são compartilhadas
   de verdade (`RelationGrid`), não copiadas. O que **não** é compartilhado é a
