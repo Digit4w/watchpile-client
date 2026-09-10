@@ -1,22 +1,11 @@
-import {
-  closestCenter,
-  DndContext,
-  type DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
+import { closestCenter, DndContext } from '@dnd-kit/core'
 import { restrictToParentElement } from '@dnd-kit/modifiers'
 import {
-  arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { useQueryClient } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { EntryArt } from '@/components/media/entry-art'
 import { EntryMenu } from '@/components/media/entry-menu'
@@ -27,6 +16,7 @@ import type { Entry } from '@/domain/media'
 import { useMovePileEntry } from '@/hooks/mutations/piles/use-move-pile-entry'
 import { useMediaTypeName } from '@/hooks/queries/media-types/use-media-type-name'
 import { pileKeys } from '@/hooks/queries/piles/keys'
+import { useReorderable } from '@/hooks/use-reorderable'
 import { appCopy } from '@/lib/copy'
 import { formatDate } from '@/lib/format'
 import { pileDetailCopy } from '@/routes/-pile-detail.copy'
@@ -268,46 +258,16 @@ export function PileEntryList({
   compact,
   reorderable,
 }: PileEntryListProps) {
-  const queryClient = useQueryClient()
   const move = useMovePileEntry(pileId)
-
   /**
-   * Distância de ativação: sem ela o `pointerdown` de um clique já conta como
-   * arrasto. 6px é curto o bastante pra não parecer travado e longo o bastante
-   * pra sobreviver ao tremor do dedo — o mesmo número do widget da Home.
+   * O reordenar otimista mora num hook desde 10/09/2026 — ele estava escrito
+   * igual aqui e no widget da Home, e a grade da pilha seria a terceira cópia.
    */
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  )
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
-    if (!over || active.id === over.id) {
-      return
-    }
-
-    const from = entries.findIndex(({ id }) => id === active.id)
-    const to = entries.findIndex(({ id }) => id === over.id)
-    if (from === -1 || to === -1) {
-      return
-    }
-
-    const reordered = arrayMove(entries, from, to)
-
-    // Otimista: esperar a rede pra mover o item desfaria a sensação de que ele
-    // ficou onde foi solto. A resposta do servidor devolve a lista inteira e
-    // sobrescreve isto; se falhar, o cache volta à verdade dele.
-    queryClient.setQueryData(pileKeys.entries(pileId), reordered)
-
-    // `after` é quem fica ATRÁS na ordem nova — `null` quando vai pro topo. O
-    // cliente nunca vê nem manda `position`: quem escolhe o número é o
-    // servidor (brief, 3.14).
-    const previous = to === 0 ? null : (reordered[to - 1]?.id ?? null)
-    move.mutate({ entryId: Number(active.id), after: previous })
-  }
+  const { sensors, onDragEnd } = useReorderable({
+    items: entries,
+    queryKey: pileKeys.entries(pileId),
+    move: move.mutate,
+  })
 
   const rows = entries.map((entry) =>
     reorderable ? (
@@ -340,7 +300,7 @@ export function PileEntryList({
       sensors={sensors}
       collisionDetection={closestCenter}
       modifiers={[restrictToParentElement]}
-      onDragEnd={handleDragEnd}
+      onDragEnd={onDragEnd}
     >
       <SortableContext
         items={entries.map(({ id }) => id)}

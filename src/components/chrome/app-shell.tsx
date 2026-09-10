@@ -7,6 +7,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { pinnedPiles } from '@/domain/pinned-piles'
 import { usePiles } from '@/hooks/queries/piles/use-piles'
 import { useCollapsedSidebar } from '@/hooks/use-collapsed-sidebar'
 import { appCopy } from '@/lib/copy'
@@ -307,16 +308,56 @@ function NavItem({ label, to, active, collapsed, children }: NavItemProps) {
  * reordenando a GRADE — que é "lista que se reordena sob a mão" com outro nome.
  * Aqui é navegação, e a coluna existe.
  *
- * **No celular ela não aparece**, e a assimetria é assumida e registrada
- * (design system, pergunta em aberto #10): a sidebar não existe lá, e a barra
- * de abas seleciona por hábito, sem aba "More".
+ * **No celular ela mora no MENU DE CONTA desde 10/09/2026** (decisão do dono,
+ * fechando a pergunta em aberto #10). A assimetria de antes era assumida e
+ * registrada — a sidebar não existe lá e a barra de abas seleciona por hábito,
+ * sem aba "More" —, e o que a desfez foi notar que **o celular já tem onde a
+ * periferia mora**: `Settings` foi pra lá em 29/08 pelo mesmo motivo. Nenhum
+ * chrome novo nasceu.
  */
+/**
+ * As fixadas dentro do menu de conta do celular — 10/09/2026.
+ *
+ * **A mesma consulta e a mesma ORDEM da sidebar** (`domain/pinned-piles.ts`),
+ * porque é a mesma lista: duas telas com a mesma regra é como elas divergem, e
+ * aqui o que divergiria é a ordem — justamente o que não pode dançar entre uma
+ * tela e outra.
+ *
+ * **Sem cabeçalho quando não há nenhuma**, e sem a divisória junto: um "Pinned"
+ * sobre o vazio é chrome que não faz nada.
+ */
+function PinnedPilesMenuGroup() {
+  const piles = usePiles()
+  const pinned = pinnedPiles(piles.data)
+
+  if (pinned.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="mt-1 border-line border-b pb-1">
+      <p className="px-2 pt-1 pb-1 text-faint text-xs uppercase tracking-wide">
+        {appCopy.nav.pinned}
+      </p>
+      {pinned.map((pile) => (
+        <Link
+          key={pile.id}
+          to="/piles/$pileId"
+          params={{ pileId: String(pile.id) }}
+          title={pile.name}
+          className="flex w-full items-center rounded-sm px-2 py-2 text-left text-muted text-sm transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised hover:text-ink"
+        >
+          <span className="min-w-0 truncate">{pile.name}</span>
+        </Link>
+      ))}
+    </div>
+  )
+}
+
 function PinnedPiles({ collapsed }: { collapsed: boolean }) {
   const piles = usePiles()
 
-  const pinned = (piles.data ?? [])
-    .filter(({ pinnedAt }) => pinnedAt !== null)
-    .sort((a, b) => (a.pinnedAt ?? '').localeCompare(b.pinnedAt ?? ''))
+  const pinned = pinnedPiles(piles.data)
 
   if (pinned.length === 0) {
     return null
@@ -417,6 +458,26 @@ function AccountMenu({
             </span>
           </span>
         </div>
+        {/* As pilhas FIXADAS, só no celular — 10/09/2026, decisão do dono
+         * (design system, pergunta em aberto #10, fechada).
+         *
+         * Fixar sempre esteve disponível no telefone, porque a preferência é da
+         * CONTA e vale no desktop da pessoa — mas quem fixava **não via o
+         * resultado ali**, e uma preferência que não faz nada em metade dos
+         * aparelhos é a assimetria que este item registrava.
+         *
+         * **O menu de conta é onde a periferia do celular já mora** — foi pra
+         * cá que `Settings` veio em 29/08, pelo mesmo motivo —, então nenhum
+         * chrome novo nasceu. A barra de abas continua selecionando por hábito,
+         * sem aba "More".
+         *
+         * `md:hidden` como o `Settings` logo abaixo: no desktop elas estão na
+         * sidebar, e repeti-las nos dois lugares seria dois caminhos pro mesmo
+         * lugar na mesma tela. */}
+        <span className="block md:hidden">
+          <PinnedPilesMenuGroup />
+        </span>
+
         {/* Settings só aparece aqui no CELULAR: ele saiu da barra de abas pra
          * ela caber em quatro destinos de rotina, e este é o menu que já
          * existe no topo da tela pequena. No desktop ele continua na sidebar,
