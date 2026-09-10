@@ -64,22 +64,11 @@ function Input({ className, type, compact, ...props }: InputProps) {
 }
 
 /**
- * O `<select>` nativo com o mesmo tratamento. Não é componente do shadcn —
- * eles usam `Select` do Radix, que é outro peso —, mas o anel de foco é do
- * sistema e não pode depender de qual elemento se usou.
+ * **`NativeSelect` foi REMOVIDO em 09/09/2026**, junto com o último `<select>`
+ * do app. Ele era o único controle cuja lista aberta o sistema operacional
+ * desenhava — fora do DOM, então nem token nem `color-scheme` a alcançam por
+ * inteiro —, e o app resolve escolha com popover em todo lugar. Quem faz isso
+ * agora é `components/menu/choice-picker.tsx`.
  */
-function NativeSelect({ className, ...props }: React.ComponentProps<'select'>) {
-  return (
-    <select
-      data-slot="native-select"
-      className={cn(
-        'rounded-sm border border-line bg-card px-2 py-1 text-ink text-xs transition-[color,box-shadow]',
-        focus,
-        className,
-      )}
-      {...props}
-    />
-  )
-}
 
-export { Input, NativeSelect }
+export { Input }

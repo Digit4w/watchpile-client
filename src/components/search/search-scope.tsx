@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { MediaTypeIcon } from '@/components/media/media-type-icon'
 import { ActionMenuSeparator } from '@/components/menu/action-menu'
+import { ChoicePicker } from '@/components/menu/choice-picker'
+import { CheckIcon, ChevronIcon } from '@/components/menu/menu-icons'
 import {
   Popover,
   PopoverContent,
@@ -13,53 +15,6 @@ import {
   type TypeSources,
 } from '@/domain/search-scope'
 import { searchCopy } from '@/routes/-search.copy'
-
-function Chevron({
-  size = 14,
-  open = false,
-}: {
-  size?: number
-  /** Gira 180° quando a lista abaixo está aberta — a única dica de estado. */
-  open?: boolean
-}) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={`shrink-0 text-faint transition-transform duration-[var(--motion-micro)] ease-chrome ${
-        open ? 'rotate-180' : ''
-      }`}
-      aria-hidden="true"
-    >
-      <path d="M6.5 8.5 10 12l3.5-3.5" />
-    </svg>
-  )
-}
-
-function Check() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="shrink-0"
-      aria-hidden="true"
-    >
-      <path d="M4.5 10.5 8 14 15.5 6" />
-    </svg>
-  )
-}
 
 /**
  * Uma linha do menu — e ela tem DOIS alvos quando o tipo tem mais de uma fonte.
@@ -158,7 +113,7 @@ function Row({
               className="flex max-w-[45%] items-center gap-1 rounded-sm px-2 py-2 text-faint text-xs transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised hover:text-ink"
             >
               <span className="min-w-0 truncate">{label}</span>
-              <Chevron size={12} open={expanded} />
+              <ChevronIcon size={12} open={expanded} />
             </button>
           ) : (
             <span className="max-w-[45%] truncate px-2 text-faint text-xs">
@@ -168,7 +123,7 @@ function Row({
 
         {active && (
           <span className="shrink-0 pr-2">
-            <Check />
+            <CheckIcon />
           </span>
         )}
       </div>
@@ -189,7 +144,7 @@ function Row({
               }`}
             >
               <span className="min-w-0 flex-1 truncate">{option.name}</span>
-              {option.slug === selected && <Check />}
+              {option.slug === selected && <CheckIcon />}
             </button>
           ))}
         </div>
@@ -208,12 +163,14 @@ function Row({
  * aparecer também sob a RECUSA, que é onde ele mais importa.
  *
  * **Mora neste arquivo de propósito.** Ela e o menu de escopo escrevem o mesmo
- * par de parâmetros da consulta, e é aqui que o `Chevron`, o `Check` e o
- * desenho da linha de fonte já existem — copiá-los pra um arquivo vizinho é
- * como os cinco menus escritos à mão nasceram.
+ * par de parâmetros da consulta.
  *
- * Com uma fonte só ela continua sendo TEXTO: um seletor de uma opção é um
- * controle que mente sobre ter escolha.
+ * **O painel virou `ChoicePicker` quando ganhou o quarto irmão** (09/09/2026):
+ * a folha de vincular e os dois controles do widget da Home faziam a mesma
+ * escolha de um entre N, e a régua do `⋯` vale aqui igual — peça que aparece em
+ * três telas para de ser markup. O que fica aqui é o que é DESTA tela: com uma
+ * fonte só ela é TEXTO, porque um seletor de uma opção é um controle que mente
+ * sobre ter escolha, e o rótulo `Source` ao lado já diz o que aquela palavra é.
  */
 export function SourcePicker({
   sources,
@@ -224,49 +181,21 @@ export function SourcePicker({
   current: string
   onSource: (slug: string) => void
 }) {
-  const [open, setOpen] = useState(false)
-  const label = sources.find((source) => source.slug === current)?.name ?? ''
-
   if (sources.length <= 1) {
+    const label = sources.find((source) => source.slug === current)?.name ?? ''
     return <span className="text-ink text-sm">{label}</span>
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          aria-label={searchCopy.changeSource}
-          className="flex h-9 cursor-pointer items-center gap-1 rounded-md px-2 text-ink text-sm outline-none transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised focus-visible:ring-[3px] focus-visible:ring-ink/50"
-        >
-          <span className="min-w-0 truncate">{label}</span>
-          <Chevron size={12} open={open} />
-        </button>
-      </PopoverTrigger>
-
-      <PopoverContent align="end" sideOffset={4} className="w-48 p-1">
-        {sources.map((source) => (
-          <button
-            key={source.slug}
-            type="button"
-            role="menuitemradio"
-            aria-checked={source.slug === current}
-            onClick={() => {
-              onSource(source.slug)
-              setOpen(false)
-            }}
-            className={`flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-2 text-left text-sm ${
-              source.slug === current
-                ? 'text-ink'
-                : 'text-muted transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised hover:text-ink'
-            }`}
-          >
-            <span className="min-w-0 flex-1 truncate">{source.name}</span>
-            {source.slug === current && <Check />}
-          </button>
-        ))}
-      </PopoverContent>
-    </Popover>
+    <ChoicePicker
+      options={sources.map((source) => ({
+        value: source.slug,
+        label: source.name,
+      }))}
+      value={current}
+      onSelect={onSource}
+      ariaLabel={searchCopy.changeSource}
+    />
   )
 }
 
@@ -354,7 +283,7 @@ export function SearchScope({
             <MediaTypeIcon type={active.slug} size={14} strokeWidth={1.7} />
           )}
           <span className="max-w-32 truncate">{active?.plural ?? ''}</span>
-          <Chevron />
+          <ChevronIcon />
         </button>
       </PopoverTrigger>
 
