@@ -1319,7 +1319,23 @@ layout). O piloto é
   **E a quebra também erra:** a segunda vez, a quebra escolhida para o rollback
   otimista (`hidden.slice(0, -1)`) produzia **por acaso** exatamente o retrato
   anterior. Teste verde ali não dizia nada sobre o teste. *Quando a quebra não
-  fica vermelha, desconfie das duas pontas antes de acusar o teste*
+  fica vermelha, desconfie das duas pontas antes de acusar o teste*.
+
+  **A terceira, no mesmo dia, é a forma mais fácil de errar:** o teste de
+  `library-menu` afirmava que escolher FECHA o painel pela ausência de
+  `Sort by` — só que, sem fechar, a tela fica na **sub-vista**, onde `Sort by`
+  também não está. A asserção não distinguia *"fechou"* de *"continua onde
+  estava"*. **Ausência só prova o que se quer quando a outra hipótese a
+  contradiz** — aqui o que distingue são as linhas de escolha, presentes nos
+  dois estados do painel aberto e em nenhum do fechado
+
+**Uma coisa que este bloco de testes NÃO afirma, e é decisão** (10/09/2026):
+as regras de **geometria** de `pile-picker` — chips sob o gatilho, `side="top"`
+fixo — só existem em movimento, e o jsdom não faz layout. Afirmar `side="top"`
+seria afirmar uma prop; afirmar "o botão não se moveu" seria afirmar uma classe.
+**A terceira daquela leva é comportamento e está coberta**: criar FECHA o painel.
+*O que dava pra testar sem virar teste de estrutura está no arquivo; o resto se
+prova no navegador, e foi lá que as três apareceram.*
 
 **Duas coisas que escrever esses três testes ACHOU, e as duas são de a11y que
 nenhuma ferramenta acusa** (10/09/2026):
@@ -1358,9 +1374,10 @@ teste: o que dava pra afirmar sobre eles só se prova mexendo no navegador, e fo
 assim que os bugs de verdade apareceram.
 
 **Do lado do componente a dívida é quase tudo**: são 93 arquivos em
-`components/`, e **cinco** têm spec — `edit-entry-sheet` e `choice-picker`, mais
-`entry-progress`, `search-scope` e `preferences-section`, que entraram em
-10/09/2026 na ordem de risco do item 27. A regra
+`components/`, e **sete** têm spec — `edit-entry-sheet` e `choice-picker`, mais
+`entry-progress`, `search-scope`, `preferences-section`, `pile-picker` e
+`library-menu`, que entraram em 10/09/2026 na ordem de risco do item 27 e a
+esgotaram. A regra
 acima vale daqui pra frente; **cobrir o que já existe é item próprio do
 handoff**, e não se faz em varredura — o critério é o mesmo, e componente que só
 compõe continua fora.
