@@ -382,6 +382,39 @@ export const settingsCopy = {
     noProvider:
       'No provider serves this type, so titles are added by typing them in. Searching says so out loud instead of coming back empty.',
   },
+  /**
+   * Quais provedores servem este tipo — o controle que faltava (brief, 3.10,
+   * 10/09/2026).
+   *
+   * **A copy tem que dizer que se COPIA uma receita**, e não que se marca uma
+   * caixa, porque é isso que o gesto faz: a junção carrega o corpo da busca, o
+   * mapa de campos e o token do provedor, e a linha em branco cai no endpoint
+   * do provedor. Esconder isso deixaria a pessoa achar que escolheu um provedor
+   * quando escolheu um provedor **e um jeito de falar com ele**.
+   */
+  typeProviders: {
+    add: 'Add a provider',
+    /** O segundo passo, e o cabeçalho dele nomeia o provedor escolhido. */
+    copyFrom: (provider: string) => `Serve it like — ${provider}`,
+    /**
+     * A frase do segundo passo. Ela diz o mecanismo porque o mecanismo é a
+     * promessa: a receita que já responde por outro tipo é uma receita provada.
+     */
+    copyHint:
+      'It will talk to this provider the same way one of these types already does.',
+    remove: (provider: string) => `Stop using ${provider}`,
+    /**
+     * A recusa vem do servidor com a contagem, e a frase diz a CONSEQUÊNCIA em
+     * vez de repetir o número: sem a receita, arte e detalhe param de funcionar
+     * para essas obras, e nada na tela diria por quê.
+     */
+    inUse: (count: string) =>
+      `${count} already point at it. Unlink them from those titles first — without this provider, their artwork and details stop loading.`,
+    failed: "That didn't save. Try again.",
+    /** Nenhum provedor tem receita a emprestar: todos estão ociosos. */
+    nothingToAdd:
+      'No provider serves any type yet, so there is no recipe to copy.',
+  },
   mediaTypes: {
     body: 'The kinds of media this server can track. Everyone on this server shares them.',
     add: 'Add type',
