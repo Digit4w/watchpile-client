@@ -25,6 +25,7 @@ import { countOf } from '@/lib/format'
 import { settingsCopy } from '@/routes/-settings.copy'
 import { DefaultProviderField } from './default-provider-field'
 import { IconPicker } from './icon-picker'
+import { TypeProvidersField } from './type-providers-field'
 
 const copy = settingsCopy.mediaTypes
 
@@ -359,12 +360,20 @@ export function MediaTypeSheet({
               </div>
             </div>
 
-            {/* De qual provedor vêm título e campos deste type. Só ao EDITAR:
-             * um tipo que ainda não existe não tem provedor associado, e a
-             * associação não é escolha desta folha — ela vem da definição do
-             * provedor (brief, 3.10). */}
+            {/* Quais provedores servem este tipo, e só depois qual deles
+             * RESPONDE a busca — escolher a fonte antes de haver fonte é
+             * escolher entre nada.
+             *
+             * **Só ao EDITAR**, e o motivo mudou em 10/09/2026: era "a
+             * associação não é escolha desta folha, ela vem da definição do
+             * provedor", e agora ela É escolha desta folha (brief, 3.10). O que
+             * segura é outra coisa — um tipo que ainda não existe não tem slug
+             * a que vincular, e o slug só nasce ao salvar. */}
             {target?.mode === 'edit' && (
-              <DefaultProviderField type={target.type} />
+              <>
+                <TypeProvidersField type={target.type} />
+                <DefaultProviderField type={target.type} />
+              </>
             )}
 
             {/* Apagar só existe ao editar: não há o que apagar num type que

@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/popover'
 import type { Entry, EntryStatus } from '@/domain/media'
 import { ENTRY_STATUSES } from '@/domain/media'
+import { progressDelta } from '@/domain/progress-target'
 import { useAddProgress } from '@/hooks/mutations/entries/use-add-progress'
 import { useUpdateEntry } from '@/hooks/mutations/entries/use-update-entry'
 import { appCopy } from '@/lib/copy'
@@ -35,9 +36,20 @@ function EditTracking({ entry }: { entry: Entry }) {
   const update = useUpdateEntry(entry.id)
   const [target, setTarget] = useState(String(entry.progress))
 
-  const number = Number(target)
-  const valid = target.trim() !== '' && Number.isInteger(number) && number >= 0
-  const delta = number - entry.progress
+  /**
+   * A regra saiu daqui para `domain/progress-target.ts` em 10/09/2026, quando a
+   * tela de detalhe ganhou o mesmo campo: *duas contas da mesma coisa é como
+   * uma fica pra trás*, e aqui o que ficaria pra trás é a regra que decide se
+   * uma escrita acontece.
+   *
+   * Ela ganhou um teto que esta cópia não tinha — alvo acima do total é recusa,
+   * e não uma escrita que o servidor apara.
+   */
+  const delta = progressDelta({
+    typed: target,
+    progress: entry.progress,
+    total: entry.total,
+  })
   const busy = addProgress.isPending || update.isPending
 
   return (
@@ -45,7 +57,7 @@ function EditTracking({ entry }: { entry: Entry }) {
       className="flex flex-col gap-4 text-xs"
       onSubmit={(event) => {
         event.preventDefault()
-        if (valid && delta !== 0) {
+        if (delta !== null) {
           addProgress.mutate({ delta })
         }
       }}
@@ -72,7 +84,7 @@ function EditTracking({ entry }: { entry: Entry }) {
           </span>
           <button
             type="submit"
-            disabled={busy || !valid || delta === 0}
+            disabled={busy || delta === null}
             className="ml-auto rounded-sm bg-ink px-2.5 py-1.5 font-medium text-surface text-xs disabled:opacity-[var(--opacity-disabled)]"
           >
             {appCopy.entry.save}

@@ -3754,6 +3754,195 @@ export interface paths {
     }
     trace?: never
   }
+  '/api/media-types/{slug}/providers/{provider}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put: {
+      parameters: {
+        query?: never
+        header?: never
+        path: {
+          slug: string
+          provider: string
+        }
+        cookie?: never
+      }
+      requestBody?: {
+        content: {
+          'application/json': {
+            copyFrom: string
+          }
+        }
+      }
+      responses: {
+        /** @description The provider now serves this media type */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              slug: string
+              icon: string
+              countsProgress: boolean
+              entryCount: number
+              name: string
+              plural: string
+              progressUnit: string | null
+              providers: string[]
+              effectiveProvider: string | null
+              names: {
+                [key: string]: {
+                  name: string
+                  plural: string
+                  progressUnit?: string | null
+                }
+              }
+            }
+          }
+        }
+        /** @description There is no recipe to copy from */
+        400: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description Only an admin sets the vocabulary of this server */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description Media type or provider not found */
+        404: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    post?: never
+    delete: {
+      parameters: {
+        query?: never
+        header?: never
+        path: {
+          slug: string
+          provider: string
+        }
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description The provider no longer serves this media type */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              slug: string
+              icon: string
+              countsProgress: boolean
+              entryCount: number
+              name: string
+              plural: string
+              progressUnit: string | null
+              providers: string[]
+              effectiveProvider: string | null
+              names: {
+                [key: string]: {
+                  name: string
+                  plural: string
+                  progressUnit?: string | null
+                }
+              }
+            }
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description Only an admin sets the vocabulary of this server */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description That provider does not serve this media type */
+        404: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description Titles of this type already point at this provider */
+        409: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+              entryCount: number
+            }
+          }
+        }
+      }
+    }
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/network': {
     parameters: {
       query?: never
