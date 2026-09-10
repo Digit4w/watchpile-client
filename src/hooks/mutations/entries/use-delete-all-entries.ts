@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { entryKeys } from '@/hooks/queries/entries/keys'
 import { homeWidgetKeys } from '@/hooks/queries/home-widgets/keys'
 import { pileKeys } from '@/hooks/queries/piles/keys'
+import { searchKeys } from '@/hooks/queries/search/keys'
+import { titleKeys } from '@/hooks/queries/titles/keys'
 import type { HttpError } from '@/infra/lib/http-client'
 import { entriesService } from '@/services/entries'
 
@@ -16,6 +18,10 @@ import { entriesService } from '@/services/entries'
  *
  * Pilhas e widgets são invalidados e **não** removidos, porque eles
  * continuam existindo: o que mudou é o conteúdo deles.
+ *
+ * As telas do provedor entram pelo mesmo motivo de `useDeleteEntry`, e aqui
+ * sem exceção possível: se não sobrou obra, nenhum resultado de busca pode
+ * continuar dizendo `Already in your library`.
  */
 export function useDeleteAllEntries() {
   const queryClient = useQueryClient()
@@ -26,6 +32,8 @@ export function useDeleteAllEntries() {
       queryClient.removeQueries({ queryKey: entryKeys.all })
       queryClient.invalidateQueries({ queryKey: homeWidgetKeys.all })
       queryClient.invalidateQueries({ queryKey: pileKeys.all })
+      queryClient.invalidateQueries({ queryKey: titleKeys.all })
+      queryClient.invalidateQueries({ queryKey: searchKeys.all })
     },
   })
 }
