@@ -1,5 +1,6 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
+  ArrowUpCircle,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -143,6 +144,21 @@ const GROUPS = [
         to: '/settings/storage',
         label: settingsCopy.sections.storage,
         Icon: HardDrive,
+      },
+      /**
+       * **Não é condicional, ao contrário de `Network`.** Ela serve nas duas
+       * pontas: onde dá pra atualizar de dentro, ela tem os botões; onde não
+       * dá — o container —, ela diz isso e mostra o comando, que é a resposta
+       * que quem hospeda foi procurar. *Affordance descreve o que existe*
+       * continua valendo: o que some é o BOTÃO, não a seção.
+       *
+       * Fica por último no grupo, depois de `Storage`: as outras três dizem o
+       * que esta instalação É, e esta diz o que fazer com ela em seguida.
+       */
+      {
+        to: '/settings/updates',
+        label: settingsCopy.sections.updates,
+        Icon: ArrowUpCircle,
       },
     ],
   },
