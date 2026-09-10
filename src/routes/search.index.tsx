@@ -165,6 +165,8 @@ function SearchRoute() {
           reason: 'no-provider',
           severity: 'condition',
           message: searchCopy.refusal.noProviderBody,
+          // A tela responde sozinha: não houve provedor nenhum a recusar.
+          providerMessage: null,
         }
       : null
 
@@ -258,6 +260,7 @@ function SearchRoute() {
         {refusalVisible && scope && (
           <SearchRefused
             refusal={refusalVisible}
+            source={source}
             type={typeLabel}
             term={q}
             isAdmin={user.isAdmin}

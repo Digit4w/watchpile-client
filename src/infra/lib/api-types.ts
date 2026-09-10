@@ -4769,6 +4769,7 @@ export interface paths {
                 | 'provider-refused'
                 | 'provider-down'
                 | 'unreachable'
+              providerMessage: string | null
             }
           }
         }

@@ -134,6 +134,7 @@ function EditTracking({ entry }: { entry: Entry }) {
 export function EntryActions({
   entry,
   pileId,
+  reorder,
 }: {
   entry: Entry
   /**
@@ -142,6 +143,8 @@ export function EntryActions({
    * o item fora da Home e de `/library`, onde não há pilha de onde tirar.
    */
   pileId?: number
+  /** Repassado ao menu: só a Home tem ordem manual de carta. */
+  reorder?: { on: boolean; toggle: () => void }
 }) {
   return (
     /**
@@ -198,7 +201,7 @@ export function EntryActions({
        * — e o de fora abria mostrando o GATILHO do de dentro, que foi
        * exatamente o que apareceu na tela ao trocar o menu pela peça
        * compartilhada. */}
-      <EntryMenu entry={entry} pileId={pileId} />
+      <EntryMenu entry={entry} pileId={pileId} reorder={reorder} />
     </div>
   )
 }

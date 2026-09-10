@@ -97,6 +97,16 @@ export const searchCopy = {
    * fato, e os botões, que são a saída.
    */
   refusal: {
+    /**
+     * A atribuição da frase do provedor — 10/09/2026.
+     *
+     * **Ela existe porque a frase não é nossa.** Vem em inglês, não passa pelo
+     * catálogo, e o tom dela é o de quem a escreveu; sem a atribuição, quem lê
+     * concluiria que o app fala assim. É a mesma régua da atribuição de busca
+     * (*a frase que EXPLICA um resultado é da fonte que o produziu*), aqui numa
+     * recusa em vez de num resultado.
+     */
+    saidBy: (provider: string) => `— ${provider}`,
     'no-provider': (type: string) => `No source for ${type}`,
     /**
      * O corpo deste caso é da TELA, não do servidor — e é o único assim.

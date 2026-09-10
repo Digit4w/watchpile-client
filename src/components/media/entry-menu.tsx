@@ -15,6 +15,7 @@ import {
   OpenIcon,
   PileAddIcon,
   PileRemoveIcon,
+  ReorderIcon,
   TrashIcon,
 } from '@/components/menu/menu-icons'
 import type { Entry } from '@/domain/media'
@@ -136,6 +137,7 @@ const TRIGGER: Record<MenuVariant, string> = {
 export function EntryMenu({
   entry,
   pileId,
+  reorder,
   variant = 'card',
 }: {
   entry: Entry
@@ -145,6 +147,21 @@ export function EntryMenu({
    * fora da Home e de `/library`, onde não há pilha de onde tirar.
    */
   pileId?: number
+  /**
+   * Reordenar esta obra dentro do widget que a contém — 10/09/2026, decisão do
+   * dono (design system, decisão em aberto 16).
+   *
+   * **Ausente é o caso comum**, e o item some: em `/library` e na grade de
+   * `/piles/:id` não há ordem manual a mexer, e um item que não faz nada é pior
+   * que um item a menos. **O precedente já estava neste menu** — `Remove from
+   * pile` só existe dentro de uma pilha —, e a régua é *item de menu nasce de
+   * ação, não de simetria de layout*.
+   *
+   * `on` diz se o modo já está ligado, porque **sair é tão explícito quanto
+   * entrar**: o mesmo item alterna, em vez de a pessoa ter que adivinhar que
+   * clicar fora resolve.
+   */
+  reorder?: { on: boolean; toggle: () => void }
   variant?: MenuVariant
 }) {
   /**
@@ -248,6 +265,22 @@ export function EntryMenu({
             >
               {appCopy.entry.addToPile}
             </ActionMenuItem>
+
+            {/* Depois de `Add to pile` porque as duas falam de ONDE a obra
+             * está — uma de qual caixa, outra de que lugar dentro dela. */}
+            {reorder && (
+              <ActionMenuItem
+                icon={<ReorderIcon />}
+                onClick={() => {
+                  setOpen(false)
+                  reorder.toggle()
+                }}
+              >
+                {reorder.on
+                  ? appCopy.entry.reorderDone
+                  : appCopy.entry.reorderInWidget}
+              </ActionMenuItem>
+            )}
 
             {/* Só existe DENTRO de uma pile, e some outside dela — item de menu
              * nasce de ação, não de simetria de layout (design system, seção 5).
