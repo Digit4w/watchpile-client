@@ -167,7 +167,13 @@ export const titleDetailCopy = {
      */
     format: 'Format',
     firstAired: 'First aired',
-    seasons: 'Seasons',
+    /**
+     * **`seasons` saiu daqui em 10/09/2026.** Ele nomeava o CONJUNTO de grupos,
+     * e o produto não decide como o agrupamento se chama — o provedor decide, e
+     * agora ele declara (`unitGroupLabel`, no par). Escrito aqui, ele diria
+     * "Seasons" sobre uma lista de volumes no dia em que um par de mangá
+     * agrupasse.
+     */
     /**
      * **O rótulo do total NÃO se escreve aqui — 09/09/2026.** Ele era
      * `'Episodes'`, e a tabela o usava pra todo tipo de mídia: num mangá a
@@ -184,7 +190,6 @@ export const titleDetailCopy = {
     year: 'Year',
   },
 
-  seasons: 'Seasons',
   recommendations: 'Recommendations',
 
   /**

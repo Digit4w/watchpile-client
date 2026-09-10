@@ -1984,6 +1984,7 @@ export interface paths {
                 count: number | null
                 art: string | null
               }[]
+              unitGroupLabel: string | null
               hasUnits: boolean
               snapshot: {
                 fetchedAt: string
@@ -4852,6 +4853,7 @@ export interface paths {
                 count: number | null
                 art: string | null
               }[]
+              unitGroupLabel: string | null
               hasUnits: boolean
               snapshot: {
                 fetchedAt: string

@@ -38,6 +38,7 @@ import {
   UnitListSkeleton,
 } from '@/components/media/title-units'
 import { showsCounter } from '@/domain/shows-counter'
+import { unitGroupSummary } from '@/domain/unit-groups'
 import { defaultGroup, unitOffset } from '@/domain/unit-offset'
 import { useLogout } from '@/hooks/mutations/auth/use-logout'
 import { useAddProgress } from '@/hooks/mutations/entries/use-add-progress'
@@ -200,6 +201,16 @@ function EntryDetailRoute() {
      */
     const context = (projection ? preview.data : details.data) ?? null
     const groups = context?.unitGroups ?? []
+    /**
+     * O cabeçalho do conjunto, ou nulo quando não há conjunto a nomear. A regra
+     * é pura e **compartilhada com `/search/:provider/:id`** — as duas telas de
+     * detalhe são um molde só, e foi nesta linha exata que elas divergiram em
+     * 09/09 (`domain/unit-groups.ts`, com specs).
+     */
+    const groupSummary = unitGroupSummary({
+      groups,
+      label: context?.unitGroupLabel ?? null,
+    })
     const active = group ?? defaultGroup(groups)
     const offsetDe = (numero: number) => unitOffset(groups, numero)
     const offset = active === null ? 0 : offsetDe(active)
@@ -287,9 +298,18 @@ function EntryDetailRoute() {
                   label: titleDetailCopy.fields.year,
                   value: context?.year ?? null,
                 },
+                /**
+                 * **A linha só existe com o rótulo do par**, pelo mesmo motivo
+                 * da seção — e `DetailsBox` já some com valor nulo, então
+                 * devolver nulo aqui é dizer a coisa certa no vocabulário que a
+                 * tabela já tem.
+                 *
+                 * O grupo ZERO fica fora da conta: numeração começa em 1, e os
+                 * especiais do TMDB voltam como `season_number: 0`.
+                 */
                 {
-                  label: titleDetailCopy.fields.seasons,
-                  value: groups.filter(({ number }) => number >= 1).length,
+                  label: groupSummary?.label ?? '',
+                  value: groupSummary?.count ?? null,
                 },
                 {
                   /**
@@ -341,9 +361,20 @@ function EntryDetailRoute() {
           }
         />
 
-        {groups.length > 0 && (
+        {/* **O título vem do PAR, e a seção só existe quando ele veio** —
+         * 10/09/2026. Ele era `'Seasons'` escrito aqui, para todo tipo de
+         * mídia: o `name` de cada grupo já vinha do provedor, e o coletivo
+         * era o produto decidindo como o agrupamento se chama — que é o que a
+         * própria definição do provedor diz que ele nunca faz.
+         *
+         * **Sem rótulo a seção não aparece**, e não cai num genérico: um
+         * cabeçalho que o produto inventou sobre uma lista que o provedor
+         * organizou é a mesma mentira, com outra palavra. Hoje só
+         * `(tv, tmdb)` agrupa, então só ele declara — e é ele o único que
+         * tem grupos pra mostrar. */}
+        {groupSummary && (
           <TitleSection
-            title={titleDetailCopy.seasons}
+            title={groupSummary.label}
             aside={
               effectiveTotal === null ? undefined : (
                 <span className="text-faint text-xs tabular-nums">

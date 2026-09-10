@@ -28,6 +28,7 @@ import {
 } from '@/components/media/title-units'
 import { OpenIcon } from '@/components/menu/menu-icons'
 import { Button } from '@/components/ui/button'
+import { unitGroupSummary } from '@/domain/unit-groups'
 import { defaultGroup } from '@/domain/unit-offset'
 import { useLogout } from '@/hooks/mutations/auth/use-logout'
 import { useProgressUnit } from '@/hooks/queries/media-types/use-progress-unit'
@@ -175,6 +176,15 @@ function ProviderTitleRoute() {
     }
 
     const groups = data.unitGroups
+    /**
+     * O cabeçalho do conjunto — **a MESMA regra de `/library/:id`**, e é por
+     * isso que ela é uma função: foi nesta linha exata que as duas telas
+     * divergiram em 09/09.
+     */
+    const groupSummary = unitGroupSummary({
+      groups,
+      label: data.unitGroupLabel,
+    })
     const active = group ?? defaultGroup(groups)
     // Mesma regra da tela de dentro: com grupos o nome é do provedor, sem
     // grupos é a unidade de progresso do tipo, que já vem plural e traduzida.
@@ -247,9 +257,16 @@ function ProviderTitleRoute() {
                   value: data.subtype,
                 },
                 { label: titleDetailCopy.fields.year, value: data.year },
+                /**
+                 * **A MESMA linha da tela de dentro** — e é aqui que ela
+                 * precisava estar: em 09/09 o `Episodes` foi corrigido lá e
+                 * ficou torto aqui, porque *as duas telas de detalhe são um
+                 * molde só e divergiram LINHA A LINHA*. O rótulo vem do par, e
+                 * sem ele a linha não existe.
+                 */
                 {
-                  label: titleDetailCopy.fields.seasons,
-                  value: groups.filter(({ number }) => number >= 1).length,
+                  label: groupSummary?.label ?? '',
+                  value: groupSummary?.count ?? null,
                 },
                 {
                   // A MESMA linha da tela de dentro: o molde é um só, e foi
@@ -292,8 +309,8 @@ function ProviderTitleRoute() {
           }
         />
 
-        {groups.length > 0 && (
-          <TitleSection title={titleDetailCopy.seasons}>
+        {groupSummary && (
+          <TitleSection title={groupSummary.label}>
             <UnitGroupGrid
               groups={groups}
               active={active}
