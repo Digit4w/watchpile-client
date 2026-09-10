@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { parseAsString, useQueryStates } from 'nuqs'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AppShell } from '@/components/chrome/app-shell'
 import { SessionPending } from '@/components/chrome/session-pending'
 import { AddEntrySheet } from '@/components/library/add-entry-sheet'
@@ -28,6 +28,7 @@ import { useProviders } from '@/hooks/queries/providers/use-providers'
 import { useSearch } from '@/hooks/queries/search/use-search'
 import { useDebounced } from '@/hooks/use-debounced'
 import { useDelayedPending } from '@/hooks/use-delayed-pending'
+import { useRememberedScope } from '@/hooks/use-remembered-scope'
 import { useRequireSession } from '@/hooks/use-require-session'
 import { searchCopy } from './-search.copy'
 
@@ -89,7 +90,48 @@ function SearchRoute() {
    * tipo sem provedor mostraria uma explicação no lugar de um campo pronto, e
    * quem clicou em `Search` quer buscar.
    */
-  const scope = type ?? defaultScope(types, sourceByType)
+  /**
+   * O que a pessoa estava fazendo da última vez, validado contra o vocabulário
+   * de agora (10/09/2026, decisão do dono). **A URL continua dona** — isto só
+   * responde pelo `/search` pelado da nav, que é o único endereço ambíguo que
+   * esta tela tem.
+   */
+  const [remembered, remember] = useRememberedScope(sourceByType)
+
+  const scope = type ?? remembered?.type ?? defaultScope(types, sourceByType)
+
+  /**
+   * A memória decidiu o escopo → **a URL passa a dizê-lo**, sem entrada nova no
+   * histórico (`nuqs` já substitui por padrão).
+   *
+   * Sem isto o remendo quebraria o que ele prometia não quebrar: buscar a
+   * partir do `/search` pelado produziria `?q=naruto` **sem `type`**, e quem
+   * recebesse esse link abriria no escopo lembrado DELE — a mesma URL
+   * significando duas buscas diferentes. Escrever aqui devolve a invariante de
+   * 01/09 inteira: *a URL é o estado*, e o `localStorage` só responde pelo
+   * endereço que não diz nada.
+   *
+   * Roda uma vez por chegada, porque `type` deixa de ser nulo no mesmo gesto.
+   */
+  const rememberedType = remembered?.type ?? null
+  const rememberedProvider = remembered?.provider ?? null
+  useEffect(() => {
+    // As dependências são os VALORES e não o objeto: `rememberedScope` devolve
+    // um objeto novo a cada render (o mapa de fontes também é remontado), então
+    // depender dele faria o efeito rodar sempre — inofensivo pela guarda, e
+    // mesmo assim uma dependência que mente sobre o que muda.
+    if (type === null && rememberedType) {
+      setSearch({ type: rememberedType, provider: rememberedProvider })
+    }
+  }, [type, rememberedType, rememberedProvider, setSearch])
+  /**
+   * A fonte lembrada só vale **dentro do tipo dela**: o slug de um provedor é
+   * legível dentro do par (brief, 3.10), e carregá-lo pra outro tipo pediria um
+   * par que o servidor recusa com 400 — que é a mesma razão pela qual trocar de
+   * tipo limpa a fonte na URL, logo abaixo.
+   */
+  const sourceSlug =
+    provider ?? (remembered?.type === scope ? remembered.provider : null)
   const activeType = types.find((info) => info.slug === scope)
   const typeLabel = activeType?.plural ?? activeType?.name ?? ''
 
@@ -105,7 +147,7 @@ function SearchRoute() {
    */
   const canSearch = scope !== null && sourceByType.has(scope)
   const searchQuery = useSearch(
-    { type: scope ?? '', q: term, provider },
+    { type: scope ?? '', q: term, provider: sourceSlug },
     canSearch,
   )
 
@@ -143,7 +185,7 @@ function SearchRoute() {
    * previsão.
    */
   const typeSources = scope ? (sourceByType.get(scope) ?? null) : null
-  const querySource = effectiveSource(typeSources, provider)
+  const querySource = effectiveSource(typeSources, sourceSlug)
 
   const data = searchQuery.data
   /**
@@ -168,7 +210,7 @@ function SearchRoute() {
         <SearchHeader
           term={q}
           scope={scope}
-          source={provider}
+          source={sourceSlug}
           types={types}
           sourceByType={sourceByType}
           onTerm={(next) => setSearch({ q: next || null })}
@@ -177,16 +219,20 @@ function SearchRoute() {
            * e carregá-lo pra outro pediria um provedor que não serve ali — que
            * o servidor recusa com 400, e com razão.
            */
-          onScope={(next) => setSearch({ type: next, provider: null })}
+          onScope={(next) => {
+            setSearch({ type: next, provider: null })
+            remember({ type: next, provider: null })
+          }}
           /**
            * Escolher fonte manda o TIPO junto: a fonte só existe dentro de um
            * tipo, e escolher "Jikan" na linha de Anime estando em Movies é um
            * gesto só — pedir dois cliques pra isso seria a tela cobrando por
            * uma distinção que ela mesma inventou.
            */
-          onSource={(nextType, nextSource) =>
+          onSource={(nextType, nextSource) => {
             setSearch({ type: nextType, provider: nextSource })
-          }
+            remember({ type: nextType, provider: nextSource })
+          }}
         />
 
         {/* A order em que a tela testa seus estados é decisão de design
