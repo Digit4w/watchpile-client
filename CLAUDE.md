@@ -1106,6 +1106,70 @@ admin ficava sem fonte e **nada na tela dizia isso**.
   e como ler a contagem de dentro da recusa (*ler o corpo de uma recusa é regra
   decidível*, mesma divisão de `search-refusal.ts`)
 
+## A grade de `/piles/:id` reordena — e a decisão de 31/08 reabriu — 10/09/2026
+
+`domain/pile-detail-view.ts`, `reorderAffordance`. Aquela decisão tirou o arrasto
+dos modos de grade com **dois argumentos, e os dois eram sobre uma alça
+PERMANENTE**: os quatro cantos da carta ocupados, e `touch-none` numa tela cheia
+de cartas engolindo a rolagem do dedo.
+
+O **modo** que a Home estreou horas antes desfaz os dois — não há alça a
+encaixar porque **ela é a carta**, e `touch-none` só vale enquanto se reordena,
+que é quando ninguém está rolando. *O argumento de uma decisão pode ser sobre
+COMPETIÇÃO por espaço, e quando a competição acaba a decisão não vale mais.*
+
+- **O que NÃO mudou** é o argumento que nunca foi sobre espaço: **ordem derivada
+  recusa**, porque arrastar numa lista por título seria promessa que o servidor
+  não cumpre
+- **Três respostas e não um booleano** (`none | handle | mode`): quem chama
+  precisa saber **qual peça desenhar**, e as duas são diferentes — a linha tem
+  lugar óbvio pra alça e a mostra sempre, a carta depende do modo. Um booleano
+  faria cada chamador reabrir a pergunta do modo, que é como duas telas com a
+  mesma regra divergem
+- **A peça da grade é a MESMA da Home** — mesma classe, mesmo gatilho no menu da
+  obra, mesmo `wp-card-moving`. Estas duas telas já divergiram na mesma linha
+  duas vezes nesta semana
+
+## O reordenar otimista é UM hook — `hooks/use-reorderable.ts`
+
+10/09/2026. Ele estava escrito **duas vezes, linha a linha** — no widget da Home
+e na lista de `/piles/:id` —, e a grade da pilha seria a terceira cópia. O que
+fica pra trás numa cópia dessas não é um rótulo: é **a escrita otimista**, o
+**`after`** que o servidor espera (o cliente nunca vê nem manda `position`), e a
+**distância de ativação** que decide se um clique vira arrasto.
+
+O que difere entre os três é a **chave do cache** e a **mutação**, que são
+parâmetros. O resto era cópia.
+
+## As pilhas FIXADAS no menu de conta do celular — 10/09/2026
+
+Decisão do dono, fechando a pergunta em aberto #10. Fixar sempre esteve
+disponível no telefone, porque a preferência é da **conta** e vale no desktop da
+pessoa — mas quem fixava **não via o resultado ali**.
+
+**O que desfez a assimetria foi notar que o celular já tem onde a periferia
+mora**: `Settings` foi pro menu de conta em 29/08 pelo mesmo motivo. Nenhum
+chrome novo nasceu, e a barra de abas continua selecionando por hábito, sem aba
+"More".
+
+**A ordem virou regra pura** (`domain/pinned-piles.ts`) porque agora duas telas
+precisam da mesma resposta — e o que divergiria é justamente a ORDEM, que não
+pode dançar entre uma tela e outra. Ela é a de FIXAÇÃO, crescente: ordenar por
+nome pareceria mais previsível e seria pior, porque renomear mudaria de lugar um
+alvo que a pessoa já sabia onde estava.
+
+## A fileira de idiomas: a decisão fechou, a máquina espera — 10/09/2026
+
+A decisão em aberto 13 fechou com **a fileira se MEDE**, como a de `/library`.
+**Não há máquina de medir em `/setup`, e isso é medido**: o catálogo tem DOIS
+idiomas, e `flex-wrap` nunca quebra linha com dois.
+
+A conta que decide o transbordo já existe pronta (`domain/chip-fit.ts`), e a peça
+que a alimenta são **243 linhas acopladas aos filtros de `/library`**. Construí-la
+agora seria máquina inerte para um estado que não existe. **Quando o terceiro
+idioma entrar, o que se faz é extrair aquela peça, não escrever outra** — e a
+nota está no próprio `/setup`, que é onde quem for mexer vai olhar.
+
 ## Sobre vidro, `raised` é tingimento — e a correção é de UMA regra
 
 01/09/2026, apontado pelo dono na tela rodando. `--color-raised` **não tem
