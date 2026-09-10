@@ -1173,6 +1173,75 @@ agora seria máquina inerte para um estado que não existe. **Quando o terceiro
 idioma entrar, o que se faz é extrair aquela peça, não escrever outra** — e a
 nota está no próprio `/setup`, que é onde quem for mexer vai olhar.
 
+## A fonte da busca fica SALVA, e é preferência de CONTA — 10/09/2026
+
+Decisão do dono: o seletor de `/search` deixou de ser por consulta.
+
+- **A precedência inteira mora no SERVIDOR**, e a tela lê o mapa
+  (`useSearchSources`) **só pra desenhar o valor atual do seletor** antes de a
+  primeira busca voltar. `?provider=` continua na URL e significa *desta vez,
+  outra fonte*; a consulta **não** carrega a preferência, porque
+  `chooseSearchProvider` já a lê — *duas contas da mesma coisa é como uma fica
+  pra trás*
+- **A preferência entrou em `sourcesByType`, e foi a MESMA armadilha pela
+  terceira vez.** O cabeçalho daquela função já registra o defeito de 02/09 —
+  *o menu dizia Jikan e o Kitsu respondia* —, e o servidor acabara de ganhar um
+  degrau novo. `preferred` é **parâmetro** e não leitura de dentro: a regra
+  segue pura, e quem a alimenta é a tela que tem as consultas na mão
+- **Enquanto a preferência não chega, o mapa é VAZIO e não é o padrão do
+  admin.** Com o padrão, o seletor mostraria uma fonte por um quadro e trocaria
+  sozinho — *peça que sai sozinha se lê como defeito* (04/09). É a mesma régua
+  de `useOfferedMediaTypes`, e a tela cai no caminho que ela já tem pra "ainda
+  não sei quais tipos existem"
+- **A memória de aparelho ficou só com o TIPO** (`use-remembered-type.ts`). A
+  divisão é por significado: *em que tipo eu estava* é hábito daquele navegador,
+  da família da sidebar recolhida; *com que fonte eu busco mangá* é escolha
+  sobre o acervo, vale nos dois aparelhos e é **uma por tipo** — coisa que o par
+  guardado nunca conseguiu. Ela **lê o formato antigo** pra não mandar de volta
+  ao padrão quem o remendo veio servir, e **descarta a fonte que vinha nele**:
+  aquela era do aparelho, e promovê-la escreveria na conta uma escolha feita
+  noutro navegador
+- **A escrita é otimista**, e aqui isso é mais forte que no toggle de
+  Preferences: ela acontece **no mesmo gesto que dispara uma busca**, e o
+  seletor voltando ao valor antigo por um quadro apareceria em cima do resultado
+  chegando. **Falhar não desfaz a busca** — perder a preferência tem conserto,
+  recusar a busca seria a peça errada pagando
+
+## `THIS INSTANCE / Updates` — 10/09/2026
+
+A décima seção do modo Settings, do admin. **A versão que todo mundo lê fica em
+`About`**, por `GET /api/meta` — e aquela seção passou semanas sem número
+nenhum, com o próprio componente explicando por quê.
+
+- **A tela não compara versão nem detecta ambiente.** `updateAvailable` e
+  `canInstall` chegam prontos: comparar é conhecimento de quem emite o formato,
+  e perguntar se estamos dentro do Electron é o que o cliente **não pode** fazer
+  (brief, 3.4). Um spec afirma isso dando um `latest` mais VELHO que `current`
+  enquanto o servidor diz que há atualização — se a tela comparasse, renderizaria
+  o outro ramo
+- **A barra de progresso é exceção registrada.** A regra de 06/09 carrega o
+  próprio teste — *o denominador é conhecido E o numerador anda de um em um?* —,
+  e um download responde não a ele. Sem `Content-Length` a barra fica
+  **indeterminada** e o texto diz só quanto veio
+- **A seção não é condicional**, ao contrário de `Network`: no container ela
+  responde a pergunta mostrando o comando. **O que some é o BOTÃO, não a seção**
+- **Sem selo na coluna.** Versão nova é `info`, o sino já anunciou, e um segundo
+  sinal permanente pra algo que funciona é a régua do sinal virada contra si
+  mesma
+- **A frase de como termina vem do SERVIDOR** (`installHint`), porque as três
+  plataformas terminam diferente e escolher a certa exigiria detectar o ambiente
+- **`Check now` e o toggle ficam em todos os estados**, e o botão desabilitado
+  com a checagem desligada **fica** em vez de sumir: escondê-lo tiraria a única
+  coisa que explica por que nada acontece
+
+> **A régua de a11y de 10/09 cobrou na mesma semana**, e é a terceira ocorrência
+> da família. `aria-label` no `Switch`, que declara só `aria-labelledby`, é
+> **descartado pela peça** — `tsc -b` limpo, nenhum lint, nenhum sintoma visível.
+> Quem o pegou foi um teste que procura o controle **pelo nome**. Junto de
+> `htmlFor` apontando pra id inexistente (07/09) e do `aria-describedby`
+> descartado (10/09): *atributo de a11y é uma ponta só até alguém conferir a
+> outra*.
+
 ## Sobre vidro, `raised` é tingimento — e a correção é de UMA regra
 
 01/09/2026, apontado pelo dono na tela rodando. `--color-raised` **não tem
