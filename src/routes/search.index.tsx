@@ -21,14 +21,17 @@ import {
   defaultScope,
   effectiveSource,
   sourcesByType,
+  type TypeSources,
 } from '@/domain/search-scope'
 import { useLogout } from '@/hooks/mutations/auth/use-logout'
+import { useSetSearchSource } from '@/hooks/mutations/preferences/use-set-search-source'
 import { useOfferedMediaTypes } from '@/hooks/queries/media-types/use-offered-media-types'
+import { useSearchSources } from '@/hooks/queries/preferences/use-search-sources'
 import { useProviders } from '@/hooks/queries/providers/use-providers'
 import { useSearch } from '@/hooks/queries/search/use-search'
 import { useDebounced } from '@/hooks/use-debounced'
 import { useDelayedPending } from '@/hooks/use-delayed-pending'
-import { useRememberedScope } from '@/hooks/use-remembered-scope'
+import { useRememberedType } from '@/hooks/use-remembered-type'
 import { useRequireSession } from '@/hooks/use-require-session'
 import { searchCopy } from './-search.copy'
 
@@ -78,27 +81,50 @@ function SearchRoute() {
   const providers = useProviders()
 
   /**
+   * A fonte preferida vem da CONTA, não deste navegador — 10/09/2026, decisão
+   * do dono. Ver `hooks/queries/preferences/use-search-sources.ts`: isto só
+   * desenha o valor atual do seletor; quem decide quem responde a busca é o
+   * servidor, e a resposta dela é a palavra final.
+   */
+  const searchSources = useSearchSources()
+  const setSearchSource = useSetSearchSource()
+
+  /**
    * slug do tipo → as fontes dele, com quem responde já resolvido.
    *
    * **Os tipos entram na conta desde 02/09/2026**, e não só os provedores: é
    * `effectiveProvider` que diz quem manda, e calculá-lo aqui por alfabeto
-   * fazia o menu prometer uma fonte e o servidor responder por outra.
+   * fazia o menu prometer uma fonte e o servidor responder por outra. **A
+   * preferência entrou em 10/09 pelo mesmo motivo, um degrau acima** — ela
+   * vence o efetivo no servidor, e sem ela aqui o menu voltaria a prometer o
+   * padrão do admin.
+   *
+   * **Enquanto ela não chega, o mapa é VAZIO e não é o padrão do admin** —
+   * mesma régua de `useOfferedMediaTypes` (04/09). Com o padrão, o seletor
+   * mostraria a fonte do admin por um quadro e trocaria sozinho pra escolhida,
+   * e *peça que sai sozinha se lê como defeito*. Vazio, a tela cai no caminho
+   * que ela já tem pra "ainda não sei quais tipos existem", em vez de inventar
+   * um estado novo. As três consultas têm `staleTime` de meia hora, então isso
+   * acontece uma vez por sessão.
    */
-  const sourceByType = sourcesByType(types, providers.data ?? [])
-  /**
-   * O escopo cai no primeiro tipo COM fonte quando a URL não diz — abrir num
-   * tipo sem provedor mostraria uma explicação no lugar de um campo pronto, e
-   * quem clicou em `Search` quer buscar.
-   */
+  const sourceByType = searchSources.data
+    ? sourcesByType(types, providers.data ?? [], searchSources.data.sources)
+    : new Map<string, TypeSources>()
+
   /**
    * O que a pessoa estava fazendo da última vez, validado contra o vocabulário
    * de agora (10/09/2026, decisão do dono). **A URL continua dona** — isto só
    * responde pelo `/search` pelado da nav, que é o único endereço ambíguo que
    * esta tela tem.
    */
-  const [remembered, remember] = useRememberedScope(sourceByType)
+  const [rememberedType, rememberType] = useRememberedType(sourceByType)
 
-  const scope = type ?? remembered?.type ?? defaultScope(types, sourceByType)
+  /**
+   * O escopo cai no primeiro tipo COM fonte quando a URL não diz — abrir num
+   * tipo sem provedor mostraria uma explicação no lugar de um campo pronto, e
+   * quem clicou em `Search` quer buscar.
+   */
+  const scope = type ?? rememberedType ?? defaultScope(types, sourceByType)
 
   /**
    * A memória decidiu o escopo → **a URL passa a dizê-lo**, sem entrada nova no
@@ -113,25 +139,29 @@ function SearchRoute() {
    *
    * Roda uma vez por chegada, porque `type` deixa de ser nulo no mesmo gesto.
    */
-  const rememberedType = remembered?.type ?? null
-  const rememberedProvider = remembered?.provider ?? null
   useEffect(() => {
-    // As dependências são os VALORES e não o objeto: `rememberedScope` devolve
-    // um objeto novo a cada render (o mapa de fontes também é remontado), então
-    // depender dele faria o efeito rodar sempre — inofensivo pela guarda, e
-    // mesmo assim uma dependência que mente sobre o que muda.
+    /**
+     * **A fonte não vai junto**, e desde 10/09 isso é consequência e não
+     * omissão: ela mora na conta e é por TIPO, então quem responde já é a
+     * preferência daquele tipo — escrevê-la na URL aqui congelaria na barra de
+     * endereço uma escolha que a pessoa pode trocar na conta depois, e faria o
+     * `/search` pelado gerar um link que carrega a preferência de quem o
+     * mandou.
+     */
     if (type === null && rememberedType) {
-      setSearch({ type: rememberedType, provider: rememberedProvider })
+      setSearch({ type: rememberedType })
     }
-  }, [type, rememberedType, rememberedProvider, setSearch])
+  }, [type, rememberedType, setSearch])
   /**
-   * A fonte lembrada só vale **dentro do tipo dela**: o slug de um provedor é
-   * legível dentro do par (brief, 3.10), e carregá-lo pra outro tipo pediria um
-   * par que o servidor recusa com 400 — que é a mesma razão pela qual trocar de
-   * tipo limpa a fonte na URL, logo abaixo.
+   * Só o `?provider=` da URL, e a preferência **não entra aqui** — ela já está
+   * dentro de `sourceByType`, que é onde a precedência inteira mora.
+   *
+   * Mandá-la também na consulta seria a tela reafirmando ao servidor uma coisa
+   * que ele acabou de lhe contar: `chooseSearchProvider` lê a preferência
+   * sozinho, e quem manda `provider` explícito está dizendo *"desta vez, outra
+   * fonte"*. Duas contas da mesma coisa é como uma fica pra trás.
    */
-  const sourceSlug =
-    provider ?? (remembered?.type === scope ? remembered.provider : null)
+  const sourceSlug = provider
   const activeType = types.find((info) => info.slug === scope)
   const typeLabel = activeType?.plural ?? activeType?.name ?? ''
 
@@ -223,17 +253,26 @@ function SearchRoute() {
            */
           onScope={(next) => {
             setSearch({ type: next, provider: null })
-            remember({ type: next, provider: null })
+            rememberType(next)
           }}
           /**
            * Escolher fonte manda o TIPO junto: a fonte só existe dentro de um
            * tipo, e escolher "Jikan" na linha de Anime estando em Movies é um
            * gesto só — pedir dois cliques pra isso seria a tela cobrando por
            * uma distinção que ela mesma inventou.
+           *
+           * **São dois pedidos num gesto** — *busque aqui agora* e *lembre
+           * disso* —, e eles vão pra lugares diferentes de propósito: o
+           * primeiro na URL, que é o estado desta consulta; o segundo na
+           * conta, que atravessa aparelho. A URL não espera a escrita.
            */
           onSource={(nextType, nextSource) => {
             setSearch({ type: nextType, provider: nextSource })
-            remember({ type: nextType, provider: nextSource })
+            rememberType(nextType)
+            setSearchSource.mutate({
+              mediaType: nextType,
+              provider: nextSource,
+            })
           }}
         />
 
@@ -254,7 +293,12 @@ function SearchRoute() {
           attribution={data?.provider.attribution ?? null}
           sources={typeSources?.options ?? []}
           current={data?.provider.slug ?? querySource?.slug ?? ''}
-          onSource={(slug) => setSearch({ provider: slug })}
+          onSource={(slug) => {
+            setSearch({ provider: slug })
+            if (scope) {
+              setSearchSource.mutate({ mediaType: scope, provider: slug })
+            }
+          }}
         />
 
         {refusalVisible && scope && (

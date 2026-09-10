@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import type { RememberedScope } from '@/domain/search-memory'
-import { rememberedScope } from '@/domain/search-memory'
+import type { RememberedType } from '@/domain/search-memory'
+import { rememberedType } from '@/domain/search-memory'
 import type { TypeSources } from '@/domain/search-scope'
 
 const KEY = 'watchpile:search-scope'
 
 /**
- * O escopo com que `/search` abre quando a URL não diz — 10/09/2026.
+ * O TIPO com que `/search` abre quando a URL não diz — 10/09/2026.
  *
  * **Preferência daquele APARELHO**, então `localStorage`, como a sidebar
  * recolhida e o modo de exibição (client/CLAUDE.md, tabela de estado). A URL
@@ -31,12 +31,18 @@ const KEY = 'watchpile:search-scope'
  * de fora vale só pela visita.
  *
  * O valor guardado **não é confiável sozinho** e nunca é usado cru: quem o
- * valida contra o vocabulário de agora é `rememberedScope`, que é regra pura e
+ * valida contra o vocabulário de agora é `rememberedType`, que é regra pura e
  * tem spec.
+ *
+ * ── A FONTE não mora mais aqui — 10/09/2026 ────────────────────────────────
+ * Este hook guardava o par `{tipo, fonte}`. A fonte virou preferência de conta
+ * (`useSearchSources` / `useSetSearchSource`), porque *com que fonte eu busco
+ * mangá* vale nos dois aparelhos e é **uma por tipo**; *em que tipo eu estava*
+ * é hábito daquele navegador e continua aqui. Ver `domain/search-memory.ts`.
  */
-export function useRememberedScope(
+export function useRememberedType(
   sourceByType: ReadonlyMap<string, TypeSources>,
-): [RememberedScope | null, (next: RememberedScope) => void] {
+): [RememberedType | null, (next: RememberedType) => void] {
   /**
    * Guardado como estado, e o inicializador roda **uma vez**: reler o storage a
    * cada render faria a escrita de baixo voltar como leitura no mesmo quadro, e
@@ -45,7 +51,7 @@ export function useRememberedScope(
    */
   const [raw, setRaw] = useState<string | null>(read)
 
-  function remember(next: RememberedScope) {
+  function remember(next: RememberedType) {
     const value = JSON.stringify(next)
     setRaw(value)
     try {
@@ -55,7 +61,7 @@ export function useRememberedScope(
     }
   }
 
-  return [rememberedScope(raw, sourceByType), remember]
+  return [rememberedType(raw, sourceByType), remember]
 }
 
 function read(): string | null {

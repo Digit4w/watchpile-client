@@ -1,7 +1,8 @@
 import type { TypeSources } from '@/domain/search-scope'
 
 /**
- * O escopo LEMBRADO de `/search` — tipo e fonte, 10/09/2026, decisão do dono.
+ * O tipo com que `/search` abre quando a URL não diz — 10/09/2026, decisão do
+ * dono.
  *
  * ── O que o relato era ──────────────────────────────────────────────────────
  * "Ir na biblioteca e voltar pra busca devolve tudo ao começo." E o mecanismo
@@ -22,21 +23,24 @@ import type { TypeSources } from '@/domain/search-scope'
  * **devem continuar esquecendo**. A distinção é a de 01/09: **escopo é
  * parâmetro da consulta, filtro é recorte do resultado**. Sem tipo, a busca não
  * tem o que perguntar — a ferramenta chega desconfigurada. Sem filtro, a
- * biblioteca mostra tudo, que é um estado completo e legítimo; lembrar um
- * filtro esconderia obras que ninguém pediu pra esconder.
+ * biblioteca mostra tudo, que é um estado completo e legítimo.
  *
- * ── A fonte entra junto, e isso foi decisão do dono ─────────────────────────
- * Lembrar a fonte a transforma em **preferência**, e em 02/09 o argumento que
- * manteve `media_types.default_provider_slug` no projeto foi literalmente que o
- * seletor de `/search` não cobria o mesmo terreno — *"a fonte escolhida ali vive
- * na URL e é limpa ao trocar de tipo, então é por consulta e não preferência"*
- * (brief, 3.10). **A pergunta foi reaberta de frente**: o dono escolheu lembrar
- * as duas, e o que sustenta a coluna passa a ser o outro argumento, o que ela
- * sempre teve e que este `localStorage` não alcança — **sem padrão, o desempate
- * é o alfabeto, e alfabeto muda sozinho** quando entra um provedor de slug
- * anterior. Este aqui é por APARELHO e não decide nada pra quem chega de fora.
+ * ── A FONTE saiu daqui em 10/09/2026, e a divisão é por SIGNIFICADO ─────────
+ * Esta memória guardava o par `{tipo, fonte}`, e a fonte **mudou de lugar**:
+ * ela virou preferência de conta (`preferred_search_sources`, no servidor). Não
+ * é arrumação — as duas respondem perguntas diferentes:
+ *
+ * - *em que tipo eu estava?* é **hábito daquele aparelho**, da mesma família
+ *   da sidebar recolhida e do modo de exibição, e some com o navegador sem
+ *   perda nenhuma
+ * - *com que fonte eu busco mangá?* é **escolha sobre o acervo**, vale no
+ *   celular e no desktop, e **é uma por TIPO** — coisa que um par só nunca
+ *   conseguiu guardar: escolher Kitsu pra mangá esquecia o que valia pra anime
+ *
+ * O par também prendia as duas ao mesmo gesto: quem trocasse de tipo perdia a
+ * fonte do tipo anterior, porque só havia uma linha pra guardar as duas.
  */
-export type RememberedScope = { type: string; provider: string | null }
+export type RememberedType = string
 
 /**
  * Lê o que ficou guardado e o **valida contra o vocabulário de agora**.
@@ -51,62 +55,45 @@ export type RememberedScope = { type: string; provider: string | null }
  * argumento de `defaultScope`: abrir num tipo sem provedor mostra uma explicação
  * no lugar de um campo pronto, e quem clicou em `Search` quer buscar. Se a
  * associação caiu, o padrão volta a decidir.
- *
- * **A fonte é validada dentro do tipo**, nunca sozinha: o slug de um provedor
- * só é legível dentro do par (brief, 3.10), e uma fonte que não serve mais
- * aquele tipo vira `null` — o que cai na fonte efetiva, que é a resposta certa,
- * em vez de pedir ao servidor um par que ele recusa com 400.
  */
-export function rememberedScope(
+export function rememberedType(
   raw: string | null,
   sourceByType: ReadonlyMap<string, TypeSources>,
-): RememberedScope | null {
+): RememberedType | null {
   const parsed = parse(raw)
-  if (!parsed) {
+  if (!parsed || !sourceByType.has(parsed)) {
     return null
   }
-
-  const sources = sourceByType.get(parsed.type)
-  if (!sources) {
-    return null
-  }
-
-  const provider = sources.options.some(
-    (option) => option.slug === parsed.provider,
-  )
-    ? parsed.provider
-    : null
-
-  return { type: parsed.type, provider }
+  return parsed
 }
 
 /**
- * JSON e não duas chaves soltas: os dois valores só fazem sentido juntos — uma
- * fonte sem o tipo dela não é legível —, e ler um par escrito em dois momentos
- * é como eles ficariam fora de sincronia.
+ * Aceita o slug cru **e** o objeto que a versão anterior gravava.
  *
- * Tudo que não for exatamente a forma esperada devolve nulo: o storage é
- * editável, sobrevive a uma versão em que o formato era outro, e um valor
- * quebrado não pode custar mais que um padrão.
+ * O `localStorage` sobrevive a uma release: quem usou o app antes de 10/09 tem
+ * `{"type":"anime","provider":"kitsu"}` gravado, e ler isso como "não sei"
+ * mandaria de volta ao padrão exatamente quem o remendo veio servir. O
+ * `provider` do formato antigo é **descartado de propósito** — ele era do
+ * aparelho e virou preferência de conta, e promovê-lo aqui escreveria na conta
+ * uma escolha feita noutro navegador.
+ *
+ * Tudo que não for uma das duas formas devolve nulo: o storage é editável, e um
+ * valor quebrado não pode custar mais que um padrão.
  */
-function parse(raw: string | null): RememberedScope | null {
+function parse(raw: string | null): string | null {
   if (!raw) {
     return null
   }
   try {
     const value: unknown = JSON.parse(raw)
-    if (typeof value !== 'object' || value === null) {
-      return null
+    if (typeof value === 'string') {
+      return value === '' ? null : value
     }
-    const { type, provider } = value as Record<string, unknown>
-    if (typeof type !== 'string' || type === '') {
-      return null
+    if (typeof value === 'object' && value !== null) {
+      const { type } = value as Record<string, unknown>
+      return typeof type === 'string' && type !== '' ? type : null
     }
-    return {
-      type,
-      provider:
-        typeof provider === 'string' && provider !== '' ? provider : null,
-    }
+    return null
   } catch {
     return null
   }
