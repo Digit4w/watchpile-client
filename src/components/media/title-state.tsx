@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { RailBox } from '@/components/media/title-rail'
 import { type PickedPile, PilePicker } from '@/components/piles/pile-picker'
 import type { Entry } from '@/domain/media'
+import { progressDelta } from '@/domain/progress-target'
 import { useAddProgress } from '@/hooks/mutations/entries/use-add-progress'
 import { useSetEntryPile } from '@/hooks/mutations/entries/use-set-entry-pile'
 import { useUpdateEntry } from '@/hooks/mutations/entries/use-update-entry'
@@ -57,6 +58,50 @@ export function ProgressBox({
   const step =
     'flex size-8 items-center justify-center rounded-sm text-muted transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised hover:text-ink disabled:pointer-events-none disabled:opacity-[var(--opacity-disabled)]'
 
+  /**
+   * O NÚMERO é o campo — 10/09/2026, passo 2 do item 20.
+   *
+   * O `+`/`−` anda de um em um, que é o gesto do dia a dia. Voltar de um mangá
+   * no capítulo 364 para o 12 são 352 cliques, e ninguém faz isso: o atalho
+   * existia desde 28/08, mas **só no hover da CARTA** — a tela de detalhe, que é
+   * a visão mais completa da obra, só tinha os dois botões.
+   *
+   * **Grava no BLUR, como a nota**, e pelo mesmo motivo: `1` a caminho de `12` é
+   * um número válido e viraria uma escrita. Enter tira o foco em vez de
+   * submeter, porque não há formulário aqui — a tela de detalhe não tem botão
+   * de salvar.
+   *
+   * **Continua sendo evento de progresso e não reescrita do contador** (brief,
+   * 3.11): o campo pede um alvo, e o que sai é o delta que leva até ele —
+   * `domain/progress-target.ts`, com specs, e é a MESMA regra que o popover da
+   * carta usa desde que ela saiu de lá.
+   */
+  const [typed, setTyped] = useState(String(entry.progress))
+  /**
+   * **O `+`/`−` também move o contador**, e sem isto o campo ficaria parado no
+   * valor de antes — dois números para a mesma coisa, na mesma peça.
+   *
+   * Ajustar durante o render em vez de num efeito é o padrão que o React
+   * documenta pra estado derivado: o efeito pintaria o valor velho por um
+   * quadro, e este é o número que a pessoa está olhando enquanto clica.
+   */
+  const [seen, setSeen] = useState(entry.progress)
+  if (seen !== entry.progress) {
+    setSeen(entry.progress)
+    setTyped(String(entry.progress))
+  }
+
+  function save() {
+    const delta = progressDelta({ typed, progress: entry.progress, total })
+    if (delta === null) {
+      // Recusa devolve o campo ao que vale, em vez de deixar um número que não
+      // é o contador parado na tela.
+      setTyped(String(entry.progress))
+      return
+    }
+    advance.mutate({ delta })
+  }
+
   return (
     <RailBox label={titleDetailCopy.rail.progressOf(unit)}>
       <div className="flex items-center justify-between gap-1 px-2 pb-2">
@@ -68,8 +113,26 @@ export function ProgressBox({
         >
           <Glyph d="M5 10h10" />
         </button>
-        <span className="font-medium text-base text-ink tabular-nums">
-          {entry.progress} <span className="text-faint">/ {total ?? '?'}</span>
+        <span className="flex items-baseline gap-1 font-medium text-base text-ink tabular-nums">
+          <input
+            value={typed}
+            onChange={(event) =>
+              setTyped(event.target.value.replace(/[^\d]/g, ''))
+            }
+            onBlur={save}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.currentTarget.blur()
+              }
+            }}
+            inputMode="numeric"
+            aria-label={titleDetailCopy.rail.progressOf(unit)}
+            /* A largura acompanha o número: um campo fixo ficaria largo demais
+             * num `8` e curto num `1094`, e esta caixa tem 200px. */
+            size={Math.max(String(entry.progress).length, 1)}
+            className="min-w-4 bg-transparent text-center tabular-nums outline-none focus-visible:ring-[3px] focus-visible:ring-ink/50"
+          />
+          <span className="text-faint">/ {total ?? '?'}</span>
         </span>
         <button
           type="button"
