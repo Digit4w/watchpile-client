@@ -29,6 +29,7 @@ import {
   NotesBox,
   PilesBox,
   ProgressBox,
+  TimeBox,
   YourScore,
 } from '@/components/media/title-state'
 import {
@@ -47,6 +48,7 @@ import { useEntryLinks } from '@/hooks/queries/entries/use-entry-links'
 import { useCountsProgress } from '@/hooks/queries/media-types/use-counts-progress'
 import { useMediaTypeMap } from '@/hooks/queries/media-types/use-media-type-map'
 import { useProgressUnit } from '@/hooks/queries/media-types/use-progress-unit'
+import { useTracksTime } from '@/hooks/queries/media-types/use-tracks-time'
 import {
   useEntryTitleDetails,
   useProviderTitleDetails,
@@ -135,6 +137,7 @@ function EntryDetailRoute() {
   /** A unidade vem do TIPO: em mangá isto lê "chapters" sem código novo. */
   const unit = type?.progressUnit ?? 'units'
   const countsProgress = useCountsProgress()
+  const tracksTime = useTracksTime()
 
   // Só a obra manda no esqueleto. Esperar o provedor deixaria a tela em branco
   // por causa de uma ida à rede que pode nem ter resposta.
@@ -268,6 +271,10 @@ function EntryDetailRoute() {
                 unit={unit}
               />
             )}
+            {/* **Ao LADO do contador, nunca no lugar** — as duas perguntas
+             * convivem, e num tipo que faz as duas as duas caixas aparecem.
+             * Quem decide é o TIPO, como no contador. */}
+            {tracksTime(entry.data.mediaType) && <TimeBox entry={entry.data} />}
             <PilesBox entry={entry.data} />
             <NotesBox entry={entry.data} />
             <DetailsBox

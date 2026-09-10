@@ -478,6 +478,19 @@ export const settingsCopy = {
        */
       countsProgressOffBody:
         'Off, the status is the whole story: a title is done, or it is not.',
+      /**
+       * O irmão do contador, e a copy tem que dizer que são DUAS perguntas —
+       * senão o segundo toggle se lê como uma variação do primeiro.
+       *
+       * **`Track time` e não `Hours played`:** a caixa é do TIPO, e audiolivro,
+       * podcast e curso têm o mesmo formato. "Played" seria copy de jogo num
+       * campo que não é de jogo.
+       */
+      tracksTime: 'Track time spent',
+      tracksTimeBody:
+        'On, a title also records how long you spent on it — hours and minutes, with no total to reach.',
+      tracksTimeOffBody:
+        'Off, nothing asks how long. This is separate from counting: a type can do both, one, or neither.',
       save: 'Save',
       create: 'Create type',
       cancel: 'Cancel',

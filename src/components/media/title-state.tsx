@@ -3,6 +3,7 @@ import { RailBox } from '@/components/media/title-rail'
 import { type PickedPile, PilePicker } from '@/components/piles/pile-picker'
 import type { Entry } from '@/domain/media'
 import { progressDelta } from '@/domain/progress-target'
+import { minutesFrom, splitMinutes } from '@/domain/time-spent'
 import { useAddProgress } from '@/hooks/mutations/entries/use-add-progress'
 import { useSetEntryPile } from '@/hooks/mutations/entries/use-set-entry-pile'
 import { useUpdateEntry } from '@/hooks/mutations/entries/use-update-entry'
@@ -143,6 +144,121 @@ export function ProgressBox({
           <Glyph d="M10 5v10M5 10h10" />
         </button>
       </div>
+    </RailBox>
+  )
+}
+
+/**
+ * O tempo investido — 10/09/2026, e ele **não é progresso**.
+ *
+ * ── Por que ele existe ao lado do contador, e não no lugar ─────────────────
+ * *Quanto do acervo você percorreu* tem unidade, denominador e fim; *quanto
+ * tempo você investiu* não tem nenhum dos três. Jogo é o caso que separou as
+ * duas: ele **não conta** (`0044`) e ainda assim alguém quer registrar quarenta
+ * horas. Quem decide se a caixa existe é o TIPO (`tracksTime`), como decide o
+ * contador — e num tipo que faz as duas, as duas aparecem.
+ *
+ * ── DUAS caixas, e a razão é aritmética ────────────────────────────────────
+ * Uma caixa de horas obrigaria a aceitar `38,5`, e aí a fração volta — agora na
+ * tela em vez do schema, com um round-trip que perde: `2h05` são 2,083 horas, e
+ * devolver `2,1` seria a tela mentindo sobre o que está gravado. Duas caixas não
+ * arredondam nada, e a regra é pura (`domain/time-spent.ts`).
+ *
+ * ── Grava no BLUR, como a nota ─────────────────────────────────────────────
+ * `3` a caminho de `38` é um número válido e viraria uma escrita. E as duas
+ * caixas vazias LIMPAM, que é o "nunca registrou" da coluna — diferente de
+ * zero, que é "registrei, e é zero".
+ */
+export function TimeBox({ entry }: { entry: Entry }) {
+  const update = useUpdateEntry(entry.id)
+  const [fields, setFields] = useState(() => splitMinutes(entry.timeSpent))
+
+  /** O servidor é a verdade: escrita de outra aba, ou a nossa voltando atrás. */
+  const [seen, setSeen] = useState(entry.timeSpent)
+  if (seen !== entry.timeSpent) {
+    setSeen(entry.timeSpent)
+    setFields(splitMinutes(entry.timeSpent))
+  }
+
+  function save() {
+    const minutes = minutesFrom(fields)
+    if (minutes === null && (fields.hours.trim() || fields.minutes.trim())) {
+      // Recusa devolve o campo ao que vale: um número inválido parado na tela
+      // se lê como gravado.
+      setFields(splitMinutes(entry.timeSpent))
+      return
+    }
+    if (minutes !== entry.timeSpent) {
+      update.mutate({ timeSpent: minutes })
+    }
+  }
+
+  const box =
+    'w-10 bg-transparent text-right tabular-nums outline-none placeholder:text-faint focus-visible:ring-[3px] focus-visible:ring-ink/50'
+
+  return (
+    <RailBox label={titleDetailCopy.rail.timeSpent}>
+      {/**
+       * **O blur é do GRUPO, não de cada caixa** — descoberto escrevendo o
+       * teste. Com `onBlur` em cada `input`, digitar `38` e tabular para os
+       * minutos gravava `38h00`, e sair dos minutos gravava `38h30`: **duas
+       * escritas para uma edição**, e a primeira delas um valor que a pessoa
+       * nunca quis. O `relatedTarget` diz se o foco ficou dentro do par.
+       */}
+      <fieldset
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) {
+            save()
+          }
+        }}
+        className="flex min-w-0 items-baseline justify-center gap-1 px-2 pb-2 font-medium text-base text-ink"
+      >
+        {/* O nome do grupo já está no rótulo da caixa, e repeti-lo faria o
+         * leitor de tela dizer "Time spent" duas vezes antes de cada campo. */}
+        <legend className="sr-only">{titleDetailCopy.rail.timeSpent}</legend>
+        <input
+          value={fields.hours}
+          onChange={(event) =>
+            setFields((current) => ({
+              ...current,
+              hours: event.target.value.replace(/[^\d]/g, ''),
+            }))
+          }
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.currentTarget.blur()
+            }
+          }}
+          inputMode="numeric"
+          placeholder="0"
+          aria-label={titleDetailCopy.timeHours}
+          className={box}
+        />
+        <span className="text-faint text-xs">
+          {titleDetailCopy.timeHourUnit}
+        </span>
+        <input
+          value={fields.minutes}
+          onChange={(event) =>
+            setFields((current) => ({
+              ...current,
+              minutes: event.target.value.replace(/[^\d]/g, ''),
+            }))
+          }
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.currentTarget.blur()
+            }
+          }}
+          inputMode="numeric"
+          placeholder="0"
+          aria-label={titleDetailCopy.timeMinutes}
+          className={box}
+        />
+        <span className="text-faint text-xs">
+          {titleDetailCopy.timeMinuteUnit}
+        </span>
+      </fieldset>
     </RailBox>
   )
 }
