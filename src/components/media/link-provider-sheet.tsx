@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { RemoteArt } from '@/components/media/remote-art'
+import { ChoicePicker } from '@/components/menu/choice-picker'
 import { Input } from '@/components/ui/input'
 import {
   Sheet,
@@ -145,20 +146,22 @@ export function LinkProviderSheet({
           />
           {/* Com uma source só não há o que trocar, e um seletor de uma opção é
            * um controle que mente sobre ter escolha — a mesma régua do
-           * cabeçalho de `/search`. */}
+           * cabeçalho de `/search`. **Aqui ele SOME em vez de virar texto**,
+           * porque não há rótulo ao lado: uma palavra solta no meio do
+           * formulário não se explica sozinha. */}
           {available.length > 1 && (
-            <select
-              value={active.slug}
-              onChange={(event) => setSource(event.target.value)}
-              aria-label={titleDetailCopy.sources.linkTitle}
-              className="h-9 rounded-md bg-transparent px-1 text-ink text-sm outline-none ring-1 ring-line transition-colors duration-[var(--motion-micro)] ease-chrome focus-visible:ring-[3px] focus-visible:ring-ink/50"
-            >
-              {available.map((option) => (
-                <option key={option.slug} value={option.slug}>
-                  {option.name}
-                </option>
-              ))}
-            </select>
+            <div className="self-start">
+              <ChoicePicker
+                options={available.map((option) => ({
+                  value: option.slug,
+                  label: option.name,
+                }))}
+                value={active.slug}
+                onSelect={setSource}
+                ariaLabel={titleDetailCopy.sources.linkTitle}
+                align="start"
+              />
+            </div>
           )}
         </div>
 

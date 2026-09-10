@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { ActionMenuBack } from '@/components/menu/action-menu'
+import { CheckIcon } from '@/components/menu/menu-icons'
 import { ViewModeIcon } from '@/components/view/view-mode-icon'
 import type { ViewMode } from '@/domain/library-view'
 
@@ -29,30 +30,14 @@ import type { ViewMode } from '@/domain/library-view'
  *   respondida em três formas — o desenho de cada um já é a resposta
  * - **A divisória é a do `action-menu`** (`h-px bg-line/60`), e não o `border-t`
  *   que os três traziam: a decisão já existia, faltava chegar aqui
+ * - **O visto vem de `menu-icons`**, e não desenhado aqui: ele estava idêntico
+ *   em três arquivos, que é a mesma divergência que este componente nasceu pra
+ *   tirar, um nível abaixo
  */
 
 /** O nome de um eixo, acima das escolhas dele. */
 export function FilterSectionLabel({ children }: { children: string }) {
   return <p className="px-2 pt-1 pb-1 text-faint text-xs">{children}</p>
-}
-
-function Check() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="shrink-0"
-      aria-hidden="true"
-    >
-      <path d="M4.5 10.5 8 14 15.5 6" />
-    </svg>
-  )
 }
 
 /** Uma escolha dentro de um eixo. Escolha única, daí o visto e o `radio`. */
@@ -86,7 +71,7 @@ export function FilterRow({
       <span className="min-w-0 truncate">{label}</span>
       {on && (
         <span className="ml-auto">
-          <Check />
+          <CheckIcon />
         </span>
       )}
     </button>

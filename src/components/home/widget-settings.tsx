@@ -1,7 +1,8 @@
 import type { CSSProperties } from 'react'
 import { useEffect, useState } from 'react'
-import { Input, NativeSelect } from '@/components/ui/input'
-import type { HomeWidget, WidgetType } from '@/domain/home-widget'
+import { ChoicePicker } from '@/components/menu/choice-picker'
+import { Input } from '@/components/ui/input'
+import type { HomeWidget } from '@/domain/home-widget'
 import { SELECTABLE_WIDGET_TYPES } from '@/domain/home-widget'
 import type { EntryStatus, MediaType } from '@/domain/media'
 import { ENTRY_STATUSES } from '@/domain/media'
@@ -97,27 +98,25 @@ export function WidgetSettings({ widget }: { widget: HomeWidget }) {
         />
       </label>
 
-      <label
-        htmlFor={`widget-type-${widget.id}`}
+      {/* `<div>` e não `<label>`: o alvo virou um gatilho de popover, e um
+       * `<label htmlFor>` apontando pra um id que não existe mais é a11y
+       * quebrada em silêncio. O nome acessível vem do `ariaLabel` da peça. */}
+      <div
         className="wp-settings-block flex items-center justify-between gap-2"
         {...block(1)}
       >
         <span className="text-muted">{homeCopy.widget.type}</span>
-        <NativeSelect
-          id={`widget-type-${widget.id}`}
+        <ChoicePicker
+          options={SELECTABLE_WIDGET_TYPES.map((type) => ({
+            value: type,
+            label: homeCopy.types[type],
+          }))}
           value={widget.type}
+          onSelect={(type) => update.mutate({ type })}
+          ariaLabel={homeCopy.widget.type}
           disabled={busy}
-          onChange={(event) =>
-            update.mutate({ type: event.target.value as WidgetType })
-          }
-        >
-          {SELECTABLE_WIDGET_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {homeCopy.types[type]}
-            </option>
-          ))}
-        </NativeSelect>
-      </label>
+        />
+      </div>
 
       <fieldset className="wp-settings-block flex flex-col gap-2" {...block(2)}>
         <legend className="text-muted">{homeCopy.widget.source}</legend>
@@ -203,30 +202,31 @@ export function WidgetSettings({ widget }: { widget: HomeWidget }) {
         </div>
       </fieldset>
 
-      <label
+      <div
         className="wp-settings-block flex items-center justify-between gap-2"
-        htmlFor={`widget-count-${widget.id}`}
         {...block(5)}
       >
         <span className="text-muted">{homeCopy.widget.itemCount}</span>
-        <NativeSelect
-          id={`widget-count-${widget.id}`}
-          value={widget.itemCount ?? ''}
-          disabled={busy}
-          onChange={(event) =>
-            update.mutate({
-              itemCount: event.target.value ? Number(event.target.value) : null,
-            })
+        {/* **A ausência de teto é uma OPÇÃO, e ela tem nome** — por isso o
+         * valor vazio vira a string `''` e não some da lista: "sem limite" é
+         * uma escolha que se faz, não a falta de uma. */}
+        <ChoicePicker
+          options={[
+            { value: '', label: homeCopy.widget.noLimit },
+            ...[3, 5, 10, 20].map((count) => ({
+              value: String(count),
+              label: String(count),
+            })),
+          ]}
+          value={widget.itemCount === null ? '' : String(widget.itemCount)}
+          onSelect={(raw) =>
+            update.mutate({ itemCount: raw ? Number(raw) : null })
           }
-        >
-          <option value="">{homeCopy.widget.noLimit}</option>
-          {[3, 5, 10, 20].map((count) => (
-            <option key={count} value={count}>
-              {count}
-            </option>
-          ))}
-        </NativeSelect>
-      </label>
+          ariaLabel={homeCopy.widget.itemCount}
+          disabled={busy}
+          width="w-32"
+        />
+      </div>
     </div>
   )
 }

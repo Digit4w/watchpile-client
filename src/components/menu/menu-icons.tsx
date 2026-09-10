@@ -79,3 +79,56 @@ export function OpenIcon() {
     </svg>
   )
 }
+
+/**
+ * O visto de uma escolha marcada.
+ *
+ * **Ele estava desenhado três vezes, idêntico** — em `filter-menu.tsx`, em
+ * `search-scope.tsx` e no `<select>` que a segunda substituiu. Traço 2 e não
+ * 1.6 como o resto do arquivo: é o único glifo que diz um ESTADO em vez de uma
+ * ação, e a diferença de peso é o que o separa da lista à esquerda dele.
+ */
+export function CheckIcon() {
+  return (
+    <svg
+      {...base}
+      width="14"
+      height="14"
+      strokeWidth="2"
+      className="shrink-0"
+      aria-hidden="true"
+    >
+      <path d="M4.5 10.5 8 14 15.5 6" />
+    </svg>
+  )
+}
+
+/**
+ * A seta de "isto abre uma lista", que gira quando ela está aberta.
+ *
+ * A rotação é **a única dica de estado** que o gatilho de um popover tem — o
+ * painel some do fluxo, então o botão precisa dizer sozinho que ele é a origem
+ * do que está aberto.
+ */
+export function ChevronIcon({
+  size = 14,
+  open = false,
+}: {
+  size?: number
+  open?: boolean
+}) {
+  return (
+    <svg
+      {...base}
+      width={size}
+      height={size}
+      strokeWidth="1.7"
+      className={`shrink-0 text-faint transition-transform duration-[var(--motion-micro)] ease-chrome ${
+        open ? 'rotate-180' : ''
+      }`}
+      aria-hidden="true"
+    >
+      <path d="M6.5 8.5 10 12l3.5-3.5" />
+    </svg>
+  )
+}
