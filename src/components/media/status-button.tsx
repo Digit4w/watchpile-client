@@ -49,8 +49,14 @@ const SHELL: Record<StatusVariant, string> = {
   rail: 'h-11 w-full justify-center gap-2 rounded-md bg-ink font-medium text-sm text-surface hover:opacity-90',
   card: 'h-7 w-full justify-center gap-1 rounded-sm text-[11px] text-muted hover:bg-raised hover:text-ink',
   row: 'h-11 w-44 justify-center gap-1 rounded-sm text-faint text-xs hover:bg-raised hover:text-ink sm:h-7 sm:w-36',
+  /**
+   * A compacta ganhou o alvo de toque em 10/09/2026, junto com o `+`/`−` que
+   * ela substitui — as duas peças ocupam a mesma célula, e uma largura
+   * diferente faria a coluna `Progress` deixar de ser coluna numa lista de
+   * tipo misto.
+   */
   'row-dense':
-    'h-7 w-36 justify-center gap-1 rounded-sm text-faint text-xs hover:bg-raised hover:text-ink',
+    'h-11 w-44 justify-center gap-1 rounded-sm text-faint text-xs hover:bg-raised hover:text-ink sm:h-7 sm:w-36',
 }
 
 /**

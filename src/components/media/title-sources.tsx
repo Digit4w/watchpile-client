@@ -263,7 +263,7 @@ function UnlinkPanel({
               unlink.mutate(target.provider.slug, { onSuccess: onSair })
             }
           >
-            {copy.unlinkConfirm}
+            {unlink.isPending ? copy.unlinkPending : copy.unlinkConfirm}
           </Button>
         </div>
       </div>

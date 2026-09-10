@@ -132,11 +132,30 @@ function Glyph({ sign, size }: { sign: 'plus' | 'minus'; size: number }) {
 const EMPTY: Record<ProgressVariant, string> = {
   card: 'block h-7 w-full',
   row: 'block h-11 w-44 shrink-0 sm:h-7 sm:w-36',
-  'row-dense': 'block h-7 w-36 shrink-0',
+  // Desde 10/09/2026 a compacta tem o mesmo alvo de toque da outra lista, então
+  // o vão dela acompanha: uma largura que não bate com o contador que não foi
+  // desenhado faz a coluna vizinha andar exatamente na linha sem contador.
+  'row-dense': 'block h-11 w-44 shrink-0 sm:h-7 sm:w-36',
 }
 
 const PEQUENO =
   'flex h-7 w-7 items-center justify-center rounded-sm text-muted transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised hover:text-ink disabled:pointer-events-none disabled:opacity-[var(--opacity-disabled)]'
+
+/**
+ * O alvo da lista COMPACTA — 10/09/2026, decisão do dono, e é o resto que a #8
+ * deixou.
+ *
+ * Ela fechou com *o alvo muda com o BREAKPOINT* e trocou o `⋯` das linhas por
+ * `h-11 w-11 sm:size-8`; o `+`/`−` da lista compacta ficou em 28px, **ao lado
+ * de um `⋯` de 44 na mesma linha**. Dois alvos vizinhos com tamanhos decididos
+ * por critérios diferentes é exatamente o que aquela decisão veio tirar —
+ * *critério de alvo se herda do VIZINHO, não do princípio*.
+ *
+ * `sm:size-7` e não `sm:size-8`: no ponteiro ele volta ao que era, porque é ali
+ * que a densidade da lista compacta é a feature. O que muda é só o toque.
+ */
+const PEQUENO_TOQUE =
+  'flex h-11 w-11 items-center justify-center rounded-sm text-muted transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised hover:text-ink disabled:pointer-events-none disabled:opacity-[var(--opacity-disabled)] sm:size-7'
 
 /**
  * **Esta é a peça que decide, e é de propósito que sejam os cinco chamadores a
@@ -182,7 +201,9 @@ export function EntryProgress({
   const button =
     variant === 'row'
       ? 'flex h-11 w-11 items-center justify-center rounded-sm text-faint transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised hover:text-ink disabled:pointer-events-none disabled:opacity-[var(--opacity-disabled)] sm:h-7 sm:w-7'
-      : PEQUENO
+      : variant === 'row-dense'
+        ? PEQUENO_TOQUE
+        : PEQUENO
 
   const glyph = variant === 'row' ? 16 : 14
 
