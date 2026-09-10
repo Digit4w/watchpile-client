@@ -21,6 +21,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { EntryArt } from '@/components/media/entry-art'
 import { EntryCard } from '@/components/media/entry-card'
 import { EntryMenu } from '@/components/media/entry-menu'
@@ -55,12 +56,40 @@ import { homeCopy } from '@/routes/-home.copy'
  * `cursor: default` em `button`, então o `+`, o `−` e os atalhos continuam com
  * o cursor deles.
  */
+/**
+ * A carta arrastável — e ela **só arrasta quando a pessoa PEDIU** (10/09/2026,
+ * decisão do dono, fechando a decisão em aberto 16).
+ *
+ * ── O conflito que isto resolve ────────────────────────────────────────────
+ * Desde 07/09 a carta inteira é link. Com `activationConstraint: { distance: 6 }`
+ * apertar a carta e mover seis pixels começava um ARRASTO em vez de abrir a
+ * obra — o mesmo defeito que fez a linha do widget ganhar alça naquele dia,
+ * aqui numa peça que não tem onde pôr alça: 133px já carregam dois atalhos e um
+ * contador, e a regra de alvo já está furada em 32px ali.
+ *
+ * **E o defeito era só da Home**, medido: `/library` e a grade de `/piles/:id`
+ * renderizam a MESMA carta sem embrulhá-la em nada arrastável.
+ *
+ * ── Por que o gatilho é o menu da OBRA ────────────────────────────────────
+ * Porque a ordem é de **(widget, obra)**: o que se move é esta carta, neste
+ * widget. O menu já tinha o precedente do item condicional — `Remove from pile`
+ * só existe dentro de uma pilha — e a régua é a mesma: *item de menu nasce de
+ * ação, não de simetria de layout*.
+ *
+ * ── Enquanto move, a carta não navega ─────────────────────────────────────
+ * O link e os atalhos dão lugar ao arrasto, o que dissolve a disputa em vez de
+ * arbitrá-la: em modo de reordenar não há navegação a disputar, e a alça pode
+ * tomar a carta inteira.
+ */
 function Sortable({
   id,
+  moving,
   className,
   children,
 }: {
   id: number
+  /** Alguém ligou o modo de reordenar NESTE widget. */
+  moving: boolean
   className: string
   children: React.ReactNode
 }) {
@@ -71,7 +100,7 @@ function Sortable({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id })
+  } = useSortable({ id, disabled: !moving })
 
   return (
     <li
@@ -84,9 +113,21 @@ function Sortable({
         zIndex: isDragging ? 20 : undefined,
         opacity: isDragging ? 0.7 : undefined,
       }}
-      className={`cursor-grab touch-none active:cursor-grabbing ${className}`}
-      {...attributes}
-      {...listeners}
+      /**
+       * `touch-none` **só enquanto move**: fora disso ele engoliria a rolagem
+       * do dedo dentro do widget — a mesma armadilha que a alça da linha evitou
+       * em 07/09, aqui numa peça que ocupa a caixa inteira.
+       *
+       * `wp-card-moving` é o que apaga o link e os atalhos da carta; a regra
+       * mora em `home-motion.css`, junto das outras que falam da carta.
+       */
+      className={
+        moving
+          ? `wp-card-moving cursor-grab touch-none active:cursor-grabbing ${className}`
+          : className
+      }
+      {...(moving ? attributes : {})}
+      {...(moving ? listeners : {})}
     >
       {children}
     </li>
@@ -230,6 +271,16 @@ export function WidgetContent({ widget }: { widget: HomeWidget }) {
   const entries = useWidgetEntries(widget.id)
   const move = useMoveWidgetEntry(widget.id)
   const queryClient = useQueryClient()
+  /**
+   * O modo de reordenar, ligado pelo menu de uma carta e desligado pelo mesmo
+   * item — **sair é tão explícito quanto entrar**. É por WIDGET porque a ordem
+   * é por widget: ligar num não mexe no vizinho.
+   */
+  const [reordering, setReordering] = useState(false)
+  const reorder = {
+    on: reordering,
+    toggle: () => setReordering((on) => !on),
+  }
 
   /**
    * Distância de ativação: sem ela o `pointerdown` de um clique já conta como
@@ -351,9 +402,10 @@ export function WidgetContent({ widget }: { widget: HomeWidget }) {
           <Sortable
             key={entry.id}
             id={entry.id}
+            moving={reordering}
             className="h-card-poster-h w-card-poster shrink-0"
           >
-            <EntryCard entry={entry} />
+            <EntryCard entry={entry} reorder={reorder} />
           </Sortable>
         ))}
       </ul>,
@@ -381,9 +433,10 @@ export function WidgetContent({ widget }: { widget: HomeWidget }) {
         <Sortable
           key={entry.id}
           id={entry.id}
+          moving={reordering}
           className="h-card-poster-h w-full max-w-card-poster-max"
         >
-          <EntryCard entry={entry} />
+          <EntryCard entry={entry} reorder={reorder} />
         </Sortable>
       ))}
     </ul>,

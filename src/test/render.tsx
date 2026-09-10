@@ -1,4 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+  RouterProvider,
+} from '@tanstack/react-router'
 import { render as rtlRender } from '@testing-library/react'
 import type { ReactElement, ReactNode } from 'react'
 
@@ -48,4 +56,49 @@ export function render(
   }
 
   return { queryClient, ...rtlRender(ui, { wrapper: Wrapper }) }
+}
+
+/**
+ * O mesmo `render`, com um ROUTER de memória em volta — 10/09/2026.
+ *
+ * ── Por que ele precisou existir ───────────────────────────────────────────
+ * O menu da obra tem um `ActionMenuLink`, que é um `<Link>` do TanStack Router:
+ * *item de menu que NAVEGA é `<a>`, nunca `<button>` com `onClick`* (07/09).
+ * Sem contexto de router ele lança antes da primeira asserção.
+ *
+ * ── Por que não se finge o `Link` ─────────────────────────────────────────
+ * Trocá-lo por um `<a>` de mentira apagaria justamente o que aquela decisão
+ * comprou — abrir em outra aba, copiar o endereço, o cursor. O corte do repo é
+ * em `services/`, e o router não é serviço nosso: é a peça que a tela usa de
+ * verdade, e um router de MEMÓRIA a faz rodar de verdade sem tocar na URL.
+ *
+ * A árvore é uma rota curinga só. Quem testa navegação de fato passa a sua.
+ */
+export function renderWithRouter(
+  ui: ReactElement,
+  queryClient = createTestQueryClient(),
+) {
+  const rootRoute = createRootRoute({
+    component: () => (
+      <QueryClientProvider client={queryClient}>
+        <Outlet />
+      </QueryClientProvider>
+    ),
+  })
+  const anyRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '$',
+    component: () => ui,
+  })
+
+  const router = createRouter({
+    routeTree: rootRoute.addChildren([anyRoute]),
+    history: createMemoryHistory({ initialEntries: ['/'] }),
+  })
+
+  return {
+    queryClient,
+    router,
+    ...rtlRender(<RouterProvider router={router as never} />),
+  }
 }

@@ -132,3 +132,20 @@ export function ChevronIcon({
     </svg>
   )
 }
+
+/**
+ * Setas verticais entre duas linhas — reordenar dentro de uma lista.
+ *
+ * **Não é a alça de seis pontos**: aquela é o que se ARRASTA, e vive na peça
+ * que se move. Esta é um item de menu que LIGA o modo, e o glifo tem que
+ * descrever a ação e não o gesto — desenhar a alça aqui prometeria que o item é
+ * arrastável, que é affordance mentindo (design system, seção 5).
+ */
+export function ReorderIcon() {
+  return (
+    <svg {...base} aria-hidden="true">
+      <path d="M4 6h7M4 10h7M4 14h7" />
+      <path d="M15 5v10M15 5l-2 2M15 5l2 2M15 15l-2-2M15 15l2-2" />
+    </svg>
+  )
+}
