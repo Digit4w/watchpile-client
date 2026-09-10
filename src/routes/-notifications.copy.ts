@@ -60,6 +60,20 @@ export type NotificationText = {
  */
 const BUILDERS: Record<NotificationKind, (params: Params) => NotificationText> =
   {
+    /**
+     * **Nada está quebrado, e a copy não pode soar como se estivesse.** Ela
+     * nomeia a versão e oferece o destino — quem decide se atualiza agora é
+     * quem hospeda, e a seção é onde a decisão cabe.
+     *
+     * A versão entra como veio (`v0.4.2`), sem tirar o `v`: é o nome da
+     * release, e é o que a pessoa vai reconhecer na página que o botão abre.
+     */
+    'update-available': (params) => ({
+      title: `Watchpile ${text(params, 'version')} is available`,
+      body: 'You are running an older version. Updating is up to you.',
+      action: { label: 'Open updates', to: '/settings/updates' },
+    }),
+
     'provider-missing-key': (params) => ({
       title: `${text(params, 'provider')} needs an API key`,
       body: 'Searching the media types it serves will not work until you add one.',

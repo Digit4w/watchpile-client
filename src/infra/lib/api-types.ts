@@ -5349,6 +5349,316 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/updates': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description What this installation knows about newer versions */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['UpdateState']
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description This is for the admin of this server */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/updates/check': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: {
+        content: {
+          'application/json': {
+            enabled: boolean
+          }
+        }
+      }
+      responses: {
+        /** @description The choice was saved */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['UpdateState']
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description This is for the admin of this server */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    post: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description The check ran, whether or not it found anything */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['UpdateState']
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description This is for the admin of this server */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description Update checking is turned off on this server */
+        409: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/updates/download': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description The download started, or was already running */
+        202: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['UpdateState']
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description This is for the admin of this server */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description There is nothing to download, or this install cannot apply one */
+        409: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/updates/install': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description The installer was handed to the system */
+        202: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description This is for the admin of this server */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description Nothing has been downloaded, or this install cannot apply one */
+        409: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
 export type webhooks = Record<string, never>
 export interface components {
@@ -5484,6 +5794,7 @@ export interface components {
         | 'art-cache-full'
         | 'import-finished'
         | 'import-failed'
+        | 'update-available'
       params: {
         [key: string]: string | number
       }
@@ -5511,6 +5822,26 @@ export interface components {
       files: number
       bytes: number
       limitBytes: number
+    }
+    UpdateState: {
+      current: string | null
+      enabled: boolean
+      latest: string | null
+      latestUrl: string | null
+      checkedAt: string | null
+      updateAvailable: boolean
+      canInstall: boolean
+      installHint: string | null
+      download: components['schemas']['UpdateDownload']
+    }
+    UpdateDownload: {
+      /** @enum {string} */
+      state: 'idle' | 'downloading' | 'ready' | 'failed'
+      version: string | null
+      received: number | null
+      total: number | null
+      /** @enum {string|null} */
+      reason: 'no-asset' | 'no-release' | 'failed' | null
     }
   }
   responses: never

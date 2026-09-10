@@ -28,6 +28,7 @@ import { Route as SettingsNetworkRouteImport } from './routes/settings.network'
 import { Route as SettingsPreferencesRouteImport } from './routes/settings.preferences'
 import { Route as SettingsProvidersRouteImport } from './routes/settings.providers'
 import { Route as SettingsStorageRouteImport } from './routes/settings.storage'
+import { Route as SettingsUpdatesRouteImport } from './routes/settings.updates'
 import { Route as SearchProviderExternalIdRouteImport } from './routes/search.$provider.$externalId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -125,6 +126,11 @@ const SettingsStorageRoute = SettingsStorageRouteImport.update({
   path: '/settings/storage',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsUpdatesRoute = SettingsUpdatesRouteImport.update({
+  id: '/settings/updates',
+  path: '/settings/updates',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SearchProviderExternalIdRoute =
   SearchProviderExternalIdRouteImport.update({
     id: '/search/$provider/$externalId',
@@ -148,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/providers': typeof SettingsProvidersRoute
   '/settings/storage': typeof SettingsStorageRoute
+  '/settings/updates': typeof SettingsUpdatesRoute
   '/library/': typeof LibraryIndexRoute
   '/piles/': typeof PilesIndexRoute
   '/search/': typeof SearchIndexRoute
@@ -170,6 +177,7 @@ export interface FileRoutesByTo {
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/providers': typeof SettingsProvidersRoute
   '/settings/storage': typeof SettingsStorageRoute
+  '/settings/updates': typeof SettingsUpdatesRoute
   '/library': typeof LibraryIndexRoute
   '/piles': typeof PilesIndexRoute
   '/search': typeof SearchIndexRoute
@@ -193,6 +201,7 @@ export interface FileRoutesById {
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/providers': typeof SettingsProvidersRoute
   '/settings/storage': typeof SettingsStorageRoute
+  '/settings/updates': typeof SettingsUpdatesRoute
   '/library/': typeof LibraryIndexRoute
   '/piles/': typeof PilesIndexRoute
   '/search/': typeof SearchIndexRoute
@@ -217,6 +226,7 @@ export interface FileRouteTypes {
     | '/settings/preferences'
     | '/settings/providers'
     | '/settings/storage'
+    | '/settings/updates'
     | '/library/'
     | '/piles/'
     | '/search/'
@@ -239,6 +249,7 @@ export interface FileRouteTypes {
     | '/settings/preferences'
     | '/settings/providers'
     | '/settings/storage'
+    | '/settings/updates'
     | '/library'
     | '/piles'
     | '/search'
@@ -261,6 +272,7 @@ export interface FileRouteTypes {
     | '/settings/preferences'
     | '/settings/providers'
     | '/settings/storage'
+    | '/settings/updates'
     | '/library/'
     | '/piles/'
     | '/search/'
@@ -284,6 +296,7 @@ export interface RootRouteChildren {
   SettingsPreferencesRoute: typeof SettingsPreferencesRoute
   SettingsProvidersRoute: typeof SettingsProvidersRoute
   SettingsStorageRoute: typeof SettingsStorageRoute
+  SettingsUpdatesRoute: typeof SettingsUpdatesRoute
   LibraryIndexRoute: typeof LibraryIndexRoute
   PilesIndexRoute: typeof PilesIndexRoute
   SearchIndexRoute: typeof SearchIndexRoute
@@ -426,6 +439,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsStorageRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/updates': {
+      id: '/settings/updates'
+      path: '/settings/updates'
+      fullPath: '/settings/updates'
+      preLoaderRoute: typeof SettingsUpdatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/search/$provider/$externalId': {
       id: '/search/$provider/$externalId'
       path: '/search/$provider/$externalId'
@@ -452,6 +472,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsPreferencesRoute: SettingsPreferencesRoute,
   SettingsProvidersRoute: SettingsProvidersRoute,
   SettingsStorageRoute: SettingsStorageRoute,
+  SettingsUpdatesRoute: SettingsUpdatesRoute,
   LibraryIndexRoute: LibraryIndexRoute,
   PilesIndexRoute: PilesIndexRoute,
   SearchIndexRoute: SearchIndexRoute,

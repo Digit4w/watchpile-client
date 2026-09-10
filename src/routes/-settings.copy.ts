@@ -27,6 +27,7 @@ export const settingsCopy = {
     providers: 'Providers',
     network: 'Network',
     storage: 'Storage',
+    updates: 'Updates',
     about: 'About',
   },
   /**
@@ -237,6 +238,60 @@ export const settingsCopy = {
     failed: "Couldn't save. Nothing changed.",
   },
 
+  updates: {
+    body: 'Whether this server looks for a newer version, and how to get it.',
+    /** O rótulo diz de QUEM é a versão: num self-hosted a pergunta é sempre
+     * sobre o servidor, e o cliente pode ser qualquer um (brief, 3.7). */
+    installed: 'This server',
+    unknownVersion: 'Unknown',
+    /**
+     * Duas frases, e a diferença entre elas é o que a tela SABE. "Nunca
+     * conferido" não é o mesmo que "conferido e nada novo", e o segundo é o
+     * que tranquiliza.
+     */
+    upToDate: 'This is the newest version published.',
+    neverChecked: 'This server has not looked for a newer version yet.',
+    checkedAt: (when: string) => `Last checked ${when}.`,
+    checkNow: 'Check now',
+    checking: 'Checking…',
+    checkFailed: 'Could not reach the release feed. Try again later.',
+    available: (version: string) => `Watchpile ${version} is available.`,
+    releaseNotes: 'Release notes',
+    /**
+     * **A recusa mora na peça que a causou** (design system, seção 5): quando
+     * esta instalação não sabe se atualizar, a frase fica ao lado do que a
+     * substituiria, não num banner acima da seção.
+     */
+    cannotInstall:
+      'This installation cannot update itself. Update it the way you started it.',
+    dockerHint: 'docker compose pull && docker compose up -d',
+    download: 'Download',
+    downloading: 'Downloading…',
+    /**
+     * Barra E número, e o número NÃO se repete dentro da barra — a barra
+     * responde *falta quanto*, o texto responde *quanto é*. Formatados por
+     * `Intl`, porque tamanho é número (brief, 3.8).
+     */
+    progress: (received: string, total: string) => `${received} of ${total}`,
+    progressUnknown: (received: string) => `${received} downloaded`,
+    install: 'Install',
+    /** Frases de FALHA, por `kind` — quem escreve a copy é a tela. */
+    failed: {
+      'no-asset':
+        'This release has no installer for this platform. Download it from the release page.',
+      'no-release': 'Could not find a newer release to download.',
+      failed: 'The download did not finish. Try again.',
+    },
+    retry: 'Try again',
+    checkToggle: {
+      title: 'Check for updates',
+      /**
+       * Diz **o que sai da máquina**, que é a pergunta real de quem hospeda
+       * — e diz o que NÃO sai, porque é isso que a frase existe pra prometer.
+       */
+      body: 'Once a day this server asks GitHub for the latest release. Your library and your version are never sent.',
+    },
+  },
   about: {
     body: 'A self-hosted tracker for the things you watch, read and play.',
     version: 'Version',
