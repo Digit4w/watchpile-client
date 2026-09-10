@@ -109,6 +109,11 @@ export const titleDetailCopy = {
      */
     unlinkBody: 'Only the link goes. Everything you tracked stays.',
     unlinkConfirm: 'Unlink',
+    /**
+     * A espera se diz no RÓTULO — o botão vermelho não desbota (ver
+     * `ui/button.tsx`), então é a palavra que conta que a escrita está no ar.
+     */
+    unlinkPending: 'Unlinking…',
     unlinkFrom: (provedor: string) => `Unlink from ${provedor}`,
 
     /**

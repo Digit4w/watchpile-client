@@ -143,6 +143,28 @@ describe('EntryProgress', () => {
     expect(container.firstElementChild).toHaveAttribute('aria-hidden', 'true')
   })
 
+  it('no CELULAR desenha o status mesmo com `statusInRow`', async () => {
+    // A coluna `Status` é `hidden md:block`, então abaixo de 768px ela **não
+    // existe** — e ceder o lugar a um vizinho que não está lá deixava a linha de
+    // um filme no celular com o vão vazio e **nada em lugar nenhum**. Achado em
+    // 10/09/2026, construindo a coluna que vira controle.
+    window.matchMedia = ((query: string) =>
+      ({
+        matches: query.includes('max-width'),
+        media: query,
+        onchange: null,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        addListener: () => {},
+        removeListener: () => {},
+        dispatchEvent: () => false,
+      }) as MediaQueryList) as typeof window.matchMedia
+
+    render(<EntryProgress entry={entry({ total: 1 })} statusInRow />)
+
+    expect(await screen.findByText('Watching')).toBeInTheDocument()
+  })
+
   it('`statusInRow` não apaga o contador de quem TEM o que contar', async () => {
     // A coluna `Status` existir não tira o contador da linha — as duas
     // perguntas são independentes, e confundi-las foi o defeito de 07/09.

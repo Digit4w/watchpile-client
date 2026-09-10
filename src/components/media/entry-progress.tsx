@@ -2,6 +2,7 @@ import type { Entry } from '@/domain/media'
 import { showsCounter } from '@/domain/shows-counter'
 import { useAddProgress } from '@/hooks/mutations/entries/use-add-progress'
 import { useCountsProgress } from '@/hooks/queries/media-types/use-counts-progress'
+import { useCompactViewport } from '@/hooks/use-compact-viewport'
 import { appCopy } from '@/lib/copy'
 import { StatusButton } from './status-button'
 
@@ -32,12 +33,24 @@ type EntryProgressProps = {
    * **Quando ela mostra, esta peça não põe o status aqui: fica VAZIA.** Sem
    * isso a linha diz a mesma palavra duas vezes (decisão do dono, 07/09/2026,
    * olhando a tela), e a primeira tentativa de conserto foi apagar a coluna de
-   * leitura — que é pior, porque some abaixo de `md` e porque a peça de status
-   * ficava no lugar cujo cabeçalho diz `Progress`.
+   * leitura — que é pior, porque a peça de status ficava no lugar cujo cabeçalho
+   * diz `Progress`.
    *
    * **A régua: o status mora na coluna de status.** A carta e o widget de lista
    * não têm uma, e por isso continuam ganhando o CONTROLE aqui — é o único
    * status que aquela linha tem.
+   *
+   * ── E ela precisa saber a LARGURA, o que só apareceu em 10/09/2026 ────────
+   * A coluna `Status` é `hidden md:block`, então abaixo de 768px ela **não
+   * existe** — e `statusInRow` continuava verdadeiro, deixando a linha de um
+   * filme no celular com o vão vazio e **nada em lugar nenhum**. A afirmação
+   * "a linha já mostra o status" era sobre o VIZINHO, e o vizinho some por
+   * breakpoint.
+   *
+   * Quem passa `statusInRow` passa também a resposta de `useCompactViewport`,
+   * e a peça decide: no estreito ela desenha o controle, porque ali o único
+   * lugar é este. *A parte de uma justificativa que envelhece é a que fala do
+   * vizinho* — aqui o vizinho não envelheceu, ele só não está sempre lá.
    */
   statusInRow?: boolean
 }
@@ -132,11 +145,30 @@ function Glyph({ sign, size }: { sign: 'plus' | 'minus'; size: number }) {
 const EMPTY: Record<ProgressVariant, string> = {
   card: 'block h-7 w-full',
   row: 'block h-11 w-44 shrink-0 sm:h-7 sm:w-36',
-  'row-dense': 'block h-7 w-36 shrink-0',
+  // Desde 10/09/2026 a compacta tem o mesmo alvo de toque da outra lista, então
+  // o vão dela acompanha: uma largura que não bate com o contador que não foi
+  // desenhado faz a coluna vizinha andar exatamente na linha sem contador.
+  'row-dense': 'block h-11 w-44 shrink-0 sm:h-7 sm:w-36',
 }
 
 const PEQUENO =
   'flex h-7 w-7 items-center justify-center rounded-sm text-muted transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised hover:text-ink disabled:pointer-events-none disabled:opacity-[var(--opacity-disabled)]'
+
+/**
+ * O alvo da lista COMPACTA — 10/09/2026, decisão do dono, e é o resto que a #8
+ * deixou.
+ *
+ * Ela fechou com *o alvo muda com o BREAKPOINT* e trocou o `⋯` das linhas por
+ * `h-11 w-11 sm:size-8`; o `+`/`−` da lista compacta ficou em 28px, **ao lado
+ * de um `⋯` de 44 na mesma linha**. Dois alvos vizinhos com tamanhos decididos
+ * por critérios diferentes é exatamente o que aquela decisão veio tirar —
+ * *critério de alvo se herda do VIZINHO, não do princípio*.
+ *
+ * `sm:size-7` e não `sm:size-8`: no ponteiro ele volta ao que era, porque é ali
+ * que a densidade da lista compacta é a feature. O que muda é só o toque.
+ */
+const PEQUENO_TOQUE =
+  'flex h-11 w-11 items-center justify-center rounded-sm text-muted transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised hover:text-ink disabled:pointer-events-none disabled:opacity-[var(--opacity-disabled)] sm:size-7'
 
 /**
  * **Esta é a peça que decide, e é de propósito que sejam os cinco chamadores a
@@ -161,6 +193,12 @@ export function EntryProgress({
 }: EntryProgressProps) {
   const addProgress = useAddProgress(entry.id)
   const countsProgress = useCountsProgress()
+  /**
+   * A coluna `Status` só existe a partir de `md`. Abaixo disso, o único lugar
+   * da linha é este — e ceder o lugar a um vizinho que não está lá deixava a
+   * obra sem status nenhum no celular.
+   */
+  const compact = useCompactViewport()
 
   const typeCounts = countsProgress(entry.mediaType)
   if (typeCounts === null) {
@@ -169,7 +207,7 @@ export function EntryProgress({
   if (!showsCounter({ typeCounts, total: entry.total })) {
     // A célula continua ocupando a mesma largura, senão as colunas de todas as
     // outras linhas andam — a régua da vigésima leva do design system.
-    return statusInRow ? (
+    return statusInRow && !compact ? (
       <span className={EMPTY[variant]} aria-hidden="true" />
     ) : (
       <StatusButton entry={entry} variant={variant} />
@@ -182,7 +220,9 @@ export function EntryProgress({
   const button =
     variant === 'row'
       ? 'flex h-11 w-11 items-center justify-center rounded-sm text-faint transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-raised hover:text-ink disabled:pointer-events-none disabled:opacity-[var(--opacity-disabled)] sm:h-7 sm:w-7'
-      : PEQUENO
+      : variant === 'row-dense'
+        ? PEQUENO_TOQUE
+        : PEQUENO
 
   const glyph = variant === 'row' ? 16 : 14
 

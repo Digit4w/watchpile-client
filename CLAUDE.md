@@ -123,7 +123,7 @@ O que estiver escrito abaixo é **intenção registrada** para o que ainda não 
 | Estado de UI | **A URL.** Zustand só quando aparecer caso real |
 | Componentes | shadcn/ui |
 | Estilo | Tailwind |
-| Reordenar item (drag-and-drop) | `dnd-kit` (brief, 3.14) — **instalado em 28/08/2026, ainda sem uso**: `widget_entry_order` existe no servidor e a leitura respeita, mas nada escreve nele a partir daqui |
+| Reordenar item (drag-and-drop) | `dnd-kit` (brief, 3.14) — **em uso**: reordena obra dentro de widget da Home (`useMoveWidgetEntry`, escrevendo `widget_entry_order`) e dentro de `/piles/:id`. **Esta linha dizia "ainda sem uso" até 10/09/2026**, e era verdade em agosto — a correção veio ao responder a decisão em aberto 16, cuja pergunta tinha sido feita com essa premissa. *A parte de uma justificativa que envelhece é a que fala do vizinho*, e aqui o vizinho era o estado de outra camada |
 | Layout de widgets da home (drag/resize/colisão) | `react-grid-layout` (brief, 3.15) — **instalado e em uso** desde 28/08/2026 |
 
 ### Onde cada estado mora — a tabela que evita a maior parte dos erros

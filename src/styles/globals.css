@@ -19,3 +19,31 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
 }
+
+/* O cursor de quem responde ao clique — 10/09/2026, decisão do dono (design
+ * system, decisão em aberto 7, fechada).
+ *
+ * ── Por que precisa ser escrito ────────────────────────────────────────────
+ * O preflight do Tailwind v4 fixa `cursor: default` em `button`, revertendo o
+ * que a v3 deixava o navegador decidir. Sem isto, NENHUM botão do app mostra a
+ * mãozinha — e o cursor é a afirmação mais barata de "isto responde ao clique",
+ * que é o que a decisão de affordance de 30/08 pede.
+ *
+ * ── Por que numa regra de base, e não por componente ───────────────────────
+ * Ela vale de uma vez para login, nav, toolbar e cartas. Espalhar `cursor-pointer`
+ * por classe faria a quadragésima primeira peça nascer sem — o mesmo argumento
+ * que fez a correção do vidro ser UMA regra e não quarenta.
+ *
+ * ── O que fica de fora, e é de propósito ───────────────────────────────────
+ * `:disabled` mantém a seta: o cursor não pode prometer um clique que não vai
+ * acontecer. E `[role="button"]`/`<a>` entram junto porque a promessa é sobre o
+ * ALVO e não sobre a tag — a carta virou link em 07/09, e ela responde ao clique
+ * tanto quanto um botão.
+ */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a[href],
+summary,
+label[for] {
+  cursor: pointer;
+}

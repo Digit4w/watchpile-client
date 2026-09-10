@@ -519,13 +519,26 @@ export const settingsCopy = {
     iconPicker: {
       search: 'Search icons',
       /**
-       * A busca é por nome de glifo em INGLÊS, e ele não se traduz — quem usa a
-       * UI em pt-BR procura "livro" e não acha `book`. Das duas saídas
-       * registradas (sinônimos por idioma, ou assumir inglês e DIZER isso), esta
-       * é a segunda: a decisão de sistema segue em aberto (#12).
+       * O rodapé diz o que o ACERVO é; o vazio diz por que a busca falhou. Uma
+       * linha não diz a mesma palavra duas vezes, e as duas respondem a
+       * perguntas diferentes.
        */
-      hint: 'English names, curated for legibility at badge size.',
-      noMatch: 'No icon by that name.',
+      hint: 'Curated for legibility at badge size.',
+      /**
+       * **A recusa explica, em vez de voltar vazia calada** — 10/09/2026,
+       * decisão do dono (design system, decisão em aberto 12, FECHADA).
+       *
+       * A busca é por nome de glifo, e nome de glifo é **identificador**, não
+       * copy: ele não passa pelo catálogo. Quem usa a UI em pt-BR procura
+       * "livro" e não acha `book` — e o defeito nunca foi a busca ser em inglês,
+       * foi ela **não dizer isso**. Sinônimos por idioma custariam 94 entradas
+       * escritas à mão que envelhecem quando o acervo crescer, para resolver o
+       * que uma frase resolve.
+       *
+       * O exemplo é parte da frase de propósito: dizer "está em inglês" sem
+       * mostrar como se procura deixa a pessoa no mesmo lugar.
+       */
+      noMatch: 'No icon by that name. Names are in English — try “book”.',
       empty: 'Pick an icon',
     },
     /**
