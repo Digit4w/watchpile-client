@@ -12,11 +12,21 @@ import { searchCopy } from '@/routes/-search.copy'
 function Panel({
   title,
   body,
+  quote,
   actions,
   tom = 'neutro',
 }: {
   title: string
   body: string
+  /**
+   * A frase do PROVEDOR, quando há uma — 10/09/2026.
+   *
+   * **Ela é citada, e não incorporada**, porque não é nossa: vem em inglês, não
+   * passa pelo catálogo, e o tom dela é o de quem a escreveu. Sem a atribuição,
+   * a pessoa leria uma frase estrangeira no meio da nossa copy e concluiria que
+   * o app fala assim.
+   */
+  quote?: { from: string; text: string } | null
   actions?: React.ReactNode
   tom?: 'neutro' | 'danger'
 }) {
@@ -28,6 +38,17 @@ function Panel({
     >
       <p className="font-medium text-base">{title}</p>
       <p className="max-w-md text-muted text-sm">{body}</p>
+      {/* Citação e não parágrafo: `<blockquote>` com `cite` diz, na estrutura,
+       * o que a atribuição diz na tela. O texto fica em `text-faint`, um degrau
+       * abaixo do corpo — é diagnóstico, não a resposta. */}
+      {quote && (
+        <blockquote className="max-w-md border-line border-l-2 pl-3 text-left">
+          <p className="text-faint text-xs leading-relaxed">{quote.text}</p>
+          <footer className="mt-1 text-faint text-xs">
+            {searchCopy.refusal.saidBy(quote.from)}
+          </footer>
+        </blockquote>
+      )}
       {actions && (
         <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
           {actions}
@@ -116,6 +137,7 @@ export function SearchNoResults({
 export function SearchRefused({
   refusal,
   type,
+  source,
   term,
   isAdmin,
   onManual,
@@ -123,6 +145,14 @@ export function SearchRefused({
 }: {
   refusal: SearchRefusal
   type: string
+  /**
+   * O NOME da fonte que recusou, para atribuir a frase dela — nulo quando não
+   * houve fonte (`no-provider`), e aí não há a quem atribuir nada.
+   *
+   * O nome e não o slug: *identificador do contrato não vai pra tela* (design
+   * system, seção 8, sexta leva).
+   */
+  source: string | null
   /** O que estava escrito no campo, pra viajar junto pra `/library`. */
   term: string
   isAdmin: boolean
@@ -163,6 +193,11 @@ export function SearchRefused({
        * sincronia — que é como as duas pontas divergem.
        */
       body={refusal.message}
+      quote={
+        refusal.providerMessage && source
+          ? { from: source, text: refusal.providerMessage }
+          : null
+      }
       tom={refusal.severity === 'failure' ? 'danger' : 'neutro'}
       actions={
         <>

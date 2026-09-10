@@ -66,6 +66,18 @@ export type SearchRefusal = {
   reason: SearchReason
   severity: SearchSeverity
   message: string
+  /**
+   * A frase que o PROVEDOR escreveu, quando ele escreveu uma — 10/09/2026.
+   *
+   * **Ela não se junta ao `message`, e é decisão:** concatenada viraria copy
+   * nossa, e a nossa copy passa pelo catálogo enquanto esta **vem em inglês e
+   * não passa**. Separada, a tela pode atribuí-la — *a frase que EXPLICA um
+   * resultado é da fonte que o produziu* (design system, seção 8).
+   *
+   * Nula é o caso comum: só `provider-refused` a carrega, e mesmo ali só quando
+   * o provedor escreveu algo legível. Nula, o painel é o de ontem.
+   */
+  providerMessage: string | null
 }
 
 function isReason(value: unknown): value is SearchReason {
@@ -98,7 +110,22 @@ export function searchRefusalOf(error: unknown): SearchRefusal | null {
     return null
   }
 
-  return { reason, severity: SEVERITY[reason], message: error.message }
+  const fromProvider = (body as { providerMessage?: unknown }).providerMessage
+
+  return {
+    reason,
+    severity: SEVERITY[reason],
+    message: error.message,
+    /**
+     * Validado e não confiado: o campo é novo no contrato, e uma instalação com
+     * o servidor atrasado devolve o corpo sem ele — que é o caso que a régua de
+     * 3.7 diz quebrar em RUNTIME e não em build.
+     */
+    providerMessage:
+      typeof fromProvider === 'string' && fromProvider.trim() !== ''
+        ? fromProvider
+        : null,
+  }
 }
 
 /**
