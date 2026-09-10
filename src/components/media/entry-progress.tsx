@@ -2,6 +2,7 @@ import type { Entry } from '@/domain/media'
 import { showsCounter } from '@/domain/shows-counter'
 import { useAddProgress } from '@/hooks/mutations/entries/use-add-progress'
 import { useCountsProgress } from '@/hooks/queries/media-types/use-counts-progress'
+import { useCompactViewport } from '@/hooks/use-compact-viewport'
 import { appCopy } from '@/lib/copy'
 import { StatusButton } from './status-button'
 
@@ -32,12 +33,24 @@ type EntryProgressProps = {
    * **Quando ela mostra, esta peça não põe o status aqui: fica VAZIA.** Sem
    * isso a linha diz a mesma palavra duas vezes (decisão do dono, 07/09/2026,
    * olhando a tela), e a primeira tentativa de conserto foi apagar a coluna de
-   * leitura — que é pior, porque some abaixo de `md` e porque a peça de status
-   * ficava no lugar cujo cabeçalho diz `Progress`.
+   * leitura — que é pior, porque a peça de status ficava no lugar cujo cabeçalho
+   * diz `Progress`.
    *
    * **A régua: o status mora na coluna de status.** A carta e o widget de lista
    * não têm uma, e por isso continuam ganhando o CONTROLE aqui — é o único
    * status que aquela linha tem.
+   *
+   * ── E ela precisa saber a LARGURA, o que só apareceu em 10/09/2026 ────────
+   * A coluna `Status` é `hidden md:block`, então abaixo de 768px ela **não
+   * existe** — e `statusInRow` continuava verdadeiro, deixando a linha de um
+   * filme no celular com o vão vazio e **nada em lugar nenhum**. A afirmação
+   * "a linha já mostra o status" era sobre o VIZINHO, e o vizinho some por
+   * breakpoint.
+   *
+   * Quem passa `statusInRow` passa também a resposta de `useCompactViewport`,
+   * e a peça decide: no estreito ela desenha o controle, porque ali o único
+   * lugar é este. *A parte de uma justificativa que envelhece é a que fala do
+   * vizinho* — aqui o vizinho não envelheceu, ele só não está sempre lá.
    */
   statusInRow?: boolean
 }
@@ -180,6 +193,12 @@ export function EntryProgress({
 }: EntryProgressProps) {
   const addProgress = useAddProgress(entry.id)
   const countsProgress = useCountsProgress()
+  /**
+   * A coluna `Status` só existe a partir de `md`. Abaixo disso, o único lugar
+   * da linha é este — e ceder o lugar a um vizinho que não está lá deixava a
+   * obra sem status nenhum no celular.
+   */
+  const compact = useCompactViewport()
 
   const typeCounts = countsProgress(entry.mediaType)
   if (typeCounts === null) {
@@ -188,7 +207,7 @@ export function EntryProgress({
   if (!showsCounter({ typeCounts, total: entry.total })) {
     // A célula continua ocupando a mesma largura, senão as colunas de todas as
     // outras linhas andam — a régua da vigésima leva do design system.
-    return statusInRow ? (
+    return statusInRow && !compact ? (
       <span className={EMPTY[variant]} aria-hidden="true" />
     ) : (
       <StatusButton entry={entry} variant={variant} />

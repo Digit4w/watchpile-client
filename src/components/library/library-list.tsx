@@ -3,6 +3,7 @@ import { EntryArt } from '@/components/media/entry-art'
 import { EntryMenu } from '@/components/media/entry-menu'
 import { EntryProgress } from '@/components/media/entry-progress'
 import { MediaTypeIcon } from '@/components/media/media-type-icon'
+import { StatusButton } from '@/components/media/status-button'
 import type { Entry } from '@/domain/media'
 import { useMediaTypeName } from '@/hooks/queries/media-types/use-media-type-name'
 import { appCopy } from '@/lib/copy'
@@ -90,8 +91,13 @@ function Metadata({ entry, compact }: { entry: Entry; compact: boolean }) {
        * perguntava ao tipo E à obra (`total === 1`). Uma obra de tipo que conta
        * com total 1 caía no meio das duas e aparecia nas duas. Agora só uma
        * peça decide. */}
-      <span className="hidden w-20 shrink-0 text-faint text-xs md:block">
-        {appCopy.statuses[entry.status]}
+      {/* **A coluna inteira é o CONTROLE desde 10/09/2026** (decisão do dono).
+       * Ela era rótulo de leitura, e um filme ou jogo em modo lista não tinha
+       * como mudar de status sem abrir a obra. Em TODAS as linhas e não só nas
+       * sem contador: duas coisas diferentes na mesma coluna é a confusão que o
+       * conserto de 07/09 tirou. */}
+      <span className="hidden shrink-0 md:block">
+        <StatusButton entry={entry} variant="cell" />
       </span>
       <span className="hidden w-24 shrink-0 text-faint text-xs tabular-nums lg:block">
         {formatDate(entry.createdAt)}
