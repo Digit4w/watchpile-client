@@ -239,6 +239,19 @@ export const settingsCopy = {
 
   about: {
     body: 'A self-hosted tracker for the things you watch, read and play.',
+    version: 'Version',
+    /**
+     * Diz de QUEM é a versão. Num produto self-hosted a pergunta "qual versão
+     * eu tenho?" é sempre sobre o servidor — ele é quem guarda o dado e quem se
+     * atualiza —, e o cliente pode ser qualquer um (brief, 3.7).
+     */
+    versionBody: 'The version of the server answering this app.',
+    /**
+     * Sem artigo e sem interpolar nada: o servidor responde nulo quando o
+     * layout que o empacotou não trouxe o `package.json`, e "não sei" é um
+     * estado, não uma falha que a pessoa possa consertar.
+     */
+    versionUnknown: 'Unknown',
     license: 'License',
     licenseBody:
       'AGPL-3.0. You run this yourself, and the source stays open to whoever you share it with.',

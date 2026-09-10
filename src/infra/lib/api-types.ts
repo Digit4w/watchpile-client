@@ -3955,6 +3955,52 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/meta': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description Facts about the server answering this request */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ServerMeta']
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/network': {
     parameters: {
       query?: never
@@ -5404,6 +5450,9 @@ export interface components {
       params?: {
         [key: string]: string | number
       }
+    }
+    ServerMeta: {
+      version: string | null
     }
     NetworkSettings: {
       host: string
