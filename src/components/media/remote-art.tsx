@@ -63,6 +63,19 @@ export function RemoteArt({
       src={src}
       alt=""
       loading={eager ? 'eager' : 'lazy'}
+      /**
+       * **Decodificar fora da tarefa que renderiza** — 13/09/2026.
+       *
+       * O padrão é `auto`, e nele o navegador pode decodificar de forma
+       * síncrona enquanto monta a página — com uma grade inteira chegando de
+       * uma vez, isso entra na mesma tarefa que já está criando as cartas.
+       *
+       * O peso é real e foi medido: os pôsteres chegam em 315×450 a 422×600 e
+       * aparecem em 147×210, o que dá **66 MB de bitmap** para 70 cartas. Não
+       * é o número de pixels que isto conserta — é o momento em que eles são
+       * pagos, que deixa de ser o quadro em que a pessoa está olhando.
+       */
+      decoding="async"
       referrerPolicy="no-referrer"
       onError={() => setFailed(src)}
       className={`object-cover ${className ?? ''}`}

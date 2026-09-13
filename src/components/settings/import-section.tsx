@@ -565,42 +565,37 @@ function RunningCard({ job, mine }: { job: SourcedJob; mine: boolean }) {
 /**
  * A SEGUNDA fase: a arte chegando depois de o import fechar — 13/09/2026.
  *
- * ── Por que ela é uma PEÇA e não uma linha dentro do resultado ──────────────
- * Porque ela tem contador que anda, e *estado que se lê numa lista longa ganha
- * peça, não variação do conteúdo* (design system, seção 5). Ela reusa a forma
- * do cartão de "rodando" — mesma casca, mesma marca, mesmo contador — porque é
- * o mesmo tipo de fato: um trabalho em curso com um número.
+ * ── Ela é uma LINHA, e a primeira versão errou nisso ────────────────────────
+ * Ela nasceu com a casca das caixas de fonte — ring, padding e a marca
+ * quadrada de 40px —, e o dono apontou o efeito na tela: ficava idêntica ao
+ * MyAnimeList e ao AniList logo acima, ou seja, **parecia um lugar de onde se
+ * importa**. Não é: é uma tarefa que continua o import que acabou.
+ *
+ * O que conserta é tirar o que dizia "fonte": a marca sai (ela identifica um
+ * serviço, e aqui não se escolhe serviço nenhum) e a caixa dá lugar a uma linha
+ * subordinada, separada por uma divisória. *A forma de uma peça vem do que ela
+ * É* — e esta é um estado, não uma opção.
  *
  * ── O que ela NÃO tem, e é decisão ─────────────────────────────────────────
  * **Nenhum botão de parar.** O import ocupa o recurso e travar a instalação é
  * consequência real de deixá-lo rodando; este não ocupa nada — ele cede fichas
- * a quem tem uma tela aberta (`providers.limiter.ts`), e o que ele produz é
+ * a quem tem uma tela aberta (`providers.limiter.ts`), e o que produz é
  * exatamente o que a pessoa quer. Um `Stop` aqui ofereceria desistir de um
- * benefício sem custo, que é *item de menu nascendo de simetria de layout* na
- * forma de botão.
+ * benefício sem custo.
  *
- * A arte que faltar cai na rede de segurança do caminho sob demanda, que é a
- * mesma de sempre — então nada se perde, e não há o que avisar no fim. Por isso
- * também **não há notificação**: "a arte chegou" não tem consequência para quem
- * lê, e a tela troca o ladrilho sozinha.
+ * A arte que faltar cai na rede de segurança do caminho sob demanda, então nada
+ * se perde e não há o que avisar no fim — por isso também **não há
+ * notificação**: "a arte chegou" não tem consequência para quem lê, e a tela
+ * troca o ladrilho sozinha.
  */
 function EnrichingCard({ job }: { job: SourcedJob }) {
   const climbing = useClimbingNumber(job.processed)
 
   return (
-    <div className="wp-import-in flex flex-col gap-3 rounded-lg p-4 ring-1 ring-line">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <BrandTile slug={job.source} />
-          <div className="min-w-0">
-            <p className="font-medium text-ink text-sm">
-              {copy.enriching.title}
-            </p>
-            <p className="text-faint text-xs">
-              {formatRelativeTime(job.startedAt)}
-            </p>
-          </div>
-        </div>
+    <div className="flex flex-col gap-1.5 border-line border-t pt-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <p className="font-medium text-ink text-sm">{copy.enriching.title}</p>
+
         {job.total === null ? (
           <p className="flex items-center gap-2 text-muted text-sm">
             <span

@@ -86,7 +86,28 @@ export function useGridWindow<T extends HTMLElement>(count: number) {
     return { rowHeight, columns: Math.max(1, columns), gap }
   }, [])
 
-  /** Mede depois de cada layout — o arranque e toda remedição caem aqui. */
+  /**
+   * Mede o layout — e **só quando pode ter mudado** (13/09/2026).
+   *
+   * ── O que este efeito era, e o que custava ─────────────────────────────────
+   * Ele nasceu sem lista de dependências, ou seja, rodando depois de TODO
+   * render. Como `measure()` lê `offsetTop` e `offsetHeight`, cada passagem
+   * força o navegador a calcular layout na hora, no meio da tarefa — e montar a
+   * grade dispara vários renders em sequência (o lote de arranque, a fatia
+   * medida, a fatia recalculada pela rolagem restaurada).
+   *
+   * Medido ao voltar de uma obra para `/library` com 1.442 obras: a remontagem
+   * era **uma tarefa síncrona de ~140ms**, com 46 mutações da grade no mesmo
+   * instante — tempo em que a interface não responde a nada, e que é o que se
+   * sente como travada ao navegar e voltar.
+   *
+   * As dependências são o que o resultado da medição pode depender: quantos
+   * itens estão montados agora (`count`) e se já houve uma medição. Rolar não
+   * entra, e é o ponto — rolar muda a FATIA, não a altura da linha nem o número
+   * de colunas. Largura de janela e troca de modo continuam cobertas pelo
+   * `ResizeObserver` lá embaixo, que é quem deve pegá-las.
+   */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: medir depende do DOM montado, não de valores — ver o bloco acima
   useLayoutEffect(() => {
     const next = measure()
     if (!next) {
@@ -101,7 +122,7 @@ export function useGridWindow<T extends HTMLElement>(count: number) {
         ? current
         : next,
     )
-  })
+  }, [measure, count])
 
   /**
    * Recalcula a fatia e **só escreve quando ela muda de verdade**.
