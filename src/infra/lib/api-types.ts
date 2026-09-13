@@ -2134,6 +2134,133 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/entries/{id}/refresh': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: {
+      parameters: {
+        query?: never
+        header?: never
+        path: {
+          id: number
+        }
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description The provider was read again, and this is what changed */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['RefreshResult']
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description No such title, or it has no provider link to refresh from */
+        404: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/entries/refresh': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description The sweep started, and this is the job to watch */
+        202: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['RefreshStarted']
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description A sweep is already running */
+        409: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description Nothing in this library is linked to a provider */
+        422: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/export/entries.csv': {
     parameters: {
       query?: never
@@ -5702,11 +5829,20 @@ export interface components {
     DeletedEntries: {
       deleted: number
     }
+    RefreshResult: {
+      updated: number
+    }
+    RefreshStarted: {
+      id: number
+      total: number
+    }
     ImportStatus: {
       sources: components['schemas']['ImportSource'][]
       running: components['schemas']['ImportJob']
       mine: boolean
       latest: components['schemas']['ImportJob']
+      enriching: components['schemas']['ImportJob']
+      refreshing: components['schemas']['ImportJob']
     }
     ImportSource: {
       /** @enum {string} */
@@ -5718,7 +5854,9 @@ export interface components {
     ImportJob: {
       id: number
       /** @enum {string} */
-      source: 'anilist' | 'mal' | 'csv'
+      kind: 'import' | 'enrich' | 'refresh'
+      /** @enum {string|null} */
+      source: 'anilist' | 'mal' | 'csv' | null
       /** @enum {string} */
       mode: 'skip' | 'overwrite'
       /** @enum {string} */

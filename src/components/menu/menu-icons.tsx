@@ -149,3 +149,20 @@ export function ReorderIcon() {
     </svg>
   )
 }
+
+/**
+ * Duas setas em círculo — reler o provedor.
+ *
+ * É o glifo universal de "buscar de novo", e aqui ele diz exatamente isso: os
+ * dados vêm de fora e vão ser pedidos outra vez. Não é a seta de desfazer (uma
+ * só, curvada para trás), que é o vocabulário de reverter — e reverter é
+ * justamente o que este item NÃO faz.
+ */
+export function RefreshIcon() {
+  return (
+    <svg {...base} aria-hidden="true">
+      <path d="M17 10a7 7 0 0 1-11.9 5M3 10a7 7 0 0 1 11.9-5" />
+      <path d="M15 2v3h-3M5 18v-3h3" />
+    </svg>
+  )
+}

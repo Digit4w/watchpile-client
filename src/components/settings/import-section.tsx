@@ -10,6 +10,10 @@ import {
   resultFacts,
   splitSources,
 } from '@/domain/import-view'
+import {
+  useInvalidateAfterRefresh,
+  useRefreshLibrary,
+} from '@/hooks/mutations/entries/use-refresh-library'
 import { useCancelImport } from '@/hooks/queries/import/use-cancel-import'
 import { useImportStatus } from '@/hooks/queries/import/use-import-status'
 import {
@@ -63,8 +67,13 @@ export function ImportSection() {
   const invalidate = useInvalidateAfterImport()
 
   const running = status.data?.running ?? null
+  const enriching = status.data?.enriching ?? null
+  const runningSourced = sourced(running)
+  const enrichingSourced = sourced(enriching)
+  const latestSourced = sourced(status.data?.latest ?? null)
   const mine = status.data?.mine ?? false
-  const latest = status.data?.latest ?? null
+  const refreshing = status.data?.refreshing ?? null
+  const invalidateAfterRefresh = useInvalidateAfterRefresh()
 
   /**
    * Quando o job termina, a biblioteca e o sino mudaram — e quem repara nisso é
@@ -82,6 +91,27 @@ export function ImportSection() {
       invalidate()
     }
   }, [running, invalidate])
+
+  /**
+   * O mesmo mecanismo para a varredura, e **ele precisa ser próprio**: o fim
+   * dela muda a biblioteca (os totais) e o do import muda outra coisa. Um
+   * efeito só, olhando os dois, invalidaria as chaves erradas na metade dos
+   * casos.
+   *
+   * Aqui o gatilho é o `status` deixar de ser `running` — e não a linha sumir,
+   * porque a varredura **fica na tela depois de terminar** para mostrar o
+   * resultado.
+   */
+  const wasRefreshing = useRef(false)
+  useEffect(() => {
+    const before = wasRefreshing.current
+    const now = refreshing?.status === 'running'
+    wasRefreshing.current = now
+
+    if (before && !now) {
+      invalidateAfterRefresh()
+    }
+  }, [refreshing, invalidateAfterRefresh])
 
   return (
     <>
@@ -104,12 +134,30 @@ export function ImportSection() {
 
       {status.isSuccess && (
         <div className="flex flex-col gap-6">
-          {running ? (
-            <RunningCard job={running} mine={mine} />
+          {running && runningSourced ? (
+            <RunningCard job={runningSourced} mine={mine} />
           ) : (
             <StartForm sources={status.data?.sources ?? []} />
           )}
-          {latest && !running && <ResultBlock job={latest} />}
+          {/*
+            **A segunda fase aparece ao LADO do resultado, não no lugar dele.**
+            São dois fatos que convivem: o import terminou (e os números dele
+            são o que a pessoa veio conferir) e a arte ainda está chegando.
+            Substituir um pelo outro faria o resultado sumir por quase uma hora
+            numa biblioteca grande — e é justamente ali que ele mais interessa.
+          */}
+          {enrichingSourced && <EnrichingCard job={enrichingSourced} />}
+
+          {latestSourced && !running && <ResultBlock job={latestSourced} />}
+
+          {/*
+            **A varredura é irmã do import, não uma caixa dentro dele.** As
+            duas falam com provedores e rodam em segundo plano, e é por isso
+            que moram na mesma seção (decisão do dono); o que elas fazem é
+            oposto — uma TRAZ obras de fora, a outra relê o que já está dentro.
+            A divisória diz isso sem precisar de um título de seção novo.
+          */}
+          <RefreshBox job={refreshing} />
         </div>
       )}
     </>
@@ -423,7 +471,28 @@ function BrandTile({ slug }: { slug: ImportSourceSlug }) {
 
 /* ── O job rodando ────────────────────────────────────────────────────────── */
 
-function RunningCard({ job, mine }: { job: ImportJob; mine: boolean }) {
+/**
+ * **`SourcedJob` e não `ImportJob`** — 13/09/2026.
+ *
+ * `source` passou a ser nulável quando a varredura entrou: ela relê vários
+ * provedores, então não vem de fonte nenhuma. Estas duas peças desenham a MARCA
+ * da fonte, então elas só servem os trabalhos que têm uma — e dizer isso no
+ * tipo é melhor que um `??` que escolheria uma marca errada para exibir.
+ */
+type SourcedJob = ImportJob & { source: ImportSourceSlug }
+
+/**
+ * O job quando ele tem fonte, e `null` quando não tem.
+ *
+ * Uma função em vez de um `as`: o cast afirmaria sem conferir, e o dia em que a
+ * varredura cair num destes ramos por engano a tela desenharia a marca de uma
+ * fonte que o trabalho não usou. Aqui o ramo simplesmente não existe.
+ */
+function sourced(job: ImportJob | null): SourcedJob | null {
+  return job?.source ? (job as SourcedJob) : null
+}
+
+function RunningCard({ job, mine }: { job: SourcedJob; mine: boolean }) {
   const cancel = useCancelImport()
   const stopping = job.cancelRequestedAt !== null
 
@@ -493,9 +562,160 @@ function RunningCard({ job, mine }: { job: ImportJob; mine: boolean }) {
   )
 }
 
+/**
+ * A SEGUNDA fase: a arte chegando depois de o import fechar — 13/09/2026.
+ *
+ * ── Por que ela é uma PEÇA e não uma linha dentro do resultado ──────────────
+ * Porque ela tem contador que anda, e *estado que se lê numa lista longa ganha
+ * peça, não variação do conteúdo* (design system, seção 5). Ela reusa a forma
+ * do cartão de "rodando" — mesma casca, mesma marca, mesmo contador — porque é
+ * o mesmo tipo de fato: um trabalho em curso com um número.
+ *
+ * ── O que ela NÃO tem, e é decisão ─────────────────────────────────────────
+ * **Nenhum botão de parar.** O import ocupa o recurso e travar a instalação é
+ * consequência real de deixá-lo rodando; este não ocupa nada — ele cede fichas
+ * a quem tem uma tela aberta (`providers.limiter.ts`), e o que ele produz é
+ * exatamente o que a pessoa quer. Um `Stop` aqui ofereceria desistir de um
+ * benefício sem custo, que é *item de menu nascendo de simetria de layout* na
+ * forma de botão.
+ *
+ * A arte que faltar cai na rede de segurança do caminho sob demanda, que é a
+ * mesma de sempre — então nada se perde, e não há o que avisar no fim. Por isso
+ * também **não há notificação**: "a arte chegou" não tem consequência para quem
+ * lê, e a tela troca o ladrilho sozinha.
+ */
+function EnrichingCard({ job }: { job: SourcedJob }) {
+  const climbing = useClimbingNumber(job.processed)
+
+  return (
+    <div className="wp-import-in flex flex-col gap-3 rounded-lg p-4 ring-1 ring-line">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <BrandTile slug={job.source} />
+          <div className="min-w-0">
+            <p className="font-medium text-ink text-sm">
+              {copy.enriching.title}
+            </p>
+            <p className="text-faint text-xs">
+              {formatRelativeTime(job.startedAt)}
+            </p>
+          </div>
+        </div>
+        {job.total === null ? (
+          <p className="flex items-center gap-2 text-muted text-sm">
+            <span
+              aria-hidden
+              className="wp-import-pulse size-1.5 rounded-full bg-ink"
+            />
+            {copy.enriching.starting}
+          </p>
+        ) : (
+          <p className="font-mono text-ink text-sm tabular-nums">
+            {copy.enriching.counter(climbing, job.total)}
+          </p>
+        )}
+      </div>
+
+      <p className="max-w-prose text-muted text-sm">{copy.enriching.body}</p>
+    </div>
+  )
+}
+
+/**
+ * A varredura da biblioteca — item 11(c) da fila do dono, 13/09/2026.
+ *
+ * ── Três estados numa peça só, e a posição não muda ─────────────────────────
+ * Parada (com o botão), rodando (com contador e `Stop`) e terminada (com o
+ * resultado). **O que varia é o CONTEÚDO, nunca a posição** — a régua de 09/09
+ * que tirou o seletor de fonte do ramo condicional de `/search`. Uma caixa que
+ * aparecesse só depois de clicar seria um controle que não se aprende.
+ *
+ * ── Por que ela mostra o resultado, e o aquecimento não ─────────────────────
+ * Porque ela tem um: quantas obras ganharam contagem nova é o que a pessoa
+ * apertou o botão para saber. O aquecimento não tem o que dizer depois, porque
+ * a arte que faltar cai no caminho sob demanda — e é por isso que aquela peça
+ * some ao terminar e esta fica.
+ */
+function RefreshBox({ job }: { job: ImportJob | null }) {
+  const start = useRefreshLibrary()
+  const cancel = useCancelImport()
+  const copy = importCopy.refresh
+
+  const running = job?.status === 'running'
+  const stopping = job?.cancelRequestedAt != null
+  const climbing = useClimbingNumber(job?.processed ?? 0)
+
+  /**
+   * A recusa **antes do clique**: uma biblioteca sem nenhum vínculo não tem o
+   * que reler. O servidor responde 422, e o app não tem toast para explicá-lo
+   * depois.
+   */
+  const empty = start.error?.status === 422
+
+  return (
+    <div className="flex flex-col gap-3 border-line border-t pt-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-medium text-ink text-sm">{copy.title}</p>
+          <p className="text-faint text-xs">{copy.line}</p>
+        </div>
+
+        {running ? (
+          job.total === null ? (
+            <p className="flex items-center gap-2 text-muted text-sm">
+              <span
+                aria-hidden
+                className="wp-import-pulse size-1.5 rounded-full bg-ink"
+              />
+              {copy.starting}
+            </p>
+          ) : (
+            <p className="font-mono text-ink text-sm tabular-nums">
+              {copy.counter(climbing, job.total)}
+            </p>
+          )
+        ) : (
+          <Button
+            variant="outline"
+            disabled={start.isPending}
+            onClick={() => start.mutate()}
+          >
+            {start.isPending ? copy.starting : copy.start}
+          </Button>
+        )}
+      </div>
+
+      <p className="max-w-prose text-muted text-sm">{copy.body}</p>
+      {/* A única escrita que atravessa do provedor para a obra, e a direção
+       * dela. Fica à vista porque é o que a pessoa precisa saber ANTES. */}
+      <p className="max-w-prose text-faint text-xs">{copy.totalNote}</p>
+
+      {empty && <p className="text-danger text-sm">{copy.empty}</p>}
+
+      {running && (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            disabled={stopping || cancel.isPending}
+            onClick={() => cancel.mutate(job.id)}
+          >
+            {stopping ? copy.stopping : copy.stop}
+          </Button>
+        </div>
+      )}
+
+      {/* O resultado do último varrimento, e ele conta OBRAS — o número que se
+       * confere olhando a biblioteca. */}
+      {job && !running && job.status === 'done' && (
+        <p className="text-muted text-sm">{copy.done(job.updated)}</p>
+      )}
+    </div>
+  )
+}
+
 /* ── O resultado ──────────────────────────────────────────────────────────── */
 
-function ResultBlock({ job }: { job: ImportJob }) {
+function ResultBlock({ job }: { job: SourcedJob }) {
   /**
    * **Ordenada pela LINHA do arquivo, não pela ordem em que foram achados.**
    *

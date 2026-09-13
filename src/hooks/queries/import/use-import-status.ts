@@ -19,12 +19,39 @@ import { importKeys } from './keys'
  * **E o poll não é o único caminho de volta.** Quem termina de importar recebe
  * notificação, então quem saiu da tela fica sabendo pelo sino — que é o motivo
  * de o job rodar em segundo plano.
+ *
+ * ── A SEGUNDA fase também segura o poll — 13/09/2026 ────────────────────────
+ * O aquecimento (buscar arte e snapshot do que entrou) é um job próprio, e ele
+ * dura muito mais que o import: medido no servidor, 18,7 min no MyAnimeList e
+ * 52 min no AniList para 1.200 obras. Ler só `running` pararia de perguntar
+ * exatamente quando o contador da segunda fase começa a andar — e a tela
+ * mostraria um número congelado, que é pior que não mostrar número nenhum.
+ *
+ * **O intervalo é MAIOR na segunda fase**, e a régua é a mesma que escolheu os
+ * dois segundos: o passo em que o contador anda de forma legível. Ali cada
+ * obra custa uma ida à rede com pausa, então ele avança de um em um a cada
+ * meio segundo ou mais — perguntar de dois em dois segundos por quase uma hora
+ * seria mil e oitocentas requisições para ver o mesmo número.
  */
 export function useImportStatus() {
   return useQuery({
     queryKey: importKeys.status(),
     queryFn: () => importService.status(),
-    refetchInterval: (query) => (query.state.data?.running ? 2000 : false),
+    refetchInterval: (query) => {
+      const data = query.state.data
+      if (data?.running) {
+        return 2000
+      }
+      /**
+       * As duas fases longas seguram o poll no mesmo passo: aquecer e varrer
+       * andam de uma obra por ida à rede, então o número muda devagar e
+       * perguntar de dois em dois segundos por quase uma hora seria mil e
+       * oitocentas requisições para ver o mesmo valor.
+       */
+      const slow =
+        data?.enriching != null || data?.refreshing?.status === 'running'
+      return slow ? 5000 : false
+    },
     refetchOnWindowFocus: true,
   })
 }
