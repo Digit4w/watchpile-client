@@ -5,6 +5,7 @@ import { EntryMenu } from '@/components/media/entry-menu'
 import { MediaTypeIcon } from '@/components/media/media-type-icon'
 import type { Entry } from '@/domain/media'
 import { useMediaTypeName } from '@/hooks/queries/media-types/use-media-type-name'
+import { useGridWindow } from '@/hooks/use-grid-window'
 
 /**
  * A grade padrão de `/library` — e a carta é a MESMA da Home, sem uma
@@ -21,9 +22,17 @@ import { useMediaTypeName } from '@/hooks/queries/media-types/use-media-type-nam
  * 4, alcance corrigido em 29/08/2026). Fora de um widget não há o que encaixar.
  */
 export function LibraryGrid({ entries }: { entries: Entry[] }) {
+  const { ref, first, visible, style } = useGridWindow<HTMLUListElement>(
+    entries.length,
+  )
+
   return (
-    <ul className="grid grid-cols-[repeat(auto-fill,minmax(var(--spacing-card-poster),1fr))] justify-items-center gap-4">
-      {entries.map((entry) => (
+    <ul
+      ref={ref}
+      style={style}
+      className="grid grid-cols-[repeat(auto-fill,minmax(var(--spacing-card-poster),1fr))] justify-items-center gap-4"
+    >
+      {entries.slice(first, first + visible).map((entry) => (
         <li
           key={entry.id}
           className="h-card-poster-h w-full max-w-card-poster-max"
@@ -66,10 +75,17 @@ export function LibraryGrid({ entries }: { entries: Entry[] }) {
  */
 export function LibraryCompactGrid({ entries }: { entries: Entry[] }) {
   const typeName = useMediaTypeName()
+  const { ref, first, visible, style } = useGridWindow<HTMLUListElement>(
+    entries.length,
+  )
 
   return (
-    <ul className="grid grid-cols-[repeat(auto-fill,minmax(var(--spacing-card-poster-sm),1fr))] justify-items-center gap-3">
-      {entries.map((entry) => (
+    <ul
+      ref={ref}
+      style={style}
+      className="grid grid-cols-[repeat(auto-fill,minmax(var(--spacing-card-poster-sm),1fr))] justify-items-center gap-3"
+    >
+      {entries.slice(first, first + visible).map((entry) => (
         <li
           key={entry.id}
           className="h-card-poster-sm-h w-full max-w-card-poster-sm-max"

@@ -6,6 +6,7 @@ import { MediaTypeIcon } from '@/components/media/media-type-icon'
 import { StatusButton } from '@/components/media/status-button'
 import type { Entry } from '@/domain/media'
 import { useMediaTypeName } from '@/hooks/queries/media-types/use-media-type-name'
+import { useGridWindow } from '@/hooks/use-grid-window'
 import { appCopy } from '@/lib/copy'
 import { formatDate } from '@/lib/format'
 import { libraryCopy } from '@/routes/-library.copy'
@@ -131,12 +132,15 @@ function Metadata({ entry, compact }: { entry: Entry; compact: boolean }) {
  */
 export function LibraryList({ entries }: { entries: Entry[] }) {
   const typeName = useMediaTypeName()
+  const { ref, first, visible, style } = useGridWindow<HTMLUListElement>(
+    entries.length,
+  )
 
   return (
     <div>
       <ColumnHeader compact={false} />
-      <ul className="mt-1 flex flex-col">
-        {entries.map((entry) => (
+      <ul ref={ref} style={style} className="mt-1 flex flex-col">
+        {entries.slice(first, first + visible).map((entry) => (
           <li key={entry.id}>
             <div className="group/row flex h-14 items-center gap-3 rounded-md px-2 transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-card">
               <span
@@ -183,12 +187,15 @@ export function LibraryList({ entries }: { entries: Entry[] }) {
  */
 export function LibraryCompactList({ entries }: { entries: Entry[] }) {
   const typeName = useMediaTypeName()
+  const { ref, first, visible, style } = useGridWindow<HTMLUListElement>(
+    entries.length,
+  )
 
   return (
     <div>
       <ColumnHeader compact={true} />
-      <ul className="mt-1 flex flex-col">
-        {entries.map((entry) => (
+      <ul ref={ref} style={style} className="mt-1 flex flex-col">
+        {entries.slice(first, first + visible).map((entry) => (
           <li key={entry.id}>
             <div className="group/row flex h-11 items-center gap-3 rounded-sm px-2 transition-colors duration-[var(--motion-micro)] ease-chrome hover:bg-card md:h-9">
               <span
