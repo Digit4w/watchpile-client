@@ -15,12 +15,15 @@ import {
   OpenIcon,
   PileAddIcon,
   PileRemoveIcon,
+  RefreshIcon,
   ReorderIcon,
   TrashIcon,
 } from '@/components/menu/menu-icons'
 import type { Entry } from '@/domain/media'
 import { useDeleteEntry } from '@/hooks/mutations/entries/use-delete-entry'
+import { useRefreshEntry } from '@/hooks/mutations/entries/use-refresh-entry'
 import { useRemovePileEntry } from '@/hooks/mutations/piles/use-remove-pile-entry'
+import { useEntryLinks } from '@/hooks/queries/entries/use-entry-links'
 import { appCopy } from '@/lib/copy'
 import { EntryPiles } from './entry-piles'
 import './entry-menu.css'
@@ -171,8 +174,23 @@ export function EntryMenu({
    */
   const removeFromPile = useRemovePileEntry(pileId ?? 0)
   const remove = useDeleteEntry()
+  const refresh = useRefreshEntry(entry.id)
   const [open, setOpen] = useState(false)
   const [view, setView] = useState<'menu' | 'piles' | 'confirm'>('menu')
+  /**
+   * **A consulta só roda com o menu ABERTO.** Ela existe para decidir se
+   * `Refresh data` pode ser clicado, e o menu aparece em toda carta e toda
+   * linha — buscar os vínculos de cada obra de uma grade de mil seria mil
+   * requisições para desenhar um item que ninguém abriu.
+   */
+  const links = useEntryLinks(entry.id, open)
+  /**
+   * Sem vínculo não há de onde reler, e **a recusa se anuncia antes do
+   * clique**. Enquanto a resposta não chegou o item fica habilitado: supor a
+   * ausência desabilitaria por um quadro o item de toda obra que TEM vínculo,
+   * e peça que muda sozinha se lê como defeito (04/09).
+   */
+  const canRefresh = links.data === undefined || links.data.length > 0
   /**
    * A folha de editar é IRMÃ do menu, não uma vista dentro dele: três campos
    * não cabem num painel de 256px, e o peso do formulário acompanha o objeto —
@@ -264,6 +282,24 @@ export function EntryMenu({
               onClick={() => setView('piles')}
             >
               {appCopy.entry.addToPile}
+            </ActionMenuItem>
+
+            {/* Depois de editar porque as duas escrevem na OBRA — uma com o que
+             * a pessoa digita, outra com o que o provedor diz. E antes de
+             * empilhar não caberia: ali começa o bloco de ONDE a obra está.
+             *
+             * **O menu não fecha ao clicar**, ao contrário de editar: o
+             * resultado é o próprio item virando `Refreshing…`, e fechar
+             * deixaria o gesto sem resposta num app que não tem toast. */}
+            <ActionMenuItem
+              icon={<RefreshIcon />}
+              disabled={!canRefresh || refresh.isPending}
+              title={canRefresh ? undefined : appCopy.entry.refreshUnavailable}
+              onClick={() => refresh.mutate()}
+            >
+              {refresh.isPending
+                ? appCopy.entry.refreshing
+                : appCopy.entry.refresh}
             </ActionMenuItem>
 
             {/* Depois de `Add to pile` porque as duas falam de ONDE a obra

@@ -21,7 +21,16 @@ export type ImportProblemKind = ImportProblem['kind']
 
 export type ImportFailureKind = NonNullable<ImportJob['errorKind']>
 
-export type ImportSourceSlug = ImportJob['source']
+/**
+ * As fontes que existem — e **sem o `null`**, que `ImportJob['source']` ganhou
+ * em 13/09/2026 quando a varredura entrou (ela não vem de fonte nenhuma).
+ *
+ * Ancorado na LISTA de fontes, que é o lugar onde a pergunta "quais existem?"
+ * é respondida, em vez de no job, onde o campo responde "de onde ESTE trabalho
+ * leu?" — duas perguntas que o mesmo tipo vinha servindo até a segunda passar a
+ * aceitar "de lugar nenhum".
+ */
+export type ImportSourceSlug = ImportStatus['sources'][number]['slug']
 
 export type ImportMode = ImportJob['mode']
 

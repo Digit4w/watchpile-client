@@ -42,7 +42,15 @@ export function useImportStatus() {
       if (data?.running) {
         return 2000
       }
-      return data?.enriching ? 5000 : false
+      /**
+       * As duas fases longas seguram o poll no mesmo passo: aquecer e varrer
+       * andam de uma obra por ida à rede, então o número muda devagar e
+       * perguntar de dois em dois segundos por quase uma hora seria mil e
+       * oitocentas requisições para ver o mesmo valor.
+       */
+      const slow =
+        data?.enriching != null || data?.refreshing?.status === 'running'
+      return slow ? 5000 : false
     },
     refetchOnWindowFocus: true,
   })

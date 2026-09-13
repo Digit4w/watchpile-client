@@ -23,6 +23,9 @@ vi.mock('@/services/import', async (original) => ({
   ...(await original<typeof import('@/services/import')>()),
   importService: { status: vi.fn(), startCsv: vi.fn(), cancel: vi.fn() },
 }))
+vi.mock('@/services/entries', () => ({
+  entriesService: { refreshAll: vi.fn() },
+}))
 
 const { importService } = await import('@/services/import')
 
@@ -143,5 +146,103 @@ describe('a segunda fase do import', () => {
     await waitFor(() => {
       expect(screen.queryByText('Fetching artwork')).not.toBeInTheDocument()
     })
+  })
+})
+
+describe('a varredura da biblioteca', () => {
+  const VARRENDO = {
+    ...TERMINADO,
+    id: 3,
+    kind: 'refresh' as const,
+    source: null,
+    status: 'running' as const,
+    total: 400,
+    processed: 137,
+    updated: 0,
+    finishedAt: null,
+  }
+
+  /**
+   * **O controle não depende do estado**: com a varredura parada o botão está
+   * lá, e é assim que ela se aprende. É a régua de 09/09 — *o que varia é o
+   * conteúdo, nunca a posição*.
+   */
+  it('oferece o botão quando não há varredura nenhuma', async () => {
+    vi.mocked(importService.status).mockResolvedValue(status())
+
+    render(<ImportSection />)
+
+    expect(
+      await screen.findByRole('button', { name: 'Refresh library' }),
+    ).toBeInTheDocument()
+  })
+
+  it('troca o botão pelo contador enquanto varre', async () => {
+    vi.mocked(importService.status).mockResolvedValue(
+      status({ refreshing: VARRENDO }),
+    )
+
+    render(<ImportSection />)
+
+    expect(await screen.findByText('137 / 400')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Refresh library' }),
+    ).not.toBeInTheDocument()
+    // Esta pode ser parada, ao contrário do aquecimento.
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
+  })
+
+  /**
+   * **A varredura fica na tela depois de terminar**, ao contrário do
+   * aquecimento: ela tem resultado, e o número de obras que ganharam contagem
+   * nova é o que a pessoa apertou o botão para saber.
+   */
+  it('mostra o resultado quando termina', async () => {
+    vi.mocked(importService.status).mockResolvedValue(
+      status({
+        refreshing: {
+          ...VARRENDO,
+          status: 'done' as const,
+          processed: 400,
+          updated: 7,
+        },
+      }),
+    )
+
+    render(<ImportSection />)
+
+    expect(
+      await screen.findByText(/7 titles got a new count/),
+    ).toBeInTheDocument()
+  })
+
+  it('diz quando nada mudou, em vez de mostrar um zero solto', async () => {
+    vi.mocked(importService.status).mockResolvedValue(
+      status({
+        refreshing: { ...VARRENDO, status: 'done' as const, updated: 0 },
+      }),
+    )
+
+    render(<ImportSection />)
+
+    expect(await screen.findByText(/already up to date/)).toBeInTheDocument()
+  })
+
+  /**
+   * O defeito que este ciclo criou e que só a tela rodando mostrou:
+   * `useCancelImport` escrevia a resposta em `running` e `latest` sem olhar o
+   * `kind`, então cancelar a varredura **apagava o resultado do último
+   * import**. Aqui o que se afirma é a convivência — os dois blocos na tela ao
+   * mesmo tempo.
+   */
+  it('não esconde o resultado do import enquanto varre', async () => {
+    vi.mocked(importService.status).mockResolvedValue(
+      status({ latest: TERMINADO, refreshing: VARRENDO }),
+    )
+
+    render(<ImportSection />)
+
+    expect(await screen.findByText('Last import')).toBeInTheDocument()
+    expect(screen.getByText('Refresh title data')).toBeInTheDocument()
   })
 })
