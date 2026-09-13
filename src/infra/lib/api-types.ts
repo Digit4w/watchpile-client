@@ -5707,6 +5707,7 @@ export interface components {
       running: components['schemas']['ImportJob']
       mine: boolean
       latest: components['schemas']['ImportJob']
+      enriching: components['schemas']['ImportJob']
     }
     ImportSource: {
       /** @enum {string} */
@@ -5717,6 +5718,8 @@ export interface components {
     }
     ImportJob: {
       id: number
+      /** @enum {string} */
+      kind: 'import' | 'enrich'
       /** @enum {string} */
       source: 'anilist' | 'mal' | 'csv'
       /** @enum {string} */

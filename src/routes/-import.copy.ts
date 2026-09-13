@@ -184,6 +184,38 @@ export const importCopy = {
       'An import is running on this server. You can start yours when it finishes.',
   },
 
+  /**
+   * A SEGUNDA fase — 13/09/2026.
+   *
+   * ── Por que ela tem copy própria, e não uma variação da de cima ────────────
+   * Ela descreve outro trabalho: importar TERMINOU, e o que roda agora é buscar
+   * a arte e a ficha de cada obra que entrou. Reusar `running.title` diria
+   * "Importing from…" sobre algo que já acabou — e a régua do projeto é que *a
+   * copy descreve o que a tela faz hoje*.
+   *
+   * ── A palavra escolhida, e a que foi recusada ──────────────────────────────
+   * `Fetching artwork` e não "enriquecendo" nem "aquecendo cache": os dois
+   * últimos são o nosso vocabulário interno, e quem lê quer saber o que vai
+   * mudar na tela dele. O que muda é a capa das obras aparecerem.
+   *
+   * **E ela diz que dá pra ir embora**, pelo mesmo motivo da fase anterior —
+   * aqui com mais força, porque este trabalho leva de dezoito minutos a quase
+   * uma hora numa biblioteca grande.
+   */
+  enriching: {
+    title: 'Fetching artwork',
+    /** Mesmo formato do contador da primeira fase: número, nunca barra. */
+    counter: (done: number, total: number) =>
+      `${formatNumber(done)} / ${formatNumber(total)}`,
+    /**
+     * O intervalo em que o total ainda não foi escrito. Dura um instante — o
+     * laço conta os alvos antes da primeira obra —, mas o estado existe, e sem
+     * esta frase ele renderizaria um `0 / 0` que afirma um total inexistente.
+     */
+    starting: 'Starting…',
+    body: 'Your titles are already in your library. This fills in their artwork, and you can leave this page.',
+  },
+
   result: {
     title: 'Last import',
     added: 'Added',

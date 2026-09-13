@@ -63,6 +63,7 @@ export function ImportSection() {
   const invalidate = useInvalidateAfterImport()
 
   const running = status.data?.running ?? null
+  const enriching = status.data?.enriching ?? null
   const mine = status.data?.mine ?? false
   const latest = status.data?.latest ?? null
 
@@ -109,6 +110,15 @@ export function ImportSection() {
           ) : (
             <StartForm sources={status.data?.sources ?? []} />
           )}
+          {/*
+            **A segunda fase aparece ao LADO do resultado, não no lugar dele.**
+            São dois fatos que convivem: o import terminou (e os números dele
+            são o que a pessoa veio conferir) e a arte ainda está chegando.
+            Substituir um pelo outro faria o resultado sumir por quase uma hora
+            numa biblioteca grande — e é justamente ali que ele mais interessa.
+          */}
+          {enriching && <EnrichingCard job={enriching} />}
+
           {latest && !running && <ResultBlock job={latest} />}
         </div>
       )}
@@ -489,6 +499,65 @@ function RunningCard({ job, mine }: { job: ImportJob; mine: boolean }) {
           </Button>
         </div>
       )}
+    </div>
+  )
+}
+
+/**
+ * A SEGUNDA fase: a arte chegando depois de o import fechar — 13/09/2026.
+ *
+ * ── Por que ela é uma PEÇA e não uma linha dentro do resultado ──────────────
+ * Porque ela tem contador que anda, e *estado que se lê numa lista longa ganha
+ * peça, não variação do conteúdo* (design system, seção 5). Ela reusa a forma
+ * do cartão de "rodando" — mesma casca, mesma marca, mesmo contador — porque é
+ * o mesmo tipo de fato: um trabalho em curso com um número.
+ *
+ * ── O que ela NÃO tem, e é decisão ─────────────────────────────────────────
+ * **Nenhum botão de parar.** O import ocupa o recurso e travar a instalação é
+ * consequência real de deixá-lo rodando; este não ocupa nada — ele cede fichas
+ * a quem tem uma tela aberta (`providers.limiter.ts`), e o que ele produz é
+ * exatamente o que a pessoa quer. Um `Stop` aqui ofereceria desistir de um
+ * benefício sem custo, que é *item de menu nascendo de simetria de layout* na
+ * forma de botão.
+ *
+ * A arte que faltar cai na rede de segurança do caminho sob demanda, que é a
+ * mesma de sempre — então nada se perde, e não há o que avisar no fim. Por isso
+ * também **não há notificação**: "a arte chegou" não tem consequência para quem
+ * lê, e a tela troca o ladrilho sozinha.
+ */
+function EnrichingCard({ job }: { job: ImportJob }) {
+  const climbing = useClimbingNumber(job.processed)
+
+  return (
+    <div className="wp-import-in flex flex-col gap-3 rounded-lg p-4 ring-1 ring-line">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <BrandTile slug={job.source} />
+          <div className="min-w-0">
+            <p className="font-medium text-ink text-sm">
+              {copy.enriching.title}
+            </p>
+            <p className="text-faint text-xs">
+              {formatRelativeTime(job.startedAt)}
+            </p>
+          </div>
+        </div>
+        {job.total === null ? (
+          <p className="flex items-center gap-2 text-muted text-sm">
+            <span
+              aria-hidden
+              className="wp-import-pulse size-1.5 rounded-full bg-ink"
+            />
+            {copy.enriching.starting}
+          </p>
+        ) : (
+          <p className="font-mono text-ink text-sm tabular-nums">
+            {copy.enriching.counter(climbing, job.total)}
+          </p>
+        )}
+      </div>
+
+      <p className="max-w-prose text-muted text-sm">{copy.enriching.body}</p>
     </div>
   )
 }
