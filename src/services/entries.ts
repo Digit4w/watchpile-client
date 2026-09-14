@@ -106,6 +106,12 @@ export const entriesService = {
    */
   refresh: (id: number) =>
     httpClient.post<{ updated: number }>(`/api/entries/${id}/refresh`, {}),
+  /**
+   * Preencher o que falta — a mesma rota de `Continue` e de `Fill in missing`.
+   * Responde 202 com o job a acompanhar.
+   */
+  fillMissing: () =>
+    httpClient.post<{ id: number; total: number }>('/api/entries/fill', {}),
   /** A varredura da biblioteca inteira. Responde 202 com o job a acompanhar. */
   refreshAll: () =>
     httpClient.post<{ id: number; total: number }>('/api/entries/refresh', {}),

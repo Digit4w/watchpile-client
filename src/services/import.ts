@@ -78,4 +78,10 @@ export const importService = {
 
   cancel: (id: number) =>
     httpClient.post<ImportJob>(`/api/import/${id}/cancel`, {}),
+  /** Dispensa o aviso de um trabalho interrompido. A linha fica no histórico. */
+  dismiss: (id: number) =>
+    httpClient.post<ImportJob>(`/api/import/${id}/dismiss`, {}),
+  /** Limpa o histórico — só o que terminou. Ver `jobs.clearHistory`. */
+  clearHistory: () =>
+    httpClient.delete<{ deleted: number }>('/api/import/history'),
 }

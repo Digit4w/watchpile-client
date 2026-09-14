@@ -64,3 +64,38 @@
     opacity: 1;
   }
 }
+
+/* ── A troca de passo, dentro da peça de trabalho — 14/09/2026 ──────────────
+ *
+ * A peça de dois passos (`WorkCard`) muda por dentro em vez de ser substituída:
+ * o passo 1 vira visto e o 2 assume o contador, na mesma moldura. Sem nada, a
+ * troca acontece num quadro só — e aí o visto **aparece do nada** exatamente no
+ * momento em que a informação mais importa: o import acabou de terminar.
+ *
+ * Entrar usa `--motion-chrome` e é transição de ESTADO, então ela permanece com
+ * `prefers-reduced-motion` (design system, seção 11, 30/08/2026). O que se
+ * desliga ali é loop ambiente, que é o pulso acima.
+ *
+ * **Sem escala e sem overshoot**, como todo o resto do vocabulário: o visto
+ * cresce 2px de baixo, que é a mesma pista de origem do popover em escala menor.
+ */
+.wp-step-mark {
+  animation: wp-step-mark var(--motion-chrome) var(--ease-chrome) backwards;
+}
+@keyframes wp-step-mark {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* O passo que assume o contador. Mais lento que a marca de propósito: ele entra
+ * DEPOIS, e a ordem é o que conta a história — primeiro o anterior fecha, então
+ * o seguinte começa. */
+.wp-step-active {
+  animation: wp-import-in var(--motion-chrome) var(--ease-chrome) 80ms backwards;
+}
