@@ -1,7 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { Download } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
-import { PileGlyph } from '@/components/piles/pile-art'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -15,6 +14,11 @@ import {
   useRefreshLibrary,
 } from '@/hooks/mutations/entries/use-refresh-library'
 import { useCancelImport } from '@/hooks/queries/import/use-cancel-import'
+import {
+  useClearHistory,
+  useDismissJob,
+  useFillMissing,
+} from '@/hooks/queries/import/use-import-actions'
 import { useImportStatus } from '@/hooks/queries/import/use-import-status'
 import {
   useInvalidateAfterImport,
@@ -72,6 +76,17 @@ export function ImportSection() {
   const enrichingSourced = sourced(enriching)
   const latestSourced = sourced(status.data?.latest ?? null)
   const mine = status.data?.mine ?? false
+
+  /**
+   * Qual trabalho a peça mostra, e a ORDEM da escolha é a regra: o import ganha
+   * do aquecimento porque é o que acabou de ser pedido. Sem trabalho nenhum ela
+   * não existe, e o formulário fica com a tela inteira.
+   */
+  const work = runningSourced
+    ? ({ job: runningSourced, phase: 'import', mine } as const)
+    : enrichingSourced
+      ? ({ job: enrichingSourced, phase: 'enrich', mine: true } as const)
+      : null
   const refreshing = status.data?.refreshing ?? null
   const invalidateAfterRefresh = useInvalidateAfterRefresh()
 
@@ -134,19 +149,48 @@ export function ImportSection() {
 
       {status.isSuccess && (
         <div className="flex flex-col gap-6">
-          {running && runningSourced ? (
-            <RunningCard job={runningSourced} mine={mine} />
-          ) : (
-            <StartForm sources={status.data?.sources ?? []} />
+          {/**
+           * **A peça de trabalho tem UM lugar, e as duas fases ocupam o mesmo.**
+           *
+           * Ela é a MESMA peça na segunda fase — não uma peça irmã —, e é isso
+           * que faz o aquecimento nascer onde já estava em vez de aparecer do
+           * nada embaixo de um resultado que disse que tudo acabou. A `key`
+           * comum é o que diz isso ao React: sem ela as duas são elementos em
+           * posições diferentes, o instante da troca desmonta uma e monta a
+           * outra, e a moldura **reentra** em vez de mudar por dentro.
+           *
+           * **E ela vem ANTES do formulário nas duas fases.** Até 14/09 o card
+           * de import substituía o formulário e o de aquecimento vinha DEPOIS
+           * dele — então, no instante exato em que o passo 1 fechava, a peça
+           * saltava do topo da tela para baixo de três caixas. *Peça que ancora
+           * a atenção não muda de lugar quando um vizinho aparece* — a mesma
+           * régua do sino recolhido e do seletor de pilhas, aqui na vertical.
+           */}
+          {work && (
+            <WorkCard
+              key="work"
+              job={work.job}
+              phase={work.phase}
+              mine={work.mine}
+            />
           )}
-          {/*
-            **A segunda fase aparece ao LADO do resultado, não no lugar dele.**
-            São dois fatos que convivem: o import terminou (e os números dele
-            são o que a pessoa veio conferir) e a arte ainda está chegando.
-            Substituir um pelo outro faria o resultado sumir por quase uma hora
-            numa biblioteca grande — e é justamente ali que ele mais interessa.
-          */}
-          {enrichingSourced && <EnrichingCard job={enrichingSourced} />}
+
+          {/**
+           * As duas ao mesmo tempo: começar um import novo enquanto a arte do
+           * anterior ainda chega é legítimo — o índice único do servidor é por
+           * `kind`. Aí são dois trabalhos e duas peças, porque a de cima estaria
+           * afirmando `Next` sobre um passo que já está rodando.
+           */}
+          {running && enrichingSourced && (
+            <WorkCard
+              key="work-enrich"
+              job={enrichingSourced}
+              phase="enrich"
+              mine={true}
+            />
+          )}
+
+          {!running && <StartForm sources={status.data?.sources ?? []} />}
 
           {latestSourced && !running && <ResultBlock job={latestSourced} />}
 
@@ -157,6 +201,8 @@ export function ImportSection() {
             oposto — uma TRAZ obras de fora, a outra relê o que já está dentro.
             A divisória diz isso sem precisar de um título de seção novo.
           */}
+          <FillBox pending={status.data?.pending ?? 0} />
+
           <RefreshBox job={refreshing} />
         </div>
       )}
@@ -440,13 +486,17 @@ function ModeChoice({
  * A marca da fonte — 40px, a mesma caixa da miniatura de linha de `/piles`
  * (design system, seção 5, 06/09/2026), com a mesma escada de identidade.
  *
- * O glifo é o `PileGlyph`, **reusado e não recopiado**: é o símbolo de quatro
- * peças da marca (design system, seção 10), o mesmo que a pilha vazia usa. Duas
- * contas da mesma coisa é como uma fica pra trás (seção 8) — e aqui o desenho
- * seria idêntico, byte a byte.
+ * ── O que mudou em 14/09/2026: o LOGO entrou ───────────────────────────────
+ * As três caixas paravam na inicial, e o argumento de 07/09 era que marca de
+ * terceiro só entra quando há o que reconhecer. Ele valia — e o que ele cobra
+ * é justamente esta tela: *marca de terceiro entra quando o inventário é grande
+ * e a tarefa é RECONHECER* (design system, seção 2, 01/09/2026), e a tarefa
+ * aqui é achar a sua fonte no meio das outras.
  *
- * Marca de terceiro entra quando a segunda fonte existir; o CSV é o nosso
- * formato, não um serviço a reconhecer.
+ * **O que muda é o MARK, nunca a caixa.** A moldura é nossa — mesmo tamanho,
+ * mesmo raio, mesmo fundo nas três —, e o que entra dentro é o símbolo de cada
+ * um. Dar a cada marca o seu próprio fundo deixaria a fileira esfarrapada, e o
+ * fundo não é o que identifica: o símbolo é.
  */
 function BrandTile({ slug }: { slug: ImportSourceSlug }) {
   return (
@@ -454,18 +504,124 @@ function BrandTile({ slug }: { slug: ImportSourceSlug }) {
       className="flex size-10 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-raised to-line font-medium text-faint text-sm"
       aria-hidden="true"
     >
-      {/*
-        **A escada de identidade, e o MyAnimeList para no degrau da inicial de
-        propósito.** O contrato deles (seção 17) proíbe incluir as marcas em
-        "Your Applications", com uma exceção só: atribuir a fonte, e o exemplo
-        que eles dão é uma FRASE. É exatamente o caso que o design system
-        previu — "um brand que não se possa empacotar simplesmente não tem
-        logo, e a tela continua inteira".
-
-        O CSV é o NOSSO formato, então ele usa o símbolo da marca.
-      */}
-      {slug === 'csv' ? <PileGlyph size={20} /> : copy.sources[slug].name[0]}
+      <SourceMark slug={slug} />
     </span>
+  )
+}
+
+/**
+ * **A escada de identidade, e o MyAnimeList para no degrau da inicial de
+ * propósito.** O contrato deles (seção 17) proíbe incluir as marcas em "Your
+ * Applications", com uma exceção só: atribuir a fonte, e o exemplo que eles dão
+ * é uma FRASE. É exatamente o caso que o design system previu — *um brand que
+ * não se possa empacotar simplesmente não tem logo, e a tela continua inteira*.
+ *
+ * O AniList não tem essa cláusula: os termos da API deles não dizem nada sobre
+ * logo, ícone ou trademark — só sobre o NOME do aplicativo, que não nos alcança
+ * (`server/CLAUDE.md`, "A cláusula 5 do AniList").
+ */
+function SourceMark({ slug }: { slug: ImportSourceSlug }) {
+  if (slug === 'csv') return <WatchpileMark />
+  if (slug === 'anilist') return <AniListMark />
+  return <>{copy.sources[slug].name[0]}</>
+}
+
+/**
+ * O símbolo da marca (design system, seção 10), com a geometria de
+ * `design/brand/icon.svg` — as rotações alternadas e a escada de opacidade.
+ *
+ * **Não é o `PileGlyph`, e a diferença é de assunto.** Aquele é a versão CHAPADA
+ * do símbolo, que existe pra ser ícone de nav e ladrilho de pilha vazia — ali
+ * ele é um glifo de interface e toma a cor do texto ao redor. Aqui ele é a
+ * MARCA, ao lado de outra marca, e marca não se pinta com a cor do vizinho.
+ *
+ * É o uso de `accent` que a régua de 24/08 manda confirmar antes — e ele passa
+ * porque o accent **é** a cor do símbolo por definição, não uma escolha
+ * decorativa tomada aqui.
+ */
+function WatchpileMark() {
+  return (
+    <svg
+      width={22}
+      height={22}
+      viewBox="0 0 64 64"
+      fill="var(--color-accent)"
+      className="shrink-0"
+      aria-hidden="true"
+    >
+      <rect
+        x="7"
+        y="7"
+        width="23"
+        height="23"
+        rx="6"
+        opacity="0.5"
+        transform="rotate(-3 18.5 18.5)"
+      />
+      <rect
+        x="34"
+        y="7"
+        width="23"
+        height="23"
+        rx="6"
+        opacity="0.75"
+        transform="rotate(3 45.5 18.5)"
+      />
+      <rect
+        x="7"
+        y="34"
+        width="23"
+        height="23"
+        rx="6"
+        opacity="0.9"
+        transform="rotate(3 18.5 45.5)"
+      />
+      <rect
+        x="34"
+        y="34"
+        width="23"
+        height="23"
+        rx="6"
+        transform="rotate(-3 45.5 45.5)"
+      />
+    </svg>
+  )
+}
+
+/**
+ * O símbolo do AniList, com as duas formas e as duas cores do asset oficial
+ * deles (`anilist.co/img/icons/icon.svg`) — o `A` claro e a peça em `#02a9ff`.
+ *
+ * **As cores são LITERAIS e não saem de token**, o que fura a regra de cor crua
+ * de propósito e pelo mesmo motivo que `design/brand/icon.svg` resolve os
+ * nossos tokens pra sRGB: a cor de uma marca é dado do dono dela. Trocá-la por
+ * um token do nosso sistema seria repintar o logo de um terceiro — e o dia em
+ * que o nosso `accent` mudar, o azul do AniList não pode mudar junto.
+ *
+ * O asset deles nasce transparente, desenhado pra pousar em branco, e o `A` é
+ * `#fefefe`. Sobre o nosso ladrilho escuro ele lê melhor do que leria no
+ * original — nenhuma das duas formas precisou de ajuste.
+ */
+function AniListMark() {
+  return (
+    <svg
+      width={22}
+      height={22}
+      viewBox="0 0 172 172"
+      className="shrink-0"
+      aria-hidden="true"
+    >
+      <path
+        fill="#02a9ff"
+        fillRule="evenodd"
+        d="M111.322,111.157 L111.322,41.029 C111.322,37.010 109.105,34.792 105.086,34.792 L91.365,34.792 C87.346,34.792 85.128,37.010 85.128,41.029 C85.128,41.029 85.128,56.337 85.128,74.333 C85.128,75.271 94.165,79.626 94.401,80.547 C101.286,107.449 95.897,128.980 89.370,129.985 C100.042,130.513 101.216,135.644 93.267,132.138 C94.483,117.784 99.228,117.812 112.869,131.610 C112.986,131.729 115.666,137.351 115.833,137.351 C131.170,137.351 148.050,137.351 148.050,137.351 C152.069,137.351 154.286,135.134 154.286,131.115 L154.286,117.394 C154.286,113.375 152.069,111.157 148.050,111.157 L111.322,111.157 Z"
+      />
+      <path
+        fill="#fefefe"
+        fillRule="evenodd"
+        d="M54.365,34.792 L18.331,137.351 L46.327,137.351 L52.425,119.611 L82.915,119.611 L88.875,137.351 L116.732,137.351 L80.836,34.792 L54.365,34.792 ZM58.800,96.882 L67.531,68.470 L77.094,96.882 L58.800,96.882 Z"
+      />
+    </svg>
   )
 }
 
@@ -474,144 +630,283 @@ function BrandTile({ slug }: { slug: ImportSourceSlug }) {
 /**
  * **`SourcedJob` e não `ImportJob`** — 13/09/2026.
  *
- * `source` passou a ser nulável quando a varredura entrou: ela relê vários
- * provedores, então não vem de fonte nenhuma. Estas duas peças desenham a MARCA
- * da fonte, então elas só servem os trabalhos que têm uma — e dizer isso no
- * tipo é melhor que um `??` que escolheria uma marca errada para exibir.
+ * `source` é nulável desde que a varredura entrou: ela relê vários provedores,
+ * então não vem de fonte nenhuma. As peças que desenham a MARCA só servem os
+ * trabalhos que têm uma, e dizer isso no tipo é melhor que um `??` que
+ * escolheria uma marca errada para exibir.
  */
 type SourcedJob = ImportJob & { source: ImportSourceSlug }
 
 /**
  * O job quando ele tem fonte, e `null` quando não tem.
  *
- * Uma função em vez de um `as`: o cast afirmaria sem conferir, e o dia em que a
- * varredura cair num destes ramos por engano a tela desenharia a marca de uma
- * fonte que o trabalho não usou. Aqui o ramo simplesmente não existe.
+ * Uma função em vez de um `as`: o cast afirmaria sem conferir, e o dia em que
+ * um trabalho sem fonte caísse num destes ramos a tela desenharia a marca de um
+ * serviço que ele não usou.
  */
 function sourced(job: ImportJob | null): SourcedJob | null {
   return job?.source ? (job as SourcedJob) : null
 }
 
-function RunningCard({ job, mine }: { job: SourcedJob; mine: boolean }) {
-  const cancel = useCancelImport()
-  const stopping = job.cancelRequestedAt !== null
+/* ── A peça de trabalho: um trabalho, dois passos ─────────────────────────── */
 
-  /**
-   * O poll é de 2s e o executor escreve os contadores uma vez por lote de 200:
-   * sem isto o número fica parado dois segundos e salta quatrocentos. Ele sobe
-   * do valor ANTERIOR ao ATUAL, os dois confirmados pelo servidor — re-temporiza
-   * números que já existiram, e nunca inventa os que ainda não.
-   */
-  const climbing = useClimbingNumber(job.processed)
+/**
+ * O visto de passo concluído e o alerta de passo parado.
+ *
+ * **Desenhados aqui e não vindos de `menu-icons.tsx`**: aqueles são glifos de
+ * ITEM DE MENU, com a caixa e o traço daquele contexto. Estes vivem numa lista
+ * de passos a 16px e o alerta ganha a cor do estado, que um ícone de menu não
+ * carrega. Reusar aquele arquivo o faria responder por dois contextos com
+ * exigências diferentes — que é como um traço acaba divergindo entre telas.
+ */
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M4 10.5l4 4 8-9" />
+    </svg>
+  )
+}
+
+function AlertIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M10 7.2v3.6" />
+      <circle cx="10" cy="13.4" r=".9" fill="currentColor" stroke="none" />
+      <path d="M8.7 3.9 2.6 14.8a1.5 1.5 0 0 0 1.3 2.3h12.2a1.5 1.5 0 0 0 1.3-2.3L11.3 3.9a1.5 1.5 0 0 0-2.6 0Z" />
+    </svg>
+  )
+}
+
+type EstadoPasso = 'agora' | 'feito' | 'depois' | 'parado'
+
+/**
+ * Um passo dentro da peça de trabalho — 14/09/2026.
+ *
+ * ── O marcador da esquerda É o estado ──────────────────────────────────────
+ * Visto para o que fechou, ponto vivo para o que corre, ponto apagado para o
+ * que vem, alerta para o que parou. **Sem texto repetindo o que o glifo já
+ * diz**: a direita carrega o número, que é a informação que muda.
+ *
+ * ── Cada passo carrega o SEU número ────────────────────────────────────────
+ * É o que permite o passo 1 dizer `Done` enquanto o 2 corre, e é o que mantém
+ * intacta a decisão de 07/09: importar termina quando importou. Um contador só
+ * para os dois passos somaria dois motivos, que é a régua do mesmo dia.
+ */
+function Step({
+  label,
+  state,
+  right,
+  first,
+}: {
+  label: string
+  state: EstadoPasso
+  right: ReactNode
+  first?: boolean
+}) {
+  const mark =
+    state === 'feito' ? (
+      <CheckIcon className="wp-step-mark text-muted" />
+    ) : state === 'parado' ? (
+      <AlertIcon className="wp-step-mark text-warning" />
+    ) : state === 'agora' ? (
+      <span className="wp-import-pulse size-1.5 rounded-full bg-ink" />
+    ) : (
+      <span className="size-1.5 rounded-full bg-line" />
+    )
+
+  const tone =
+    state === 'feito'
+      ? 'text-muted'
+      : state === 'depois'
+        ? 'text-faint'
+        : 'font-medium text-ink'
 
   return (
-    <div className="wp-import-in flex flex-col gap-3 rounded-lg p-4 ring-1 ring-line">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <BrandTile slug={job.source} />
-          <div className="min-w-0">
-            <p className="font-medium text-ink text-sm">
-              {copy.running.title(sourceName(job.source))}
-            </p>
-            <p className="text-faint text-xs">
-              {formatRelativeTime(job.startedAt)}
-            </p>
-          </div>
-        </div>
-        {/*
-          **Progresso é NÚMERO, nunca barra** (design system, seção 2): o dado
-          real é um inteiro discreto, e obras se contam uma a uma.
-          `tabular-nums` porque o número não pode dançar enquanto sobe.
-
-          Enquanto o total é nulo a fonte ainda está sendo LIDA, e ali não há
-          denominador nenhum — nem barra, que desenharia uma fração desconhecida,
-          nem `0 / 0`, que afirmaria um total. Uma frase com um pulso ao lado diz
-          o que está acontecendo sem afirmar quanto falta.
-        */}
-        {job.total === null ? (
-          <p className="flex items-center gap-2 text-muted text-sm">
-            <span
-              aria-hidden
-              className="wp-import-pulse size-1.5 rounded-full bg-ink"
-            />
-            {copy.running.reading}
-          </p>
-        ) : (
-          <p className="font-mono text-ink text-sm tabular-nums">
-            {copy.running.counter(climbing, job.total)}
-          </p>
-        )}
-      </div>
-
-      <p className="max-w-prose text-muted text-sm">
-        {mine ? copy.running.body : copy.running.someoneElse}
-      </p>
-
-      {mine && (
-        <div className="flex justify-end">
-          <Button
-            variant="outline"
-            disabled={stopping || cancel.isPending}
-            onClick={() => cancel.mutate(job.id)}
-          >
-            {stopping ? copy.running.stopping : copy.running.stop}
-          </Button>
-        </div>
+    <li
+      className={cn(
+        'flex items-center gap-3',
+        !first && 'mt-3 border-line border-t pt-3',
+        state === 'agora' && 'wp-step-active',
       )}
-    </div>
+    >
+      <span className="flex size-4 shrink-0 items-center justify-center">
+        {mark}
+      </span>
+      <span className={cn('min-w-0 flex-1 truncate text-sm', tone)}>
+        {label}
+      </span>
+      {right}
+    </li>
+  )
+}
+
+/** O contador — número, nunca barra (design system, seção 2). */
+function Counter({ done, total }: { done: number; total: number }) {
+  const climbing = useClimbingNumber(done)
+  return (
+    <p className="font-mono text-ink text-sm tabular-nums">
+      {copy.running.counter(climbing, total)}
+    </p>
   )
 }
 
 /**
- * A SEGUNDA fase: a arte chegando depois de o import fechar — 13/09/2026.
+ * A peça de trabalho — **um trabalho, dois passos** (14/09/2026, variante A
+ * escolhida pelo dono entre quatro desenhadas).
  *
- * ── Ela é uma LINHA, e a primeira versão errou nisso ────────────────────────
- * Ela nasceu com a casca das caixas de fonte — ring, padding e a marca
- * quadrada de 40px —, e o dono apontou o efeito na tela: ficava idêntica ao
- * MyAnimeList e ao AniList logo acima, ou seja, **parecia um lugar de onde se
- * importa**. Não é: é uma tarefa que continua o import que acabou.
+ * ── O que ela conserta ─────────────────────────────────────────────────────
+ * Antes eram duas peças desconexas: o import terminava, o resultado aparecia, e
+ * **então** uma linha nova surgia embaixo dizendo que a arte estava vindo —
+ * sem nomear de onde veio e depois de a primeira ter dito que acabou. O
+ * intervalo não é pequeno: medido em 13/09 com 1.442 obras, o aquecimento leva
+ * de 13 a 51 minutos.
  *
- * O que conserta é tirar o que dizia "fonte": a marca sai (ela identifica um
- * serviço, e aqui não se escolhe serviço nenhum) e a caixa dá lugar a uma linha
- * subordinada, separada por uma divisória. *A forma de uma peça vem do que ela
- * É* — e esta é um estado, não uma opção.
+ * Aqui o passo 2 já está na moldura desde o começo, apagado, dizendo que vem
+ * depois. Quando chega a vez dele, ele nasce onde já estava.
  *
- * ── O que ela NÃO tem, e é decisão ─────────────────────────────────────────
- * **Nenhum botão de parar.** O import ocupa o recurso e travar a instalação é
- * consequência real de deixá-lo rodando; este não ocupa nada — ele cede fichas
- * a quem tem uma tela aberta (`providers.limiter.ts`), e o que produz é
- * exatamente o que a pessoa quer. Um `Stop` aqui ofereceria desistir de um
- * benefício sem custo.
+ * ── O que ela NÃO desfaz ───────────────────────────────────────────────────
+ * Os dois passos moram na mesma moldura **sem fundir os estados**. O contador
+ * de importar chega ao fim e vira `Done`; o de aquecer começa do zero. É por
+ * isso que a decisão de 07/09 continua de pé — segurar o `done` no aquecimento
+ * faria o número parar em `1442/1442` por minutos e uma CDN fora do ar
+ * reprovar um import que deu certo.
  *
- * A arte que faltar cai na rede de segurança do caminho sob demanda, então nada
- * se perde e não há o que avisar no fim — por isso também **não há
- * notificação**: "a arte chegou" não tem consequência para quem lê, e a tela
- * troca o ladrilho sozinha.
+ * ── Ela SOME quando não há trabalho ────────────────────────────────────────
+ * É o que responde o risco que esta variante carregava: uma peça que vive uma
+ * hora vira mobília. Ela só existe enquanto há o que mostrar.
  */
-function EnrichingCard({ job }: { job: SourcedJob }) {
-  const climbing = useClimbingNumber(job.processed)
+function WorkCard({
+  job,
+  phase,
+  mine,
+}: {
+  job: SourcedJob
+  phase: 'import' | 'enrich'
+  mine: boolean
+}) {
+  const cancel = useCancelImport()
+  const fill = useFillMissing()
+  const dismiss = useDismissJob()
+
+  const stopping = job.cancelRequestedAt !== null
+  const stopped = job.status === 'failed'
+  const reading = job.total === null
+
+  /**
+   * O passo 1 já fechou sempre que estamos na fase 2 — a peça só chega aqui
+   * depois de o import ter terminado, porque `enriching` nasce do runner.
+   */
+  const importDone = phase === 'enrich'
 
   return (
-    <div className="flex flex-col gap-1.5 border-line border-t pt-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <p className="font-medium text-ink text-sm">{copy.enriching.title}</p>
-
-        {job.total === null ? (
-          <p className="flex items-center gap-2 text-muted text-sm">
-            <span
-              aria-hidden
-              className="wp-import-pulse size-1.5 rounded-full bg-ink"
-            />
-            {copy.enriching.starting}
+    <div
+      className={cn(
+        'wp-import-in flex flex-col gap-3 rounded-lg p-4 ring-1',
+        stopped ? 'ring-warning/40' : 'ring-line',
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <BrandTile slug={job.source} />
+        <div className="min-w-0">
+          <p className="font-medium text-ink text-sm">
+            {copy.work.title(sourceName(job.source))}
           </p>
-        ) : (
-          <p className="font-mono text-ink text-sm tabular-nums">
-            {copy.enriching.counter(climbing, job.total)}
+          <p className="text-faint text-xs">
+            {formatRelativeTime(job.startedAt)}
           </p>
-        )}
+        </div>
       </div>
 
-      <p className="max-w-prose text-muted text-sm">{copy.enriching.body}</p>
+      <ul className="flex flex-col">
+        <Step
+          first
+          label={copy.work.reading}
+          state={importDone ? 'feito' : 'agora'}
+          right={
+            importDone ? (
+              <p className="text-faint text-sm">{copy.work.done}</p>
+            ) : reading ? (
+              <p className="text-muted text-sm">{copy.running.reading}</p>
+            ) : (
+              <Counter done={job.processed} total={job.total ?? 0} />
+            )
+          }
+        />
+        <Step
+          label={copy.work.artwork}
+          state={importDone ? (stopped ? 'parado' : 'agora') : 'depois'}
+          right={
+            !importDone ? (
+              <p className="text-faint text-sm">{copy.work.next}</p>
+            ) : stopped ? (
+              <p className="text-sm text-warning">
+                {copy.work.stoppedAt(job.processed, job.total ?? 0)}
+              </p>
+            ) : reading ? (
+              <p className="text-muted text-sm">{copy.enriching.starting}</p>
+            ) : (
+              <Counter done={job.processed} total={job.total ?? 0} />
+            )
+          }
+        />
+      </ul>
+
+      <p className="max-w-prose text-muted text-sm">
+        {stopped
+          ? copy.work.stoppedBody
+          : mine
+            ? copy.work.body
+            : copy.running.someoneElse}
+      </p>
+
+      {mine && (
+        <div className="flex flex-wrap justify-end gap-2">
+          {stopped ? (
+            <>
+              <Button disabled={fill.isPending} onClick={() => fill.mutate()}>
+                {fill.isPending ? copy.work.continuing : copy.work.continue}
+              </Button>
+              <Button
+                variant="outline"
+                disabled={dismiss.isPending}
+                onClick={() => dismiss.mutate(job.id)}
+              >
+                {copy.work.dismiss}
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="outline"
+              disabled={stopping || cancel.isPending}
+              onClick={() => cancel.mutate(job.id)}
+            >
+              {stopping ? copy.running.stopping : copy.running.stop}
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -704,6 +999,78 @@ function RefreshBox({ job }: { job: ImportJob | null }) {
       {job && !running && job.status === 'done' && (
         <p className="text-muted text-sm">{copy.done(job.updated)}</p>
       )}
+    </div>
+  )
+}
+
+/**
+ * Preencher o que falta — 14/09/2026, pedido do dono.
+ *
+ * **Irmã do `RefreshBox`, e vizinha dele de propósito.** A diferença entre as
+ * duas é o que a tela tem de ensinar: esta pula o que já existe e custa só o
+ * buraco; aquela relê tudo e custa a biblioteca inteira. Separá-las em lugares
+ * distintos faria alguém escolher a cara achando que escolhia a barata.
+ *
+ * **É a mesma ação do `Continue`** do cartão parado — aquecer pula o que já
+ * está guardado, então retomar é rodar de novo. Uma ação, duas situações.
+ */
+function FillBox({ pending }: { pending: number }) {
+  const fill = useFillMissing()
+  const copy_ = importCopy.fill
+  const nada = pending === 0
+
+  return (
+    <div className="flex flex-col gap-1.5 border-line border-t pt-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <p className="font-medium text-ink text-sm">{copy_.title}</p>
+        <Button
+          variant="outline"
+          disabled={nada || fill.isPending}
+          title={nada ? copy_.noneWhy : undefined}
+          onClick={() => fill.mutate()}
+        >
+          {nada
+            ? copy_.none
+            : fill.isPending
+              ? copy_.starting
+              : copy_.start(pending)}
+        </Button>
+      </div>
+      <p className="max-w-prose text-muted text-sm">{copy_.body}</p>
+      <p className="max-w-prose text-faint text-xs">{copy_.note}</p>
+    </div>
+  )
+}
+
+/**
+ * Limpar o histórico — 14/09/2026, pedido do dono.
+ *
+ * ── Por que ela mora DENTRO do resultado ──────────────────────────────────
+ * Porque é o que ela apaga. Uma ação solta na seção teria de explicar sobre o
+ * que age; encostada no bloco que some, ela não precisa — *o botão é o VERBO e
+ * quem nomeia a coisa é o que está ao lado* (07/09).
+ *
+ * ── Discreta, e é decisão ─────────────────────────────────────────────────
+ * Ela não compete com `Import`, que é a ação primária da tela. E **não pede
+ * confirmação**: o que ela joga fora é o relato de trabalhos passados, não
+ * conteúdo — as obras ficam, e a frase ao lado diz isso, porque "limpar
+ * histórico de import" lê perto demais de "desfazer o import".
+ */
+function ClearHistory() {
+  const clear = useClearHistory()
+  const copy_ = importCopy.history
+
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-3">
+      <p className="text-faint text-xs">{copy_.kept}</p>
+      <button
+        type="button"
+        disabled={clear.isPending}
+        onClick={() => clear.mutate()}
+        className="rounded-md px-2 py-1 font-medium text-faint text-xs transition-colors duration-[var(--motion-micro)] ease-chrome hover:text-ink disabled:opacity-[var(--opacity-disabled)]"
+      >
+        {clear.isPending ? copy_.clearing : copy_.clear}
+      </button>
     </div>
   )
 }
@@ -816,6 +1183,8 @@ function ResultBlock({ job }: { job: SourcedJob }) {
           )}
         </div>
       )}
+
+      <ClearHistory />
     </section>
   )
 }

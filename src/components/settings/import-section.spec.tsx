@@ -51,6 +51,7 @@ const TERMINADO = {
   errorKind: null,
   errorParams: null,
   cancelRequestedAt: null,
+  dismissedAt: null,
   startedAt: new Date().toISOString(),
   finishedAt: new Date().toISOString(),
 }
@@ -72,6 +73,8 @@ function status(over: Partial<ImportStatus> = {}): ImportStatus {
     mine: false,
     latest: null,
     enriching: null,
+    refreshing: null,
+    pending: 0,
     ...over,
   } as ImportStatus
 }
@@ -117,11 +120,19 @@ describe('a segunda fase do import', () => {
   })
 
   /**
-   * **Sem `Stop`**, e é decisão: o import ocupa o recurso, este não — ele cede
-   * fichas a quem tem uma tela aberta. Um botão aqui ofereceria desistir de um
-   * benefício sem custo.
+   * **O aquecimento GANHOU `Stop` — 14/09/2026, e a regra mudou por um motivo.**
+   *
+   * Em 13/09 ele não tinha, e o argumento era que parar ofereceria desistir de
+   * um benefício sem custo: o trabalho não ocupava o recurso, e o que se perdia
+   * ao parar não voltava. **O `Continue` desfaz esse argumento por dentro** —
+   * com uma retomada que acha o que falta, parar deixa de ser desistir e passa
+   * a ser pausar.
+   *
+   * É a mesma forma de *o argumento de uma decisão pode ser sobre COMPETIÇÃO
+   * por espaço, e quando a competição acaba a decisão não vale mais*: aqui o
+   * argumento era sobre PERDA, e a perda deixou de existir.
    */
-  it('não oferece parar o aquecimento', async () => {
+  it('oferece parar o aquecimento, agora que dá para continuar', async () => {
     vi.mocked(importService.status).mockResolvedValue(
       status({ latest: TERMINADO, enriching: AQUECENDO }),
     )
@@ -129,9 +140,7 @@ describe('a segunda fase do import', () => {
     render(<ImportSection />)
 
     await screen.findByText('Fetching artwork')
-    expect(
-      screen.queryByRole('button', { name: 'Stop' }),
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
   })
 
   /** Terminado o aquecimento, a peça sai e o resultado fica. */

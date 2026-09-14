@@ -202,6 +202,43 @@ export const importCopy = {
    * aqui com mais força, porque este trabalho leva de dezoito minutos a quase
    * uma hora numa biblioteca grande.
    */
+  /**
+   * A peça de trabalho — um trabalho, dois passos (14/09/2026).
+   *
+   * ── Por que o título fala da BIBLIOTECA, e não do import ──────────────────
+   * `Importing from MyAnimeList` descreve só o primeiro passo, e a peça vive
+   * pelos dois — ela continua na tela depois de o import ter terminado. *Trazer
+   * sua biblioteca* cobre o trabalho inteiro sem mentir em nenhum dos momentos.
+   *
+   * ── As duas saídas do estado parado ───────────────────────────────────────
+   * `Continue` é a ação, e é **a mesma** de `Fill in missing` lá embaixo:
+   * aquecer pula o que já está guardado, então retomar é rodar de novo.
+   * `Dismiss` tira o aviso e **não apaga** — a linha fica no histórico, como
+   * lido e dispensado em `notifications`.
+   */
+  work: {
+    title: (source: string) => `Bringing in your ${source} library`,
+    reading: 'Reading your list',
+    artwork: 'Fetching artwork',
+    /** O passo que fechou. Curto: o visto ao lado já diz o que é. */
+    done: 'Done',
+    /** O passo que ainda não começou. Não promete tempo — só ordem. */
+    next: 'Next',
+    stoppedAt: (done: number, total: number) =>
+      `Stopped at ${formatNumber(done)} / ${formatNumber(total)}`,
+    /**
+     * A frase do estado parado. Ela diz **o que sobreviveu** antes do que
+     * falta: as obras estão todas lá, e o que ficou para trás é a arte — que é
+     * a diferença entre "perdi meu import" e "falta terminar uma parte".
+     */
+    stoppedBody:
+      'Watchpile closed before this finished. Your titles are all there — only their artwork is missing.',
+    body: 'This runs in the background — you can leave this page.',
+    continue: 'Continue',
+    continuing: 'Continuing…',
+    dismiss: 'Dismiss',
+  },
+
   enriching: {
     title: 'Fetching artwork',
     /** Mesmo formato do contador da primeira fase: número, nunca barra. */
@@ -232,6 +269,46 @@ export const importCopy = {
    * PROVEDOR diz — e o único campo da obra que pode mudar é o total, **só para
    * cima**, que é o caso do mangá em publicação.
    */
+  /**
+   * Preencher o que falta — 14/09/2026, pedido do dono.
+   *
+   * ── Ela fica ao LADO do refresh de propósito ──────────────────────────────
+   * A diferença entre as duas é o que a tela tem de ensinar: uma pula o que já
+   * existe e custa só o buraco, a outra relê tudo e custa a biblioteca inteira.
+   * Separá-las em lugares distintos faria alguém escolher a cara achando que
+   * escolhia a barata.
+   *
+   * ── A contagem vai no BOTÃO ───────────────────────────────────────────────
+   * *Contagem que mede o ESTRAGO entra na frase; contagem que mede um RECURSO
+   * fica ao lado* (07/09) — e aqui ela mede **o trabalho**, que é o que o botão
+   * vai fazer. Em zero o botão desabilita com o motivo, porque a recusa se
+   * anuncia antes do clique e o app não tem toast.
+   */
+  fill: {
+    title: 'Fill in missing artwork',
+    body: "Fetches artwork and details for titles that don't have them yet. It skips everything already stored, so it costs only what is missing.",
+    note: 'Also how you pick up a run that stopped halfway — it finds what is left.',
+    start: (n: number) =>
+      `Fill in ${formatNumber(n)} ${n === 1 ? 'title' : 'titles'}`,
+    starting: 'Starting…',
+    /** O estado em que não há o que fazer — e ele é bom, não um erro. */
+    none: 'Nothing missing',
+    noneWhy: 'Every title with a provider link already has its artwork.',
+  },
+
+  /**
+   * Limpar o histórico — 14/09/2026, pedido do dono.
+   *
+   * O verbo diz o que sai: o RELATO dos trabalhos. O que entrou na biblioteca
+   * fica, e a frase precisa dizer isso, porque "limpar histórico de import" lê
+   * perto demais de "desfazer o import".
+   */
+  history: {
+    clear: 'Clear history',
+    clearing: 'Clearing…',
+    kept: 'Your titles stay — this only clears the record of past runs.',
+  },
+
   refresh: {
     title: 'Refresh title data',
     line: 'Ask the providers again',

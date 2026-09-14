@@ -2261,6 +2261,74 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/entries/fill': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description The fill-in started, and this is the job to watch */
+        202: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['RefreshStarted']
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description Something is already filling in */
+        409: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description Nothing is missing */
+        422: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/export/entries.csv': {
     parameters: {
       query?: never
@@ -3208,6 +3276,113 @@ export interface paths {
       }
     }
     delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/import/{id}/dismiss': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post: {
+      parameters: {
+        query?: never
+        header?: never
+        path: {
+          id: number
+        }
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description The job, now dismissed */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['ImportJob']
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description No such job to dismiss */
+        404: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/import/history': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description How many finished jobs were removed */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              deleted: number
+            }
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
     options?: never
     head?: never
     patch?: never
@@ -5843,6 +6018,7 @@ export interface components {
       latest: components['schemas']['ImportJob']
       enriching: components['schemas']['ImportJob']
       refreshing: components['schemas']['ImportJob']
+      pending: number
     }
     ImportSource: {
       /** @enum {string} */
@@ -5883,6 +6059,7 @@ export interface components {
         [key: string]: string | number
       } | null
       cancelRequestedAt: string | null
+      dismissedAt: string | null
       startedAt: string
       finishedAt: string | null
     } | null
