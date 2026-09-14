@@ -47,6 +47,36 @@ export function formatDate(iso: string): string {
 }
 
 /**
+ * "08:14:20" — a hora de uma linha de log, no fuso de QUEM LÊ (14/09/2026).
+ *
+ * Com o `LOCALE` fixo e não o do navegador: `Intl` sem locale segue o
+ * navegador enquanto o resto da copy não segue, e isso já pôs duas línguas na
+ * mesma linha (design system, 06/09). `hourCycle: 'h23'` porque log é lido
+ * contra outro log — AM/PM obrigaria a converter de cabeça.
+ */
+const clockTime = new Intl.DateTimeFormat(LOCALE, {
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23',
+})
+
+export function formatTime(time: number): string {
+  return clockTime.format(new Date(time))
+}
+
+/** "Monday, 14 September" — o separador de dia da lista de log. */
+const dayLabel = new Intl.DateTimeFormat(LOCALE, {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+})
+
+export function formatDay(time: number): string {
+  return dayLabel.format(new Date(time))
+}
+
+/**
  * "2 days ago" — a coluna "Updated" das listas de `/piles`.
  *
  * `Intl.RelativeTimeFormat` e não uma escada de `if`: "há 2 dias" tem outra

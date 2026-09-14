@@ -3388,6 +3388,124 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/logs': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: {
+      parameters: {
+        query?: {
+          level?: 'all' | 'warn' | 'error'
+          before?: number | null
+          after?: number | null
+        }
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description The newest log lines that match the filter */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': components['schemas']['LogPage']
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description This is set by the server admin */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/logs/download': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get: {
+      parameters: {
+        query?: never
+        header?: never
+        path?: never
+        cookie?: never
+      }
+      requestBody?: never
+      responses: {
+        /** @description Every log file this server kept, oldest first, as JSON Lines */
+        200: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/x-ndjson': string
+          }
+        }
+        /** @description No active session */
+        401: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+        /** @description This is set by the server admin */
+        403: {
+          headers: {
+            [name: string]: unknown
+          }
+          content: {
+            'application/json': {
+              message: string
+            }
+          }
+        }
+      }
+    }
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/media-types': {
     parameters: {
       query?: never
@@ -6076,6 +6194,29 @@ export interface components {
         [key: string]: string | number
       }
     }
+    LogPage: {
+      lines: components['schemas']['LogLine'][]
+      hasOlder: boolean
+      usage: {
+        files: number
+        bytes: number
+        limitBytes: number
+      }
+    }
+    LogLine: {
+      time: number
+      level: number
+      msg: string
+      fields: {
+        [key: string]: unknown
+      }
+      err: components['schemas']['LogError']
+    }
+    LogError: {
+      type: string | null
+      message: string | null
+      stack: string | null
+    } | null
     ServerMeta: {
       version: string | null
     }

@@ -408,8 +408,8 @@ de 29/08 fica inteira: nenhuma largura de tela mexe na sidebar.
   plataformas — é o primeiro "voltar" que este app tem
 - **Só entra na coluna o que existe.** Hoje são `Account`, `Preferences`,
   `Import`, `Export`, `Media types`, `Providers`, `Network` (condicional — quem
-  decide se ela existe é o SERVIDOR) e `Storage` — "affordance descreve o que
-  existe".
+  decide se ela existe é o SERVIDOR), `Storage`, `Logs` (14/09/2026) e
+  `Updates` — "affordance descreve o que existe".
   **E desde 05/09/2026 `Notifications` mudou de objeto**: a central de leitura é
   o SINO e a rota `/notifications`, fora de Settings; a seção guardaria só as
   preferências de quais avisos receber, e não entra enquanto não houver o que
@@ -1264,6 +1264,34 @@ nenhum, com o próprio componente explicando por quê.
 > `htmlFor` apontando pra id inexistente (07/09) e do `aria-describedby`
 > descartado (10/09): *atributo de a11y é uma ponta só até alguém conferir a
 > outra*.
+
+## `THIS INSTANCE / Logs` — 14/09/2026
+
+A seção entre `Storage` e `Updates`, do admin, desenhada num mockup de recorte e
+construída no mesmo dia (design system, seção 5 e trigésima segunda leva).
+`components/settings/logs-section.tsx`, com a regra pura em `domain/log-view.ts`
+e o acompanhamento em `hooks/queries/logs/use-log-stream.ts`.
+
+- **O filtro mora na URL** (`?level=`) e a lista monta com `key={level}`: outro
+  filtro é outra lista, e reconciliar as duas misturaria recortes
+- **`SettingsShell` ganhou `fill`.** Com ele o modo é `h-svh` e só o visualizador
+  rola; sem ele a página cresce com o conteúdo e não há altura que sobre. As
+  outras seções não passam a prop
+- **Acompanha só colado no fim**, exceção consciente a *a lista não se reordena
+  sob a mão*; rolado pra cima, a peça de vidro "N new lines ↓" conta o que chegou
+- **Um `useLayoutEffect` só, e a ordem era o defeito.** Dois efeitos — um que
+  acompanha o fim, outro que compensa o `Load older` — faziam o primeiro gravar a
+  altura nova antes de o segundo medir, e a compensação dava zero. O jsdom não faz
+  layout: **isto se confere no app rodando**, e foi conferido (0px)
+- **A chave da linha inclui os CAMPOS** (`rowKeys`). Índice como desempate e
+  ocorrência entre linhas de mesmo tempo e mensagem remontavam a lista inteira no
+  `Load older` — uma rajada tem centenas de "Request completed" no mesmo
+  milissegundo
+- **`Copy` usa `navigator.clipboard`, que exige contexto SEGURO.** Em
+  `http://hermes.local` ele não existe, e a peça cai em *Couldn't copy*. Pendência
+  registrada no handoff, não esquecimento
+- **Conferir no navegador exige saber qual BUILD está na tela.** Duas conferências
+  "falharam" com a página ainda rodando o bundle anterior, vindo do cache
 
 ## Sobre vidro, `raised` é tingimento — e a correção é de UMA regra
 
