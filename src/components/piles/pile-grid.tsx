@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import type { Pile } from '@/domain/media'
+import { useGridWindow } from '@/hooks/use-grid-window'
 import { countOf } from '@/lib/format'
 import { pilesCopy } from '@/routes/-piles.copy'
 import { PileActions } from './pile-actions'
@@ -85,6 +86,28 @@ function PileCard({ pile, onEdit }: { pile: Pile; onEdit: () => void }) {
  * fileiras que se leem juntas. O que muda é a PROPORÇÃO da arte (quadrada
  * aqui, pôster lá), e ela é decidida dentro de `PileArt`.
  */
+/**
+ * A grade de pilhas — virtualizada em 14/09/2026, **antes de doer**.
+ *
+ * ── Por que ela entrou depois das outras, e mesmo assim entrou ──────────────
+ * Medida com 306 pilhas, esta tela custa 15–18ms de layout e **nenhuma
+ * imagem**: o mosaico 2×2 desenha a INICIAL do título num degradê, porque o
+ * `preview` que a API devolve é só `{id, title}`. É outro perfil do de uma
+ * lista de obras, onde cada item traz um pôster para decodificar — e a curva
+ * também é outra, porque nada cria pilha em massa: só `piles.handlers.ts`
+ * insere, uma por requisição, enquanto obras entram aos milhares num import.
+ *
+ * Pelo volume, ela não precisaria: seriam ~3.500 pilhas para chegar ao custo
+ * que a Home tinha.
+ *
+ * **O que a traz para cá é a CAPA** (brief, 3.17). Quando a capa subida pelo
+ * usuário existir, cada ladrilho passa a carregar uma imagem de verdade, e esta
+ * tela ganha de uma vez o mesmo perfil das listas de obra — 300 pilhas viram
+ * 300 imagens. O gatilho não é o número de pilhas crescer; é uma feature
+ * entrar. Aplicar a conta agora custa a mesma linha que custou nas outras três
+ * listas, e a alternativa é a capa chegar e a tela ficar pesada sem ninguém
+ * ligar uma coisa à outra.
+ */
 export function PileGrid({
   piles,
   onEdit,
@@ -92,9 +115,17 @@ export function PileGrid({
   piles: Pile[]
   onEdit: (pile: Pile) => void
 }) {
+  const { ref, first, visible, style } = useGridWindow<HTMLUListElement>(
+    piles.length,
+  )
+
   return (
-    <ul className="grid grid-cols-[repeat(auto-fill,minmax(var(--spacing-card-poster),1fr))] justify-items-center gap-5">
-      {piles.map((pile) => (
+    <ul
+      ref={ref}
+      style={style}
+      className="grid grid-cols-[repeat(auto-fill,minmax(var(--spacing-card-poster),1fr))] justify-items-center gap-5"
+    >
+      {piles.slice(first, first + visible).map((pile) => (
         <li key={pile.id} className="w-full max-w-card-poster-max">
           <PileCard pile={pile} onEdit={() => onEdit(pile)} />
         </li>
