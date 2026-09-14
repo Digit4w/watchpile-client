@@ -6,6 +6,7 @@ import {
   type LogLine,
   levelLabel,
   levelTone,
+  rowKeys,
   startOfDay,
   withDaySeparators,
 } from './log-view'
@@ -114,6 +115,32 @@ describe('copyText', () => {
       () => '',
     )
     expect(text).toBe('WARN refused\n    nope')
+  })
+})
+
+describe('rowKeys', () => {
+  /**
+   * O caso que o app rodando achou, 14/09/2026: uma rajada tem centenas de
+   * "Request completed" no mesmo milissegundo, e as mais antigas que o `Load
+   * older` põe no começo não podem mudar a chave das que já estavam.
+   */
+  it('não muda a chave das linhas que já estavam quando entra rajada antes', () => {
+    const burst = (path: string) =>
+      line(1, 30, 'Request completed', { fields: { req: { path } } })
+    const current = [burst('/a'), burst('/b')]
+    const older = [burst('/x'), burst('/y')]
+
+    const before = rowKeys(current)
+    const after = rowKeys([...older, ...current]).slice(older.length)
+
+    expect(after).toEqual(before)
+  })
+
+  it('separa duas linhas idênticas campo a campo pela ocorrência', () => {
+    const same = line(1, 30, 'Request completed')
+    const keys = rowKeys([same, same])
+
+    expect(new Set(keys).size).toBe(2)
   })
 })
 

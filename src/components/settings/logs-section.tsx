@@ -11,6 +11,7 @@ import {
   type LogLine,
   levelLabel,
   levelTone,
+  rowKeys,
   withDaySeparators,
 } from '@/domain/log-view'
 import { useLogStream } from '@/hooks/queries/logs/use-log-stream'
@@ -306,7 +307,14 @@ function Viewer({
   }
 
   const unseen = atEnd.current ? 0 : newerCount - seen
-  const items = useMemo(() => withDaySeparators(lines), [lines])
+  const items = useMemo(() => {
+    const keys = rowKeys(lines)
+    let next = 0
+    return withDaySeparators(lines).map((item) => ({
+      item,
+      key: item.kind === 'day' ? `day-${item.day}` : (keys[next++] ?? ''),
+    }))
+  }, [lines])
   const empty = !stream.isPending && lines.length === 0
 
   return (
@@ -355,16 +363,16 @@ function Viewer({
           <EmptyState title={copy.empty.title} body={copy.empty.body} />
         )}
 
-        {items.map((item, index) =>
+        {items.map(({ item, key }) =>
           item.kind === 'day' ? (
             <p
-              key={`day-${item.day}`}
+              key={key}
               className="px-3 pt-3 pb-1 font-sans text-faint text-xs first:pt-1"
             >
               {formatDay(item.day)}
             </p>
           ) : (
-            <LogRow key={rowKey(item.line, index)} line={item.line} />
+            <LogRow key={key} line={item.line} />
           ),
         )}
       </div>
@@ -382,15 +390,6 @@ function Viewer({
       )}
     </div>
   )
-}
-
-/**
- * A chave de uma linha é o que ela É, e não a posição: `Load older` põe linhas
- * no começo, e uma chave por índice faria a stack aberta pular de linha. O
- * índice só entra como desempate de duas linhas idênticas no mesmo milissegundo.
- */
-function rowKey(line: LogLine, index: number): string {
-  return `${line.time}:${line.level}:${line.msg}:${index}`
 }
 
 const TONE = {

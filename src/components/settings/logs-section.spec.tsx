@@ -167,6 +167,26 @@ describe('LogsSection', () => {
     )
   })
 
+  /**
+   * Visto no app rodando, 14/09/2026: a chave da linha levava o ÍNDICE como
+   * desempate, e o índice de toda linha muda quando entram linhas antes dela —
+   * a lista inteira remontava, e a stack aberta fechava sozinha. O jsdom não faz
+   * layout, mas remontagem ele vê.
+   */
+  it('Load older não fecha a stack que estava aberta', async () => {
+    const { user } = open()
+    await screen.findByText('art warm failed')
+    await user.click(screen.getByRole('button', { name: 'Show details' }))
+
+    await user.click(screen.getByRole('button', { name: 'Load older' }))
+    await screen.findByText('older line')
+
+    expect(
+      screen.getByRole('button', { name: 'Hide details' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/at writeArt/)).toBeInTheDocument()
+  })
+
   it('não oferece Download nem Copy quando não há o que levar', async () => {
     vi.mocked(logsService.read).mockResolvedValue({
       lines: [],

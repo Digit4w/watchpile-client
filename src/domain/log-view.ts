@@ -156,6 +156,35 @@ export function copyText(
     .join('\n')
 }
 
+/**
+ * A chave de cada linha: o que ela É, e nunca a posição — 14/09/2026.
+ *
+ * `Load older` põe linhas no COMEÇO. Uma chave que mudasse com isso remontaria
+ * a lista inteira, e a stack aberta fecharia sozinha. Duas versões erraram, e as
+ * duas só apareceram no app rodando:
+ *
+ * - **índice da lista como desempate**: o índice de toda linha muda quando
+ *   entram linhas antes dela
+ * - **só `time` + nível + mensagem, com a ocorrência como desempate**: uma
+ *   rajada de requisições tem centenas de "Request completed" no mesmo
+ *   milissegundo, e as mais antigas que entram no começo deslocam a contagem
+ *   das que já estavam
+ *
+ * **Os campos entram na base**, porque é neles que duas linhas de uma rajada
+ * diferem (`reqId`, `req.path`). A ocorrência fica só pra linha idêntica de
+ * verdade, campo a campo — e duas assim são indistinguíveis pra quem lê, então
+ * trocar uma pela outra não muda nada na tela.
+ */
+export function rowKeys(lines: readonly LogLine[]): string[] {
+  const seen = new Map<string, number>()
+  return lines.map((line) => {
+    const base = `${line.time}:${line.level}:${line.msg}:${JSON.stringify(line.fields)}`
+    const occurrence = seen.get(base) ?? 0
+    seen.set(base, occurrence + 1)
+    return `${base}:${occurrence}`
+  })
+}
+
 /** Se a rolagem está colada no fim — o que decide se a caixa acompanha o log. */
 export function isAtEnd(
   box: { scrollTop: number; scrollHeight: number; clientHeight: number },
