@@ -440,9 +440,32 @@ de 29/08 fica inteira: nenhuma largura de tela mexe na sidebar.
   extrapolar não seria. **E não há barra em lugar nenhum**: enquanto a fonte é
   lida não existe denominador, e ali vai uma frase com um ponto pulsando —
   atividade, nunca proporção. O pulso é loop ambiente e `prefers-reduced-motion`
-  o apaga; a entrada, que é transição de estado, fica. `About`
-  fica fora dos dois grupos, no fim: versão e licença não são de ninguém, e é
-  ele que garante que a coluna nunca fique oca
+  o apaga; a entrada, que é transição de estado, fica.
+
+  **Ela ganhou a SEGUNDA FASE em 13-14/09/2026** — trazer as obras e buscar a
+  arte são dois trabalhos que a pessoa vive como um, e convivem numa peça de
+  dois passos (`WorkCard`). Cinco coisas dela valem em qualquer tela que mostre
+  trabalho de fundo: **cada passo carrega o SEU contador**, que é o que deixa o
+  passo 1 dizer `Done` com o 2 vivo (*número que soma dois motivos não confere
+  nada*); **a peça tem UM slot e a mesma `key` nas duas fases**, senão a troca
+  desmonta uma e monta a outra e a moldura reentra em vez de mudar por dentro
+  (`wp-step-mark` e `wp-step-active`, com 80ms de atraso no segundo — é a ordem
+  que conta a história); **ela vem ANTES do formulário nas duas fases**, porque
+  até 14/09 ela saltava do topo para baixo de três caixas no instante em que o
+  passo 1 fechava; **o formulário NÃO some** enquanto um import roda — ele fica
+  e os botões recusam com o motivo dito uma vez acima, que é a régua de 09/09 do
+  `/search` (*o que varia é o CONTEÚDO, nunca a posição*), e a recusa fala de
+  import e não de aquecimento, porque o índice único do servidor é por `kind`; e
+  **a divisória agrupa** — ela mora no topo do formulário, nunca entre a regra de
+  colisão e as caixas que ela governa. Um trabalho interrompido diz que parou e
+  oferece `Continue` e `Dismiss`, e **`Continue` é a MESMA ação de `Fill in
+  missing artwork`**: aquecer pula o que já está guardado, então retomar não
+  precisa saber onde parou. **O logo de terceiro entrou**: o que muda por marca é
+  o SÍMBOLO e nunca o ladrilho, e as cores dele são LITERAIS e não saem de token
+  — a cor de uma marca é dado do dono dela. O MyAnimeList fica na inicial.
+
+  `About` fica fora dos dois grupos, no fim: versão e licença não são de
+  ninguém, e é ele que garante que a coluna nunca fique oca
 - **O selo da coluna é um CONTADOR, e vive no SHELL** (`SectionBadge` +
   `usePendingBySection`). Ele fica aqui e não na seção porque existe pra ser
   visto **de fora** dela. **O que ele conta é a regra toda**, e é pura
