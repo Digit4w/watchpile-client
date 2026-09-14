@@ -31,9 +31,54 @@ import { type GridSlice, gridSlice } from '@/domain/grid-window'
 /** Quantos itens a primeira passada monta, só para haver o que medir. */
 const PROBE = 24
 
+/**
+ * Quem rola: o ancestral com `overflow` próprio, ou a janela — 14/09/2026.
+ *
+ * A primeira versão assumia a janela, porque em `/library` nenhum ancestral
+ * rola (`app-shell.tsx`). **Os widgets da Home rolam dentro de si**, e a
+ * suposição os deixava de fora: a conta lia a rolagem da página enquanto o
+ * conteúdo se movia dentro de uma caixa parada, então a fatia nunca mudava e a
+ * grade inteira precisava existir.
+ *
+ * Descobrir em vez de receber por parâmetro: quem chama sabe o que está
+ * listando, não onde a peça foi montada — e o mesmo componente aparece dentro
+ * de um widget e numa tela inteira.
+ */
+function scrollerOf(element: HTMLElement, axis: Axis): HTMLElement | null {
+  /**
+   * **Começa no PRÓPRIO elemento**, e é o eixo `x` que obriga: na fileira
+   * horizontal do widget o `overflow-x-auto` está no mesmo `<ul>` que lista os
+   * itens, não num ancestral. Subir direto para o pai o deixaria de fora e a
+   * conta leria a rolagem de outra caixa.
+   */
+  let node: HTMLElement | null = element
+  while (node) {
+    const style = getComputedStyle(node)
+    const overflow = axis === 'x' ? style.overflowX : style.overflowY
+    if (overflow === 'auto' || overflow === 'scroll') {
+      return node
+    }
+    node = node.parentElement
+  }
+  return null
+}
+
 type Metrics = { rowHeight: number; columns: number; gap: number }
 
-export function useGridWindow<T extends HTMLElement>(count: number) {
+/**
+ * Em que eixo a lista cresce — 14/09/2026.
+ *
+ * `y` é o caso comum: grades e listas que rolam para baixo. `x` é a fileira de
+ * rolagem horizontal do widget da Home, que é uma linha só e cresce para o
+ * lado. **A aritmética é a mesma** (`gridSlice` não sabe de eixo); o que muda é
+ * qual medida do item se lê e contra qual borda a rolagem se mede.
+ */
+export type Axis = 'x' | 'y'
+
+export function useGridWindow<T extends HTMLElement>(
+  count: number,
+  axis: Axis = 'y',
+) {
   const ref = useRef<T | null>(null)
   const [metrics, setMetrics] = useState<Metrics | null>(null)
   const [slice, setSlice] = useState<GridSlice | null>(null)
@@ -44,17 +89,43 @@ export function useGridWindow<T extends HTMLElement>(count: number) {
       return null
     }
 
+    /**
+     * **Os espaçadores ficam de fora da medição** — 14/09/2026. No eixo `x` o
+     * vão é um item do flex, e ele tem a largura do RESTO da lista; lido como
+     * se fosse uma carta, ele daria um passo de milhares de pixels e a fatia
+     * inteira caberia numa "coluna". Eles se marcam com `aria-hidden`, que é o
+     * que já os tira da árvore de acessibilidade pelo mesmo motivo: não são
+     * conteúdo.
+     */
     const items = [...element.children].filter(
-      (child): child is HTMLElement => child instanceof HTMLElement,
+      (child): child is HTMLElement =>
+        child instanceof HTMLElement &&
+        child.getAttribute('aria-hidden') === null,
     )
     const first = items[0]
     if (!first) {
       return null
     }
 
-    const rowHeight = first.offsetHeight
+    const rowHeight = axis === 'x' ? first.offsetWidth : first.offsetHeight
     if (!(rowHeight > 0)) {
       return null
+    }
+
+    /**
+     * Numa fileira horizontal todo item divide o mesmo topo, então a contagem
+     * de colunas abaixo acharia a fileira inteira. O eixo `x` é sempre uma
+     * "coluna" — os itens se sucedem no outro sentido.
+     */
+    if (axis === 'x') {
+      const next = items[1]
+      return {
+        rowHeight,
+        columns: 1,
+        gap: next
+          ? Math.max(0, next.offsetLeft - (first.offsetLeft + rowHeight))
+          : 0,
+      }
     }
 
     /**
@@ -84,7 +155,7 @@ export function useGridWindow<T extends HTMLElement>(count: number) {
       : 0
 
     return { rowHeight, columns: Math.max(1, columns), gap }
-  }, [])
+  }, [axis])
 
   /**
    * Mede o layout — e **só quando pode ter mudado** (13/09/2026).
@@ -138,18 +209,43 @@ export function useGridWindow<T extends HTMLElement>(count: number) {
     }
 
     const box = element.getBoundingClientRect()
+    const scroller = scrollerOf(element, axis)
+
+    /**
+     * O mesmo cálculo nos dois casos, e a diferença é só contra QUE borda a
+     * distância se mede: a da caixa que rola, ou a da dobra da janela.
+     */
+    /**
+     * Quanto a lista já subiu (ou andou para a esquerda), e há **dois casos**:
+     *
+     * - o scroller É o próprio elemento — a fileira horizontal do widget, onde
+     *   `overflow-x` está no mesmo `<ul>`. Aí a diferença de bordas é sempre
+     *   zero, e quem responde é `scrollLeft`/`scrollTop`
+     * - o scroller é um ANCESTRAL (ou a janela) — aí o que vale é a distância
+     *   entre as duas bordas
+     */
+    const scrollerBox = scroller?.getBoundingClientRect()
+    const proprio = scroller === (element as unknown as HTMLElement)
+    const scrollTop =
+      axis === 'x'
+        ? proprio
+          ? scroller.scrollLeft
+          : (scrollerBox?.left ?? 0) - box.left
+        : proprio
+          ? scroller.scrollTop
+          : (scrollerBox?.top ?? 0) - box.top
+    const viewport =
+      axis === 'x'
+        ? (scroller?.clientWidth ?? window.innerWidth)
+        : (scroller?.clientHeight ?? window.innerHeight)
+
     const next = gridSlice({
       count,
       columns: metrics.columns,
       rowHeight: metrics.rowHeight,
       gap: metrics.gap,
-      /**
-       * A rolagem é da JANELA — nenhum ancestral de `/library` tem `overflow`
-       * próprio (`app-shell.tsx`), o que se confirmou medindo. `box.top` já é
-       * relativo à dobra, então o quanto a grade subiu é o seu negativo.
-       */
-      scrollTop: -box.top,
-      viewport: window.innerHeight,
+      scrollTop,
+      viewport,
     })
 
     setSlice((current) =>
@@ -162,7 +258,7 @@ export function useGridWindow<T extends HTMLElement>(count: number) {
         ? current
         : next,
     )
-  }, [count, metrics])
+  }, [count, metrics, axis])
 
   useLayoutEffect(recompute, [recompute])
 
@@ -172,6 +268,13 @@ export function useGridWindow<T extends HTMLElement>(count: number) {
       return
     }
 
+    /**
+     * O evento de rolagem de uma caixa **não sobe para a janela**, então ouvir
+     * só `window` deixaria os widgets sem recalcular. Ouvir os dois cobre as
+     * duas montagens sem quem chama precisar dizer qual é.
+     */
+    const scroller = scrollerOf(element, axis)
+    scroller?.addEventListener('scroll', recompute, { passive: true })
     window.addEventListener('scroll', recompute, { passive: true })
     window.addEventListener('resize', recompute, { passive: true })
     /**
@@ -183,11 +286,12 @@ export function useGridWindow<T extends HTMLElement>(count: number) {
     observer.observe(element)
 
     return () => {
+      scroller?.removeEventListener('scroll', recompute)
       window.removeEventListener('scroll', recompute)
       window.removeEventListener('resize', recompute)
       observer.disconnect()
     }
-  }, [recompute])
+  }, [recompute, axis])
 
   /**
    * Enquanto não mediu, o lote de arranque. Depois, a fatia — e nunca a lista
@@ -211,9 +315,23 @@ export function useGridWindow<T extends HTMLElement>(count: number) {
      * espaçadores, que numa grade CSS ocupariam colunas e empurrariam a
      * primeira carta da fatia para o meio da linha.
      */
-    style: {
-      paddingTop: shown.padTop,
-      paddingBottom: shown.padBottom,
-    },
+    /**
+     * Os dois vãos, crus — quem monta decide COMO reservá-los.
+     *
+     * No eixo `y` eles viram padding do container (ver `style`). No eixo `x`
+     * não podem: ali o elemento que rola é o MESMO que receberia o padding, e
+     * padding lateral num flex que é o próprio scroller **infla o
+     * `clientWidth`** em vez de criar espaço rolável — medido em 14/09/2026, a
+     * fita colapsava para 1.438 cartas montadas assim que alguém a arrastava.
+     * Lá o vão vira um item espaçador.
+     */
+    padStart: shown.padTop,
+    padEnd: shown.padBottom,
+    /**
+     * Os dois vãos como `padding` do container — e não como itens espaçadores,
+     * que numa grade CSS ocupariam colunas e empurrariam a primeira carta da
+     * fatia para o meio da linha. **Serve o eixo `y`**; ver `padStart` acima.
+     */
+    style: { paddingTop: shown.padTop, paddingBottom: shown.padBottom },
   }
 }

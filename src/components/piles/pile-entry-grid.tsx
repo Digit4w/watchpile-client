@@ -11,6 +11,7 @@ import { EntryCard } from '@/components/media/entry-card'
 import type { Entry } from '@/domain/media'
 import { useMovePileEntry } from '@/hooks/mutations/piles/use-move-pile-entry'
 import { pileKeys } from '@/hooks/queries/piles/keys'
+import { useGridWindow } from '@/hooks/use-grid-window'
 import { useReorderable } from '@/hooks/use-reorderable'
 
 /**
@@ -147,8 +148,46 @@ export function PileEntryGrid({
   const { moving, reorder, wrap } = useGridReorder(entries, pileId, reorderable)
 
   return wrap(
-    <ul className="grid grid-cols-[repeat(auto-fill,minmax(var(--spacing-card-poster),1fr))] justify-items-center gap-4">
-      {entries.map((entry) => (
+    <VirtualCards
+      entries={entries}
+      pileId={pileId}
+      moving={moving}
+      reorder={reorder}
+    />,
+  )
+}
+
+/**
+ * A grade da pilha, montando só a fatia visível — 14/09/2026.
+ *
+ * Mesma conta de `/library` e dos widgets da Home (`use-grid-window.ts`): uma
+ * pilha pode ter centenas de obras, e sem isto todas existem no DOM com a
+ * imagem de cada uma. É a mesma doença tratada no mesmo ciclo, nos três lugares
+ * que listam obra — o quarto (`/search`) não precisa, porque o provedor já
+ * devolve uma página curta.
+ */
+function VirtualCards({
+  entries,
+  pileId,
+  moving,
+  reorder,
+}: {
+  entries: Entry[]
+  pileId: number
+  moving: boolean
+  reorder?: { on: boolean; toggle: () => void }
+}) {
+  const { ref, first, visible, style } = useGridWindow<HTMLUListElement>(
+    entries.length,
+  )
+
+  return (
+    <ul
+      ref={ref}
+      style={style}
+      className="grid grid-cols-[repeat(auto-fill,minmax(var(--spacing-card-poster),1fr))] justify-items-center gap-4"
+    >
+      {entries.slice(first, first + visible).map((entry) => (
         <SortableCard
           key={entry.id}
           id={entry.id}
@@ -158,7 +197,7 @@ export function PileEntryGrid({
           <EntryCard entry={entry} pileId={pileId} reorder={reorder} />
         </SortableCard>
       ))}
-    </ul>,
+    </ul>
   )
 }
 

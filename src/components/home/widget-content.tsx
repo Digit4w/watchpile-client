@@ -32,6 +32,7 @@ import { requestFailure } from '@/domain/request-failure'
 import { useMoveWidgetEntry } from '@/hooks/mutations/home-widgets/use-move-widget-entry'
 import { homeWidgetKeys } from '@/hooks/queries/home-widgets/keys'
 import { useWidgetEntries } from '@/hooks/queries/home-widgets/use-widget-entries'
+import { useGridWindow } from '@/hooks/use-grid-window'
 import { appCopy } from '@/lib/copy'
 import { homeCopy } from '@/routes/-home.copy'
 
@@ -374,11 +375,7 @@ export function WidgetContent({ widget }: { widget: HomeWidget }) {
 
   if (widget.type === 'list') {
     return dnd(
-      <ul className="flex flex-col gap-4">
-        {entries.data.map((entry) => (
-          <SortableListRow key={entry.id} entry={entry} />
-        ))}
-      </ul>,
+      <VirtualList entries={entries.data} />,
       verticalListSortingStrategy,
     )
   }
@@ -395,20 +392,11 @@ export function WidgetContent({ widget }: { widget: HomeWidget }) {
      * este ciclo existe pra resolver.
      */
     return dnd(
-      <ul className="scrollbar-none flex gap-4 overflow-x-auto">
-        {entries.data.map((entry) => (
-          // Largura fixa: numa fita horizontal não existe "sobra à direita"
-          // pra distribuir — o que não cabe rola.
-          <Sortable
-            key={entry.id}
-            id={entry.id}
-            moving={reordering}
-            className="h-card-poster-h w-card-poster shrink-0"
-          >
-            <EntryCard entry={entry} reorder={reorder} />
-          </Sortable>
-        ))}
-      </ul>,
+      <VirtualStrip
+        entries={entries.data}
+        reordering={reordering}
+        reorder={reorder}
+      />,
       horizontalListSortingStrategy,
     )
   }
@@ -428,8 +416,124 @@ export function WidgetContent({ widget }: { widget: HomeWidget }) {
    * estreito, de duas ou três colunas, evita a carta virar quase um quadrado.
    */
   return dnd(
-    <ul className="grid grid-cols-[repeat(auto-fill,minmax(var(--spacing-card-poster),1fr))] justify-items-center gap-4">
-      {entries.data.map((entry) => (
+    <VirtualGrid
+      entries={entries.data}
+      reordering={reordering}
+      reorder={reorder}
+    />,
+    rectSortingStrategy,
+  )
+}
+
+/**
+ * O widget de LISTA, montando só a fatia visível — 14/09/2026.
+ *
+ * ── Por que ele precisou disto, se a `/library` já tinha ───────────────────
+ * Porque a virtualização de 13/09 cobriu `/library` e mais nada, e o widget
+ * sem pile mostra a biblioteca inteira por decisão de modelo (brief, 3.15).
+ * Medido na Home do dono: **88.327 nós e 2.889 imagens**, com um layout
+ * custando 191ms — as 1.442 obras montadas DUAS vezes, uma por widget.
+ *
+ * ── O `SortableContext` recebe a FATIA, e não a lista toda ────────────────
+ * É o que muda em relação a `/library`, que não tem arrasto. Passar os 1.442
+ * ids ao dnd-kit anularia o ganho: ele monta estado por item. Arrastar
+ * continua funcionando dentro do que está montado — e reordenar mil e
+ * quatrocentas cartas arrastando não é o gesto que alguém faz; quem quer a
+ * obra em outro lugar usa o menu.
+ */
+function VirtualList({ entries }: { entries: Entry[] }) {
+  const { ref, first, visible, style } = useGridWindow<HTMLUListElement>(
+    entries.length,
+  )
+
+  return (
+    <ul ref={ref} style={style} className="flex flex-col gap-4">
+      {entries.slice(first, first + visible).map((entry) => (
+        <SortableListRow key={entry.id} entry={entry} />
+      ))}
+    </ul>
+  )
+}
+
+/**
+ * A fileira que desliza — virtualizada no eixo X.
+ *
+ * **É a mesma conta, no outro eixo** (`use-grid-window.ts`, `axis: 'x'`): uma
+ * fileira é uma linha só, e o que se sucede são colunas. Ela foi a última das
+ * três a entrar, e por um motivo que vale registrar: as listas verticais
+ * saltaram aos olhos na medição e esta ficou montando as 1.442 cartas mais um
+ * ciclo, porque o hook só sabia olhar para baixo.
+ *
+ * O `overflow-x` fica no PRÓPRIO `<ul>` aqui, ao contrário dos outros dois —
+ * que é o caso a mais que `scrollerOf` precisou aprender.
+ */
+function VirtualStrip({
+  entries,
+  reordering,
+  reorder,
+}: {
+  entries: Entry[]
+  reordering: boolean
+  reorder?: { on: boolean; toggle: () => void }
+}) {
+  const { ref, first, visible, padStart, padEnd } =
+    useGridWindow<HTMLUListElement>(entries.length, 'x')
+
+  return (
+    <ul ref={ref} className="scrollbar-none flex gap-4 overflow-x-auto">
+      {/**
+       * **Espaçador, e não padding** — 14/09/2026. Aqui o `<ul>` é ao mesmo
+       * tempo o que rola e o que receberia o padding, e padding lateral num
+       * flex nessa posição infla o `clientWidth` em vez de abrir espaço
+       * rolável: medido, a fita voltava a montar as 1.438 cartas no primeiro
+       * arrasto. Um item de largura fixa reserva o mesmo espaço e rola junto.
+       *
+       * `aria-hidden` porque ele não é uma obra, e `shrink-0` porque num flex
+       * um item sem conteúdo encolhe a zero.
+       */}
+      {padStart > 0 && (
+        <li aria-hidden className="shrink-0" style={{ width: padStart }} />
+      )}
+      {entries.slice(first, first + visible).map((entry) => (
+        // Largura fixa: numa fita horizontal não existe "sobra à direita"
+        // pra distribuir — o que não cabe rola.
+        <Sortable
+          key={entry.id}
+          id={entry.id}
+          moving={reordering}
+          className="h-card-poster-h w-card-poster shrink-0"
+        >
+          <EntryCard entry={entry} reorder={reorder} />
+        </Sortable>
+      ))}
+      {padEnd > 0 && (
+        <li aria-hidden className="shrink-0" style={{ width: padEnd }} />
+      )}
+    </ul>
+  )
+}
+
+/** A grade do widget — mesma conta da lista, com as colunas medidas. */
+function VirtualGrid({
+  entries,
+  reordering,
+  reorder,
+}: {
+  entries: Entry[]
+  reordering: boolean
+  reorder?: { on: boolean; toggle: () => void }
+}) {
+  const { ref, first, visible, style } = useGridWindow<HTMLUListElement>(
+    entries.length,
+  )
+
+  return (
+    <ul
+      ref={ref}
+      style={style}
+      className="grid grid-cols-[repeat(auto-fill,minmax(var(--spacing-card-poster),1fr))] justify-items-center gap-4"
+    >
+      {entries.slice(first, first + visible).map((entry) => (
         <Sortable
           key={entry.id}
           id={entry.id}
@@ -439,7 +543,6 @@ export function WidgetContent({ widget }: { widget: HomeWidget }) {
           <EntryCard entry={entry} reorder={reorder} />
         </Sortable>
       ))}
-    </ul>,
-    rectSortingStrategy,
+    </ul>
   )
 }
