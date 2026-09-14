@@ -6,6 +6,7 @@ import {
   Download,
   HardDrive,
   Info,
+  ScrollText,
   Shapes,
   Share2,
   SlidersHorizontal,
@@ -144,6 +145,16 @@ const GROUPS = [
         to: '/settings/storage',
         label: settingsCopy.sections.storage,
         Icon: HardDrive,
+      },
+      /**
+       * O que este servidor andou fazendo (14/09/2026). Fica ao lado de
+       * `Storage` porque as duas dizem o que a instalação GUARDOU — o cache e o
+       * histórico —, e `Updates` continua fechando o grupo (decisão do dono).
+       */
+      {
+        to: '/settings/logs',
+        label: settingsCopy.sections.logs,
+        Icon: ScrollText,
       },
       /**
        * **Não é condicional, ao contrário de `Network`.** Ela serve nas duas
@@ -484,6 +495,16 @@ type SettingsShellProps = {
   isAdmin: boolean
   /** O nome da seção, na barra de cima do celular. */
   sectionTitle: string
+  /**
+   * O painel OCUPA a altura da tela, e o que rola é uma peça dentro dele —
+   * 14/09/2026, `Logs`.
+   *
+   * Sem isto o shell é `min-h-svh` e a página cresce com o conteúdo, então não
+   * há "altura que sobra" pra uma caixa preencher: ela teria de inventar um
+   * número. Com isto a altura é da tela, e a seção decide o que rola dentro.
+   * As outras seções não passam a prop e continuam rolando a página inteira.
+   */
+  fill?: boolean
   children: ReactNode
 }
 
@@ -497,6 +518,7 @@ type SettingsShellProps = {
 export function SettingsShell({
   isAdmin,
   sectionTitle,
+  fill = false,
   children,
 }: SettingsShellProps) {
   const pathname = useRouterState({
@@ -504,14 +526,14 @@ export function SettingsShell({
   })
 
   return (
-    <div className="flex min-h-svh bg-surface text-ink">
+    <div className={`flex bg-surface text-ink ${fill ? 'h-svh' : 'min-h-svh'}`}>
       <SectionColumn pathname={pathname} isAdmin={isAdmin} />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {/* Dentro de uma seção, o goBack do celular sobe pra list de seções —
          * o primeiro dos dois níveis. Sair do modo é o voltar de lá. */}
         <MobileTopBar title={sectionTitle} backTo="/settings" />
         <main className="flex min-h-0 min-w-0 flex-1 flex-col p-4 md:p-8">
-          <div className="flex w-full max-w-3xl flex-1 flex-col">
+          <div className="flex min-h-0 w-full max-w-3xl flex-1 flex-col">
             {children}
           </div>
         </main>

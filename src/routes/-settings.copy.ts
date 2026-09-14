@@ -27,6 +27,7 @@ export const settingsCopy = {
     providers: 'Providers',
     network: 'Network',
     storage: 'Storage',
+    logs: 'Logs',
     updates: 'Updates',
     about: 'About',
   },
@@ -213,6 +214,63 @@ export const settingsCopy = {
     /** Depois do clique, na própria linha — o app não tem toast. */
     cleared: (size: string) => `${size} freed.`,
     failed: "Couldn't clear that. Nothing changed.",
+  },
+  /**
+   * `THIS INSTANCE / Logs` — o que este servidor andou fazendo (14/09/2026).
+   *
+   * **A copy diz que o segredo já saiu**, porque é o que deixa alguém colar o
+   * log num Discord sem medo — e é verdade desde o emissor, não uma promessa da
+   * tela.
+   */
+  logs: {
+    body: 'What this server has been doing: failures from providers, imports and updates. Keys and passwords are removed before anything is written, so you can share this when asking for help.',
+    file: {
+      /** O título nomeia a coisa; os botões são os verbos (seção 5, 07/09). */
+      title: 'Server log',
+      /**
+       * **Copy e Download levam coisas diferentes**, e a frase diz isso antes
+       * do clique: quem copia com `Errors` ligado cola um trecho sem o contexto
+       * em volta, e precisa saber que o arquivo inteiro está a um botão.
+       */
+      body: 'Copy takes the lines shown below. Download takes every file this server kept.',
+      count: { one: 'file', other: 'files' },
+      held: (files: string, size: string, limit: string) =>
+        `${files} · ${size}, keeping up to ${limit}`,
+      empty: 'No log files yet',
+    },
+    copy: 'Copy',
+    /** Na própria peça, por ~2s: o app não tem toast. */
+    copied: 'Copied',
+    copyFailed: "Couldn't copy. Download the file instead.",
+    download: 'Download',
+    levelsLabel: 'Show',
+    levels: { all: 'All', warn: 'Warnings', error: 'Errors' },
+    lineCount: { one: 'line', other: 'lines' },
+    showing: (lines: string) => `Showing the last ${lines}`,
+    loadOlder: 'Load older',
+    loadingOlder: 'Loading…',
+    olderFailed: "Couldn't load older lines.",
+    showDetails: 'Show details',
+    hideDetails: 'Hide details',
+    /** A peça que aparece quando se rolou pra cima e chegaram linhas. */
+    newLines: { one: 'new line', other: 'new lines' },
+    /** O vazio de quem FILTROU: a saída desfaz o recorte (seção 5, 29/08). */
+    emptyFiltered: {
+      warn: 'No warnings or errors',
+      error: 'No errors',
+      body: 'Nothing went wrong in the lines this server kept.',
+      action: 'Show all',
+    },
+    /** Quase inalcançável: todo boot escreve a linha de listening. */
+    empty: {
+      title: 'Nothing logged yet',
+      body: 'Lines appear here as the server works.',
+    },
+    forbidden: {
+      title: 'This is for the admin of this server',
+      body: 'Ask them for the log when you need help with a problem.',
+      back: 'Back to settings',
+    },
   },
   /**
    * `THIS INSTANCE / Network` — em qual interface este servidor escuta.
