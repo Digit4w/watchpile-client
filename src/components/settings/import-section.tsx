@@ -190,7 +190,29 @@ export function ImportSection() {
             />
           )}
 
-          {!running && <StartForm sources={status.data?.sources ?? []} />}
+          {/**
+           * **O formulário FICA, mesmo com um import rodando — 14/09/2026.**
+           *
+           * Ele sumia inteiro durante a primeira fase e voltava na segunda, o
+           * que é a régua de 09/09 do `/search` furada aqui: *controle cuja
+           * existência depende do estado da tela é controle que não se
+           * aprende*. A saída lá foi a mesma — **o que varia é o CONTEÚDO,
+           * nunca a posição** —, e a recusa se anuncia antes do clique, porque
+           * este app não tem toast.
+           *
+           * `running` e não `work`: o índice único do servidor é por `kind`, e
+           * buscar arte não ocupa a vaga de importar.
+           */}
+          <StartForm
+            sources={status.data?.sources ?? []}
+            busy={
+              running
+                ? mine
+                  ? copy.running.busy.mine
+                  : copy.running.busy.theirs
+                : null
+            }
+          />
 
           {latestSourced && !running && <ResultBlock job={latestSourced} />}
 
@@ -212,13 +234,34 @@ export function ImportSection() {
 
 /* ── O formulário ─────────────────────────────────────────────────────────── */
 
-function StartForm({ sources }: { sources: ImportSourceState[] }) {
+function StartForm({
+  sources,
+  busy,
+}: {
+  sources: ImportSourceState[]
+  /** Por que não dá pra começar agora, ou `null` quando dá. */
+  busy: string | null
+}) {
   const [mode, setMode] = useState<ImportMode>('skip')
   const { services, csv } = splitSources(sources)
 
   return (
-    <div className="flex flex-col gap-6">
+    /*
+      **O formulário é um bloco só, e a divisória mora AQUI** — acima da regra e
+      das caixas juntas, nunca entre elas. É o que faz a regra e o que ela
+      governa lerem como uma coisa.
+    */
+    <div className="flex flex-col gap-6 border-line border-t pt-6">
       <ModeChoice mode={mode} onChange={setMode} />
+
+      {/*
+        **A recusa fica UMA vez, e não uma por caixa.** O que impede não é nada
+        de nenhuma delas — é o servidor estar ocupado —, então repeti-la três
+        vezes diria três vezes a mesma coisa e ainda sugeriria que cada fonte
+        tem um motivo próprio. Mesma forma da regra logo acima, pelo mesmo
+        argumento.
+      */}
+      {busy && <p className="max-w-prose text-muted text-sm">{busy}</p>}
 
       {/*
         Uma caixa por fonte, **em grade de duas colunas com o CSV ocupando a
@@ -234,9 +277,14 @@ function StartForm({ sources }: { sources: ImportSourceState[] }) {
       */}
       <div className="grid gap-4 sm:grid-cols-2">
         {services.map((source) => (
-          <ProfileBox key={source.slug} source={source} mode={mode} />
+          <ProfileBox
+            key={source.slug}
+            source={source}
+            mode={mode}
+            busy={busy !== null}
+          />
         ))}
-        {csv && <CsvBox key={csv.slug} mode={mode} />}
+        {csv && <CsvBox key={csv.slug} mode={mode} busy={busy !== null} />}
       </div>
     </div>
   )
@@ -313,7 +361,7 @@ function ActionRow({ children }: { children: ReactNode }) {
   return <div className="mt-auto flex justify-end">{children}</div>
 }
 
-function CsvBox({ mode }: { mode: ImportMode }) {
+function CsvBox({ mode, busy }: { mode: ImportMode; busy: boolean }) {
   const [file, setFile] = useState<File | null>(null)
   const input = useRef<HTMLInputElement>(null)
   const start = useStartCsvImport()
@@ -356,7 +404,7 @@ function CsvBox({ mode }: { mode: ImportMode }) {
 
       <ActionRow>
         <Button
-          disabled={!file || start.isPending}
+          disabled={busy || !file || start.isPending}
           onClick={() => {
             if (file) {
               start.mutate({ file, mode })
@@ -381,9 +429,12 @@ function CsvBox({ mode }: { mode: ImportMode }) {
 function ProfileBox({
   source,
   mode,
+  busy,
 }: {
   source: ImportSourceState
   mode: ImportMode
+  /** Já há um import rodando neste servidor? O motivo fica acima, uma vez só. */
+  busy: boolean
 }) {
   const [username, setUsername] = useState('')
   const start = useStartProfileImport()
@@ -425,7 +476,7 @@ function ProfileBox({
 
       <ActionRow>
         <Button
-          disabled={username.trim() === '' || start.isPending}
+          disabled={busy || username.trim() === '' || start.isPending}
           onClick={() =>
             start.mutate({ source: slug, username: username.trim(), mode })
           }
@@ -452,7 +503,21 @@ function ModeChoice({
   onChange: (mode: ImportMode) => void
 }) {
   return (
-    <div className="flex flex-col gap-2 border-line border-b pb-6">
+    /*
+      **Sem divisória embaixo — ela subiu para o topo do formulário, 14/09/2026.**
+
+      A `border-b` daqui lia certo enquanto a regra era a primeira coisa da
+      tela: linha embaixo dela = "regra no topo, conteúdo abaixo". Com a peça de
+      trabalho acima, a mesma linha passou a SEPARAR a regra das caixas que ela
+      governa e a colá-la ao job em curso — que é justamente o que ela não
+      controla, porque o modo é fixado quando o job começa.
+
+      *A regra que governa a operação fica uma vez, ACIMA do que ela governa*
+      (design system, 06/09/2026) — e "acima" é sobre o que está do mesmo lado
+      da divisória, não sobre a ordem no DOM. **Ao mover uma peça de contexto,
+      reler o motivo dela.**
+    */
+    <div className="flex flex-col gap-2">
       <p className="text-muted text-sm">{copy.mode.label}</p>
       {/*
         `aria-pressed`, como os chips de `/library`, e não `role="radio"`: o

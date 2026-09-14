@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ImportStatus } from '@/services/import'
 import { render } from '@/test/render'
@@ -21,7 +21,12 @@ import { ImportSection } from './import-section'
  */
 vi.mock('@/services/import', async (original) => ({
   ...(await original<typeof import('@/services/import')>()),
-  importService: { status: vi.fn(), startCsv: vi.fn(), cancel: vi.fn() },
+  importService: {
+    status: vi.fn(),
+    startCsv: vi.fn(),
+    startProfile: vi.fn(),
+    cancel: vi.fn(),
+  },
 }))
 vi.mock('@/services/entries', () => ({
   entriesService: { refreshAll: vi.fn() },
@@ -81,6 +86,86 @@ function status(over: Partial<ImportStatus> = {}): ImportStatus {
 
 beforeEach(() => {
   vi.mocked(importService.status).mockReset()
+})
+
+describe('o formulário enquanto um trabalho roda', () => {
+  /**
+   * Uma fonte de PERFIL, e não o CSV das outras fixtures. O botão do CSV já
+   * nasce desabilitado por falta de arquivo, então afirmar `toBeDisabled()`
+   * nele passaria com ou sem a regra — *dado de exemplo que não distingue as
+   * duas implementações não confere regra nenhuma* (10/09/2026). Com o campo
+   * preenchido, `busy` vira o ÚNICO portão que sobra.
+   */
+  const PERFIL: ImportStatus['sources'] = [
+    { slug: 'mal', available: true, reason: null },
+  ]
+
+  const IMPORTANDO = {
+    ...TERMINADO,
+    id: 3,
+    source: 'mal' as const,
+    status: 'running' as const,
+    total: 400,
+    processed: 91,
+    finishedAt: null,
+  }
+
+  async function preencherUsuario() {
+    const campo = await screen.findByPlaceholderText(
+      'Your MyAnimeList username',
+    )
+    fireEvent.change(campo, { target: { value: 'hatrask' } })
+  }
+
+  /**
+   * **O formulário FICA, e a recusa se anuncia — 14/09/2026.**
+   *
+   * Ele sumia inteiro durante a primeira fase e voltava na segunda, o que é a
+   * régua de 09/09 do `/search` furada aqui: *controle cuja existência depende
+   * do estado da tela é controle que não se aprende*. A saída é a mesma que lá
+   * — **o que varia é o CONTEÚDO, nunca a posição**.
+   *
+   * As DUAS metades são afirmadas de propósito: a peça continua na tela **e**
+   * ela recusa. Só a primeira passaria com um formulário que aceita o clique e
+   * falha depois, que é o que este app não pode fazer por não ter toast.
+   */
+  it('fica na tela com o botão recusando enquanto um import roda', async () => {
+    vi.mocked(importService.status).mockResolvedValue(
+      status({ sources: PERFIL, running: IMPORTANDO, mine: true }),
+    )
+
+    render(<ImportSection />)
+    await preencherUsuario()
+
+    expect(
+      screen.getByText('If a title is already in your library'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled()
+    expect(screen.getByText(/Your import is still running/)).toBeInTheDocument()
+  })
+
+  /**
+   * **Aquecer NÃO ocupa a vaga de importar**, e é o servidor que diz isso: o
+   * índice único é por `kind`, então as duas correm juntas. Uma recusa escrita
+   * para "qualquer trabalho" passaria no teste de cima e mentiria aqui — que é
+   * exatamente o par que separa as duas implementações.
+   */
+  it('aceita um import novo enquanto só a arte está sendo buscada', async () => {
+    vi.mocked(importService.status).mockResolvedValue(
+      status({
+        sources: PERFIL,
+        latest: TERMINADO,
+        enriching: AQUECENDO,
+        mine: true,
+      }),
+    )
+
+    render(<ImportSection />)
+    await preencherUsuario()
+
+    expect(screen.queryByText(/still running/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Import' })).not.toBeDisabled()
+  })
 })
 
 describe('a segunda fase do import', () => {
