@@ -182,6 +182,186 @@ export const importCopy = {
      */
     someoneElse:
       'An import is running on this server. You can start yours when it finishes.',
+    /**
+     * A recusa do FORMULÁRIO enquanto um import roda — 14/09/2026.
+     *
+     * Até hoje o formulário inteiro sumia durante um import, e sumir não
+     * explica nada: *controle cuja existência depende do estado da tela é
+     * controle que não se aprende* (design system, 09/09/2026). Ele fica, e o
+     * que muda é o CONTEÚDO — os botões recusam com o motivo à vista.
+     *
+     * **Ela fala do import, não do aquecimento.** O índice único do servidor é
+     * por `kind`, então buscar arte não ocupa a vaga de importar: escrever uma
+     * frase que recusasse durante as duas mentiria na segunda.
+     *
+     * Duas frases e não uma interpolada, porque o que muda entre elas é de quem
+     * é o trabalho — e *artigo e possessivo dentro de copy interpolada é
+     * armadilha de i18n* (01/09/2026).
+     */
+    busy: {
+      mine: 'Your import is still running. You can start another when it finishes.',
+      theirs:
+        'An import is running on this server. You can start yours when it finishes.',
+    },
+  },
+
+  /**
+   * A SEGUNDA fase — 13/09/2026.
+   *
+   * ── Por que ela tem copy própria, e não uma variação da de cima ────────────
+   * Ela descreve outro trabalho: importar TERMINOU, e o que roda agora é buscar
+   * a arte e a ficha de cada obra que entrou. Reusar `running.title` diria
+   * "Importing from…" sobre algo que já acabou — e a régua do projeto é que *a
+   * copy descreve o que a tela faz hoje*.
+   *
+   * ── A palavra escolhida, e a que foi recusada ──────────────────────────────
+   * `Fetching artwork` e não "enriquecendo" nem "aquecendo cache": os dois
+   * últimos são o nosso vocabulário interno, e quem lê quer saber o que vai
+   * mudar na tela dele. O que muda é a capa das obras aparecerem.
+   *
+   * **E ela diz que dá pra ir embora**, pelo mesmo motivo da fase anterior —
+   * aqui com mais força, porque este trabalho leva de dezoito minutos a quase
+   * uma hora numa biblioteca grande.
+   */
+  /**
+   * A peça de trabalho — um trabalho, dois passos (14/09/2026).
+   *
+   * ── Por que o título fala da BIBLIOTECA, e não do import ──────────────────
+   * `Importing from MyAnimeList` descreve só o primeiro passo, e a peça vive
+   * pelos dois — ela continua na tela depois de o import ter terminado. *Trazer
+   * sua biblioteca* cobre o trabalho inteiro sem mentir em nenhum dos momentos.
+   *
+   * ── As duas saídas do estado parado ───────────────────────────────────────
+   * `Continue` é a ação, e é **a mesma** de `Fill in missing` lá embaixo:
+   * aquecer pula o que já está guardado, então retomar é rodar de novo.
+   * `Dismiss` tira o aviso e **não apaga** — a linha fica no histórico, como
+   * lido e dispensado em `notifications`.
+   */
+  work: {
+    title: (source: string) => `Bringing in your ${source} library`,
+    reading: 'Reading your list',
+    artwork: 'Fetching artwork',
+    /** O passo que fechou. Curto: o visto ao lado já diz o que é. */
+    done: 'Done',
+    /** O passo que ainda não começou. Não promete tempo — só ordem. */
+    next: 'Next',
+    stoppedAt: (done: number, total: number) =>
+      `Stopped at ${formatNumber(done)} / ${formatNumber(total)}`,
+    /**
+     * A frase do estado parado. Ela diz **o que sobreviveu** antes do que
+     * falta: as obras estão todas lá, e o que ficou para trás é a arte — que é
+     * a diferença entre "perdi meu import" e "falta terminar uma parte".
+     */
+    stoppedBody:
+      'Watchpile closed before this finished. Your titles are all there — only their artwork is missing.',
+    body: 'This runs in the background — you can leave this page.',
+    continue: 'Continue',
+    continuing: 'Continuing…',
+    dismiss: 'Dismiss',
+  },
+
+  enriching: {
+    title: 'Fetching artwork',
+    /** Mesmo formato do contador da primeira fase: número, nunca barra. */
+    counter: (done: number, total: number) =>
+      `${formatNumber(done)} / ${formatNumber(total)}`,
+    /**
+     * O intervalo em que o total ainda não foi escrito. Dura um instante — o
+     * laço conta os alvos antes da primeira obra —, mas o estado existe, e sem
+     * esta frase ele renderizaria um `0 / 0` que afirma um total inexistente.
+     */
+    starting: 'Starting…',
+    body: 'Your titles are already in your library. This fills in their artwork, and you can leave this page.',
+  },
+
+  /**
+   * A varredura da biblioteca — 13/09/2026, item 11(c) da fila do dono.
+   *
+   * ── Por que ela mora em `Import`, e o que isso custa ──────────────────────
+   * Decisão do dono: é a seção mais próxima em FUNÇÃO — as duas falam com
+   * provedores, rodam em segundo plano e mostram contador —, e a varredura
+   * reusa a peça de progresso que já vive aqui. O custo assumido é o título da
+   * seção ficar mais estreito que o conteúdo dela, que é a mesma dívida de nome
+   * que `import_jobs` carrega no servidor.
+   *
+   * ── O verbo diz o que muda, e o que NÃO muda ──────────────────────────────
+   * Quem lê precisa saber que isto não apaga nem re-importa nada: o progresso,
+   * o status, as pilhas e as notas ficam inteiros. O que é relido é o que o
+   * PROVEDOR diz — e o único campo da obra que pode mudar é o total, **só para
+   * cima**, que é o caso do mangá em publicação.
+   */
+  /**
+   * Preencher o que falta — 14/09/2026, pedido do dono.
+   *
+   * ── Ela fica ao LADO do refresh de propósito ──────────────────────────────
+   * A diferença entre as duas é o que a tela tem de ensinar: uma pula o que já
+   * existe e custa só o buraco, a outra relê tudo e custa a biblioteca inteira.
+   * Separá-las em lugares distintos faria alguém escolher a cara achando que
+   * escolhia a barata.
+   *
+   * ── A contagem vai no BOTÃO ───────────────────────────────────────────────
+   * *Contagem que mede o ESTRAGO entra na frase; contagem que mede um RECURSO
+   * fica ao lado* (07/09) — e aqui ela mede **o trabalho**, que é o que o botão
+   * vai fazer. Em zero o botão desabilita com o motivo, porque a recusa se
+   * anuncia antes do clique e o app não tem toast.
+   */
+  fill: {
+    title: 'Fill in missing artwork',
+    body: "Fetches artwork and details for titles that don't have them yet. It skips everything already stored, so it costs only what is missing.",
+    note: 'Also how you pick up a run that stopped halfway — it finds what is left.',
+    start: (n: number) =>
+      `Fill in ${formatNumber(n)} ${n === 1 ? 'title' : 'titles'}`,
+    starting: 'Starting…',
+    /** O estado em que não há o que fazer — e ele é bom, não um erro. */
+    none: 'Nothing missing',
+    noneWhy: 'Every title with a provider link already has its artwork.',
+  },
+
+  /**
+   * Limpar o histórico — 14/09/2026, pedido do dono.
+   *
+   * O verbo diz o que sai: o RELATO dos trabalhos. O que entrou na biblioteca
+   * fica, e a frase precisa dizer isso, porque "limpar histórico de import" lê
+   * perto demais de "desfazer o import".
+   */
+  history: {
+    clear: 'Clear history',
+    clearing: 'Clearing…',
+    kept: 'Your titles stay — this only clears the record of past runs.',
+  },
+
+  refresh: {
+    title: 'Refresh title data',
+    line: 'Ask the providers again',
+    body: 'Rereads what the providers say about the titles in your library — artwork, synopsis and chapter or episode counts. Your progress, status and piles are untouched.',
+    /**
+     * A frase que explica o único campo que MUDA na obra, e a direção. Ela está
+     * aqui e não escondida numa dica porque é a única escrita que atravessa a
+     * fronteira entre o provedor e a biblioteca de alguém.
+     */
+    totalNote:
+      'A title whose count grew — a manga still publishing, say — gets the new number. It never shrinks.',
+    start: 'Refresh library',
+    starting: 'Starting…',
+    running: 'Refreshing your library',
+    counter: (done: number, total: number) =>
+      `${formatNumber(done)} / ${formatNumber(total)}`,
+    stop: 'Stop',
+    stopping: 'Stopping…',
+    /**
+     * O resultado, e ele conta OBRAS — não requisições. O número que a tela
+     * mostra tem que poder ser conferido contra a biblioteca (design system,
+     * seção 8): "quantas mudaram" é o que a pessoa consegue olhar e verificar.
+     */
+    done: (updated: number) =>
+      updated === 0
+        ? 'Nothing changed — your titles were already up to date.'
+        : `${formatNumber(updated)} ${updated === 1 ? 'title' : 'titles'} got a new count.`,
+    /**
+     * A recusa, anunciada antes do clique: obra sem vínculo não tem provedor de
+     * onde reler, e uma biblioteca inteira sem vínculo não tem o que varrer.
+     */
+    empty: 'None of your titles are linked to a provider yet.',
   },
 
   result: {

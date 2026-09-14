@@ -100,6 +100,21 @@ export const entriesService = {
    * `GET /api/entries` devolve a biblioteca inteira — pendurar os vínculos na
    * obra faria toda listagem pagar por uma caixa que só uma tela mostra.
    */
+  /**
+   * Reler o provedor para esta obra (itens 11c/11d da fila). Devolve quantas
+   * obras tiveram o total atualizado — normalmente 0 ou 1 aqui.
+   */
+  refresh: (id: number) =>
+    httpClient.post<{ updated: number }>(`/api/entries/${id}/refresh`, {}),
+  /**
+   * Preencher o que falta — a mesma rota de `Continue` e de `Fill in missing`.
+   * Responde 202 com o job a acompanhar.
+   */
+  fillMissing: () =>
+    httpClient.post<{ id: number; total: number }>('/api/entries/fill', {}),
+  /** A varredura da biblioteca inteira. Responde 202 com o job a acompanhar. */
+  refreshAll: () =>
+    httpClient.post<{ id: number; total: number }>('/api/entries/refresh', {}),
   links: (id: number) =>
     httpClient.get<EntryLink[]>(`/api/entries/${id}/links`),
   /**

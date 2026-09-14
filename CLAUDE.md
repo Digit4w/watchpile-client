@@ -408,8 +408,8 @@ de 29/08 fica inteira: nenhuma largura de tela mexe na sidebar.
   plataformas — é o primeiro "voltar" que este app tem
 - **Só entra na coluna o que existe.** Hoje são `Account`, `Preferences`,
   `Import`, `Export`, `Media types`, `Providers`, `Network` (condicional — quem
-  decide se ela existe é o SERVIDOR) e `Storage` — "affordance descreve o que
-  existe".
+  decide se ela existe é o SERVIDOR), `Storage`, `Logs` (14/09/2026) e
+  `Updates` — "affordance descreve o que existe".
   **E desde 05/09/2026 `Notifications` mudou de objeto**: a central de leitura é
   o SINO e a rota `/notifications`, fora de Settings; a seção guardaria só as
   preferências de quais avisos receber, e não entra enquanto não houver o que
@@ -440,9 +440,32 @@ de 29/08 fica inteira: nenhuma largura de tela mexe na sidebar.
   extrapolar não seria. **E não há barra em lugar nenhum**: enquanto a fonte é
   lida não existe denominador, e ali vai uma frase com um ponto pulsando —
   atividade, nunca proporção. O pulso é loop ambiente e `prefers-reduced-motion`
-  o apaga; a entrada, que é transição de estado, fica. `About`
-  fica fora dos dois grupos, no fim: versão e licença não são de ninguém, e é
-  ele que garante que a coluna nunca fique oca
+  o apaga; a entrada, que é transição de estado, fica.
+
+  **Ela ganhou a SEGUNDA FASE em 13-14/09/2026** — trazer as obras e buscar a
+  arte são dois trabalhos que a pessoa vive como um, e convivem numa peça de
+  dois passos (`WorkCard`). Cinco coisas dela valem em qualquer tela que mostre
+  trabalho de fundo: **cada passo carrega o SEU contador**, que é o que deixa o
+  passo 1 dizer `Done` com o 2 vivo (*número que soma dois motivos não confere
+  nada*); **a peça tem UM slot e a mesma `key` nas duas fases**, senão a troca
+  desmonta uma e monta a outra e a moldura reentra em vez de mudar por dentro
+  (`wp-step-mark` e `wp-step-active`, com 80ms de atraso no segundo — é a ordem
+  que conta a história); **ela vem ANTES do formulário nas duas fases**, porque
+  até 14/09 ela saltava do topo para baixo de três caixas no instante em que o
+  passo 1 fechava; **o formulário NÃO some** enquanto um import roda — ele fica
+  e os botões recusam com o motivo dito uma vez acima, que é a régua de 09/09 do
+  `/search` (*o que varia é o CONTEÚDO, nunca a posição*), e a recusa fala de
+  import e não de aquecimento, porque o índice único do servidor é por `kind`; e
+  **a divisória agrupa** — ela mora no topo do formulário, nunca entre a regra de
+  colisão e as caixas que ela governa. Um trabalho interrompido diz que parou e
+  oferece `Continue` e `Dismiss`, e **`Continue` é a MESMA ação de `Fill in
+  missing artwork`**: aquecer pula o que já está guardado, então retomar não
+  precisa saber onde parou. **O logo de terceiro entrou**: o que muda por marca é
+  o SÍMBOLO e nunca o ladrilho, e as cores dele são LITERAIS e não saem de token
+  — a cor de uma marca é dado do dono dela. O MyAnimeList fica na inicial.
+
+  `About` fica fora dos dois grupos, no fim: versão e licença não são de
+  ninguém, e é ele que garante que a coluna nunca fique oca
 - **O selo da coluna é um CONTADOR, e vive no SHELL** (`SectionBadge` +
   `usePendingBySection`). Ele fica aqui e não na seção porque existe pra ser
   visto **de fora** dela. **O que ele conta é a regra toda**, e é pura
@@ -1241,6 +1264,34 @@ nenhum, com o próprio componente explicando por quê.
 > `htmlFor` apontando pra id inexistente (07/09) e do `aria-describedby`
 > descartado (10/09): *atributo de a11y é uma ponta só até alguém conferir a
 > outra*.
+
+## `THIS INSTANCE / Logs` — 14/09/2026
+
+A seção entre `Storage` e `Updates`, do admin, desenhada num mockup de recorte e
+construída no mesmo dia (design system, seção 5 e trigésima segunda leva).
+`components/settings/logs-section.tsx`, com a regra pura em `domain/log-view.ts`
+e o acompanhamento em `hooks/queries/logs/use-log-stream.ts`.
+
+- **O filtro mora na URL** (`?level=`) e a lista monta com `key={level}`: outro
+  filtro é outra lista, e reconciliar as duas misturaria recortes
+- **`SettingsShell` ganhou `fill`.** Com ele o modo é `h-svh` e só o visualizador
+  rola; sem ele a página cresce com o conteúdo e não há altura que sobre. As
+  outras seções não passam a prop
+- **Acompanha só colado no fim**, exceção consciente a *a lista não se reordena
+  sob a mão*; rolado pra cima, a peça de vidro "N new lines ↓" conta o que chegou
+- **Um `useLayoutEffect` só, e a ordem era o defeito.** Dois efeitos — um que
+  acompanha o fim, outro que compensa o `Load older` — faziam o primeiro gravar a
+  altura nova antes de o segundo medir, e a compensação dava zero. O jsdom não faz
+  layout: **isto se confere no app rodando**, e foi conferido (0px)
+- **A chave da linha inclui os CAMPOS** (`rowKeys`). Índice como desempate e
+  ocorrência entre linhas de mesmo tempo e mensagem remontavam a lista inteira no
+  `Load older` — uma rajada tem centenas de "Request completed" no mesmo
+  milissegundo
+- **`Copy` usa `navigator.clipboard`, que exige contexto SEGURO.** Em
+  `http://hermes.local` ele não existe, e a peça cai em *Couldn't copy*. Pendência
+  registrada no handoff, não esquecimento
+- **Conferir no navegador exige saber qual BUILD está na tela.** Duas conferências
+  "falharam" com a página ainda rodando o bundle anterior, vindo do cache
 
 ## Sobre vidro, `raised` é tingimento — e a correção é de UMA regra
 

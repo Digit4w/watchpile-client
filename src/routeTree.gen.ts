@@ -23,6 +23,7 @@ import { Route as SettingsAboutRouteImport } from './routes/settings.about'
 import { Route as SettingsAccountRouteImport } from './routes/settings.account'
 import { Route as SettingsExportRouteImport } from './routes/settings.export'
 import { Route as SettingsImportRouteImport } from './routes/settings.import'
+import { Route as SettingsLogsRouteImport } from './routes/settings.logs'
 import { Route as SettingsMediaTypesRouteImport } from './routes/settings.media-types'
 import { Route as SettingsNetworkRouteImport } from './routes/settings.network'
 import { Route as SettingsPreferencesRouteImport } from './routes/settings.preferences'
@@ -101,6 +102,11 @@ const SettingsImportRoute = SettingsImportRouteImport.update({
   path: '/settings/import',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsLogsRoute = SettingsLogsRouteImport.update({
+  id: '/settings/logs',
+  path: '/settings/logs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsMediaTypesRoute = SettingsMediaTypesRouteImport.update({
   id: '/settings/media-types',
   path: '/settings/media-types',
@@ -149,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/settings/account': typeof SettingsAccountRoute
   '/settings/export': typeof SettingsExportRoute
   '/settings/import': typeof SettingsImportRoute
+  '/settings/logs': typeof SettingsLogsRoute
   '/settings/media-types': typeof SettingsMediaTypesRoute
   '/settings/network': typeof SettingsNetworkRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
@@ -172,6 +179,7 @@ export interface FileRoutesByTo {
   '/settings/account': typeof SettingsAccountRoute
   '/settings/export': typeof SettingsExportRoute
   '/settings/import': typeof SettingsImportRoute
+  '/settings/logs': typeof SettingsLogsRoute
   '/settings/media-types': typeof SettingsMediaTypesRoute
   '/settings/network': typeof SettingsNetworkRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
@@ -196,6 +204,7 @@ export interface FileRoutesById {
   '/settings/account': typeof SettingsAccountRoute
   '/settings/export': typeof SettingsExportRoute
   '/settings/import': typeof SettingsImportRoute
+  '/settings/logs': typeof SettingsLogsRoute
   '/settings/media-types': typeof SettingsMediaTypesRoute
   '/settings/network': typeof SettingsNetworkRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
@@ -221,6 +230,7 @@ export interface FileRouteTypes {
     | '/settings/account'
     | '/settings/export'
     | '/settings/import'
+    | '/settings/logs'
     | '/settings/media-types'
     | '/settings/network'
     | '/settings/preferences'
@@ -244,6 +254,7 @@ export interface FileRouteTypes {
     | '/settings/account'
     | '/settings/export'
     | '/settings/import'
+    | '/settings/logs'
     | '/settings/media-types'
     | '/settings/network'
     | '/settings/preferences'
@@ -267,6 +278,7 @@ export interface FileRouteTypes {
     | '/settings/account'
     | '/settings/export'
     | '/settings/import'
+    | '/settings/logs'
     | '/settings/media-types'
     | '/settings/network'
     | '/settings/preferences'
@@ -291,6 +303,7 @@ export interface RootRouteChildren {
   SettingsAccountRoute: typeof SettingsAccountRoute
   SettingsExportRoute: typeof SettingsExportRoute
   SettingsImportRoute: typeof SettingsImportRoute
+  SettingsLogsRoute: typeof SettingsLogsRoute
   SettingsMediaTypesRoute: typeof SettingsMediaTypesRoute
   SettingsNetworkRoute: typeof SettingsNetworkRoute
   SettingsPreferencesRoute: typeof SettingsPreferencesRoute
@@ -404,6 +417,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsImportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/logs': {
+      id: '/settings/logs'
+      path: '/settings/logs'
+      fullPath: '/settings/logs'
+      preLoaderRoute: typeof SettingsLogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/media-types': {
       id: '/settings/media-types'
       path: '/settings/media-types'
@@ -467,6 +487,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsAccountRoute: SettingsAccountRoute,
   SettingsExportRoute: SettingsExportRoute,
   SettingsImportRoute: SettingsImportRoute,
+  SettingsLogsRoute: SettingsLogsRoute,
   SettingsMediaTypesRoute: SettingsMediaTypesRoute,
   SettingsNetworkRoute: SettingsNetworkRoute,
   SettingsPreferencesRoute: SettingsPreferencesRoute,

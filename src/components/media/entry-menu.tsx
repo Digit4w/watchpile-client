@@ -15,12 +15,15 @@ import {
   OpenIcon,
   PileAddIcon,
   PileRemoveIcon,
+  RefreshIcon,
   ReorderIcon,
   TrashIcon,
 } from '@/components/menu/menu-icons'
 import type { Entry } from '@/domain/media'
 import { useDeleteEntry } from '@/hooks/mutations/entries/use-delete-entry'
+import { useRefreshEntry } from '@/hooks/mutations/entries/use-refresh-entry'
 import { useRemovePileEntry } from '@/hooks/mutations/piles/use-remove-pile-entry'
+import { useEntryLinks } from '@/hooks/queries/entries/use-entry-links'
 import { appCopy } from '@/lib/copy'
 import { EntryPiles } from './entry-piles'
 import './entry-menu.css'
@@ -164,13 +167,6 @@ export function EntryMenu({
   reorder?: { on: boolean; toggle: () => void }
   variant?: MenuVariant
 }) {
-  /**
-   * O hook roda sempre, com `pileId ?? 0` quando não há pilha — hook não pode
-   * ser condicional, e a mutação só é DISPARADA pelo botão, que por sua vez só
-   * existe quando `pileId` existe. O `0` nunca chega ao servidor.
-   */
-  const removeFromPile = useRemovePileEntry(pileId ?? 0)
-  const remove = useDeleteEntry()
   const [open, setOpen] = useState(false)
   const [view, setView] = useState<'menu' | 'piles' | 'confirm'>('menu')
   /**
@@ -204,111 +200,203 @@ export function EntryMenu({
           </button>
         }
       >
-        {view === 'piles' ? (
-          <ActionMenuPanel>
-            <div className="flex flex-col gap-2">
-              <ActionMenuBack onClick={() => setView('menu')} />
-              <EntryPiles entry={entry} />
-            </div>
-          </ActionMenuPanel>
-        ) : view === 'confirm' ? (
-          <ActionMenuConfirm
-            title={appCopy.entry.removeTitle}
-            body={appCopy.entry.removeBody}
-            confirmLabel={appCopy.entry.removeConfirm}
-            pending={remove.isPending}
-            onCancel={() => setView('menu')}
-            onConfirm={() => remove.mutate(entry.id)}
+        {open && (
+          <MenuBody
+            entry={entry}
+            pileId={pileId}
+            reorder={reorder}
+            view={view}
+            setView={setView}
+            setOpen={setOpen}
+            setEditing={setEditing}
           />
-        ) : (
-          <>
-            {/* **Primeiro, e é um LINK** (pedido do dono, 07/09/2026).
-             *
-             * A carta salva linka só pelo TÍTULO, porque a camada de atalhos é
-             * `inset-0` e usa `opacity` — um link esticado por baixo dela seria
-             * bloqueado no clique. A carta de resultado de busca, que não tem
-             * essa camada, é link inteiro. **As duas se comportam diferente, e
-             * este item é o que dá à salva um caminho até o detalhe que não seja
-             * um alvo de texto pequeno** — no toque, onde os atalhos aparecem sem
-             * hover, ele é o caminho mais óbvio que existe.
-             *
-             * Ele passa no teste que derrubou o `Duplicate` de `/piles`: item de
-             * menu nasce de ação, não de simetria de layout. E vem antes da
-             * divisória de tudo, porque ir a um lugar não é agir sobre a obra. */}
-            <ActionMenuLink
-              icon={<OpenIcon />}
-              to="/library/$entryId"
-              params={{ entryId: String(entry.id) }}
-            >
-              {appCopy.entry.viewDetails}
-            </ActionMenuLink>
-
-            <ActionMenuSeparator />
-
-            {/* Editar vem antes de empilhar porque fala da OBRA, e empilhar fala
-             * de onde ela está. Não é `submenu`: ela abre uma folha, não uma
-             * vista deste painel. */}
-            <ActionMenuItem
-              icon={<EditIcon />}
-              onClick={() => {
-                setOpen(false)
-                setEditing(true)
-              }}
-            >
-              {appCopy.entry.edit}
-            </ActionMenuItem>
-
-            <ActionMenuItem
-              icon={<PileAddIcon />}
-              submenu
-              onClick={() => setView('piles')}
-            >
-              {appCopy.entry.addToPile}
-            </ActionMenuItem>
-
-            {/* Depois de `Add to pile` porque as duas falam de ONDE a obra
-             * está — uma de qual caixa, outra de que lugar dentro dela. */}
-            {reorder && (
-              <ActionMenuItem
-                icon={<ReorderIcon />}
-                onClick={() => {
-                  setOpen(false)
-                  reorder.toggle()
-                }}
-              >
-                {reorder.on
-                  ? appCopy.entry.reorderDone
-                  : appCopy.entry.reorderInWidget}
-              </ActionMenuItem>
-            )}
-
-            {/* Só existe DENTRO de uma pile, e some outside dela — item de menu
-             * nasce de ação, não de simetria de layout (design system, seção 5).
-             * Na Home e em `/library` não há pilha de onde tirar. */}
-            {pileId !== undefined && (
-              <ActionMenuItem
-                icon={<PileRemoveIcon />}
-                disabled={removeFromPile.isPending}
-                onClick={() => removeFromPile.mutate(entry.id)}
-              >
-                {appCopy.entry.removeFromPile}
-              </ActionMenuItem>
-            )}
-
-            <ActionMenuSeparator />
-
-            <ActionMenuItem
-              icon={<TrashIcon />}
-              tone="danger"
-              onClick={() => setView('confirm')}
-            >
-              {appCopy.entry.remove}
-            </ActionMenuItem>
-          </>
         )}
       </ActionMenu>
 
       <EditEntrySheet entry={entry} open={editing} onOpenChange={setEditing} />
+    </>
+  )
+}
+
+/**
+ * O conteúdo do menu — e ele **só existe enquanto o menu está aberto**
+ * (13/09/2026).
+ *
+ * ── Por que isto é um componente, e não um bloco dentro do de cima ──────────
+ * Os hooks que os itens precisam — três mutações e a consulta de vínculos —
+ * custam um observer do TanStack Query cada um, criado na montagem. Como o
+ * `⋯` aparece em TODA carta e TODA linha, uma grade de noventa cartas montava
+ * **~360 observers** para desenhar menus que ninguém abriu.
+ *
+ * Medido em 13/09/2026, voltando de uma obra para `/library` com 1.442 obras:
+ * a remontagem era uma tarefa síncrona de ~140ms no build de desenvolvimento —
+ * a interface parada, e o que se sente como travar ao navegar e voltar.
+ *
+ * Hook não pode ser condicional, então a condição vira **fronteira de
+ * componente**: o React só executa o corpo daqui quando este elemento existe,
+ * e ele só existe com `open`.
+ */
+function MenuBody({
+  entry,
+  pileId,
+  reorder,
+  view,
+  setView,
+  setOpen,
+  setEditing,
+}: {
+  entry: Entry
+  pileId?: number
+  reorder?: { on: boolean; toggle: () => void }
+  view: 'menu' | 'piles' | 'confirm'
+  setView: (v: 'menu' | 'piles' | 'confirm') => void
+  setOpen: (v: boolean) => void
+  setEditing: (v: boolean) => void
+}) {
+  /**
+   * O hook roda sempre, com `pileId ?? 0` quando não há pilha — hook não pode
+   * ser condicional, e a mutação só é DISPARADA pelo botão, que por sua vez só
+   * existe quando `pileId` existe. O `0` nunca chega ao servidor.
+   */
+  const removeFromPile = useRemovePileEntry(pileId ?? 0)
+  const remove = useDeleteEntry()
+  const refresh = useRefreshEntry(entry.id)
+  /**
+   * A consulta de vínculos decide se `Refresh data` pode ser clicado. Ela já
+   * rodava só com o menu aberto; agora o componente inteiro só existe aí, e o
+   * `enabled` deixa de ser necessário.
+   */
+  const links = useEntryLinks(entry.id)
+  /**
+   * Sem vínculo não há de onde reler, e **a recusa se anuncia antes do
+   * clique**. Enquanto a resposta não chegou o item fica habilitado: supor a
+   * ausência desabilitaria por um quadro o item de toda obra que TEM vínculo,
+   * e peça que muda sozinha se lê como defeito (04/09).
+   */
+  const canRefresh = links.data === undefined || links.data.length > 0
+
+  return (
+    <>
+      {view === 'piles' ? (
+        <ActionMenuPanel>
+          <div className="flex flex-col gap-2">
+            <ActionMenuBack onClick={() => setView('menu')} />
+            <EntryPiles entry={entry} />
+          </div>
+        </ActionMenuPanel>
+      ) : view === 'confirm' ? (
+        <ActionMenuConfirm
+          title={appCopy.entry.removeTitle}
+          body={appCopy.entry.removeBody}
+          confirmLabel={appCopy.entry.removeConfirm}
+          pending={remove.isPending}
+          onCancel={() => setView('menu')}
+          onConfirm={() => remove.mutate(entry.id)}
+        />
+      ) : (
+        <>
+          {/* **Primeiro, e é um LINK** (pedido do dono, 07/09/2026).
+           *
+           * A carta salva linka só pelo TÍTULO, porque a camada de atalhos é
+           * `inset-0` e usa `opacity` — um link esticado por baixo dela seria
+           * bloqueado no clique. A carta de resultado de busca, que não tem
+           * essa camada, é link inteiro. **As duas se comportam diferente, e
+           * este item é o que dá à salva um caminho até o detalhe que não seja
+           * um alvo de texto pequeno** — no toque, onde os atalhos aparecem sem
+           * hover, ele é o caminho mais óbvio que existe.
+           *
+           * Ele passa no teste que derrubou o `Duplicate` de `/piles`: item de
+           * menu nasce de ação, não de simetria de layout. E vem antes da
+           * divisória de tudo, porque ir a um lugar não é agir sobre a obra. */}
+          <ActionMenuLink
+            icon={<OpenIcon />}
+            to="/library/$entryId"
+            params={{ entryId: String(entry.id) }}
+          >
+            {appCopy.entry.viewDetails}
+          </ActionMenuLink>
+
+          <ActionMenuSeparator />
+
+          {/* Editar vem antes de empilhar porque fala da OBRA, e empilhar fala
+           * de onde ela está. Não é `submenu`: ela abre uma folha, não uma
+           * vista deste painel. */}
+          <ActionMenuItem
+            icon={<EditIcon />}
+            onClick={() => {
+              setOpen(false)
+              setEditing(true)
+            }}
+          >
+            {appCopy.entry.edit}
+          </ActionMenuItem>
+
+          <ActionMenuItem
+            icon={<PileAddIcon />}
+            submenu
+            onClick={() => setView('piles')}
+          >
+            {appCopy.entry.addToPile}
+          </ActionMenuItem>
+
+          {/* Depois de editar porque as duas escrevem na OBRA — uma com o que
+           * a pessoa digita, outra com o que o provedor diz. E antes de
+           * empilhar não caberia: ali começa o bloco de ONDE a obra está.
+           *
+           * **O menu não fecha ao clicar**, ao contrário de editar: o
+           * resultado é o próprio item virando `Refreshing…`, e fechar
+           * deixaria o gesto sem resposta num app que não tem toast. */}
+          <ActionMenuItem
+            icon={<RefreshIcon />}
+            disabled={!canRefresh || refresh.isPending}
+            title={canRefresh ? undefined : appCopy.entry.refreshUnavailable}
+            onClick={() => refresh.mutate()}
+          >
+            {refresh.isPending
+              ? appCopy.entry.refreshing
+              : appCopy.entry.refresh}
+          </ActionMenuItem>
+
+          {/* Depois de `Add to pile` porque as duas falam de ONDE a obra
+           * está — uma de qual caixa, outra de que lugar dentro dela. */}
+          {reorder && (
+            <ActionMenuItem
+              icon={<ReorderIcon />}
+              onClick={() => {
+                setOpen(false)
+                reorder.toggle()
+              }}
+            >
+              {reorder.on
+                ? appCopy.entry.reorderDone
+                : appCopy.entry.reorderInWidget}
+            </ActionMenuItem>
+          )}
+
+          {/* Só existe DENTRO de uma pile, e some outside dela — item de menu
+           * nasce de ação, não de simetria de layout (design system, seção 5).
+           * Na Home e em `/library` não há pilha de onde tirar. */}
+          {pileId !== undefined && (
+            <ActionMenuItem
+              icon={<PileRemoveIcon />}
+              disabled={removeFromPile.isPending}
+              onClick={() => removeFromPile.mutate(entry.id)}
+            >
+              {appCopy.entry.removeFromPile}
+            </ActionMenuItem>
+          )}
+
+          <ActionMenuSeparator />
+
+          <ActionMenuItem
+            icon={<TrashIcon />}
+            tone="danger"
+            onClick={() => setView('confirm')}
+          >
+            {appCopy.entry.remove}
+          </ActionMenuItem>
+        </>
+      )}
     </>
   )
 }

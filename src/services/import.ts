@@ -21,7 +21,16 @@ export type ImportProblemKind = ImportProblem['kind']
 
 export type ImportFailureKind = NonNullable<ImportJob['errorKind']>
 
-export type ImportSourceSlug = ImportJob['source']
+/**
+ * As fontes que existem — e **sem o `null`**, que `ImportJob['source']` ganhou
+ * em 13/09/2026 quando a varredura entrou (ela não vem de fonte nenhuma).
+ *
+ * Ancorado na LISTA de fontes, que é o lugar onde a pergunta "quais existem?"
+ * é respondida, em vez de no job, onde o campo responde "de onde ESTE trabalho
+ * leu?" — duas perguntas que o mesmo tipo vinha servindo até a segunda passar a
+ * aceitar "de lugar nenhum".
+ */
+export type ImportSourceSlug = ImportStatus['sources'][number]['slug']
 
 export type ImportMode = ImportJob['mode']
 
@@ -69,4 +78,10 @@ export const importService = {
 
   cancel: (id: number) =>
     httpClient.post<ImportJob>(`/api/import/${id}/cancel`, {}),
+  /** Dispensa o aviso de um trabalho interrompido. A linha fica no histórico. */
+  dismiss: (id: number) =>
+    httpClient.post<ImportJob>(`/api/import/${id}/dismiss`, {}),
+  /** Limpa o histórico — só o que terminou. Ver `jobs.clearHistory`. */
+  clearHistory: () =>
+    httpClient.delete<{ deleted: number }>('/api/import/history'),
 }

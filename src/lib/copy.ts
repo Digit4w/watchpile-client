@@ -120,6 +120,27 @@ export const appCopy = {
     /** O destino, não a ação — o item que abre a obra. */
     viewDetails: 'View details',
     /**
+     * Reler o provedor para esta obra — 13/09/2026, item 11(d) da fila do dono.
+     *
+     * ── Por que `Refresh data`, e não `Update` ────────────────────────────
+     * `Update` é o que a pessoa faz com o PROGRESSO dela — marcar episódio,
+     * mudar status —, e o app já usa a palavra nesse sentido no resultado de
+     * import (`Updated`). Aqui quem muda é o que o PROVEDOR diz: título, ano,
+     * sinopse, arte e o total. `data` é a palavra que separa as duas.
+     *
+     * **Não é `Refresh` sozinho**, porque num app de navegador isso se lê como
+     * recarregar a página.
+     */
+    refresh: 'Refresh data',
+    /** Enquanto a ida à rede acontece — é uma obra, então ela é curta. */
+    refreshing: 'Refreshing…',
+    /**
+     * A recusa, **anunciada antes do clique** (design system, seção 5): obra
+     * sem vínculo não tem provedor de onde reler, e o app não tem toast para
+     * explicar isso depois.
+     */
+    refreshUnavailable: 'No provider linked to refresh from',
+    /**
      * Reordenar a obra DENTRO do widget — 10/09/2026, decisão do dono
      * (design system, decisão em aberto 16).
      *
