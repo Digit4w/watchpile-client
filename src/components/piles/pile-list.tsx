@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import type { Pile } from '@/domain/media'
+import { useGridWindow } from '@/hooks/use-grid-window'
 import { countOf, formatRelativeTime } from '@/lib/format'
 import { pilesCopy } from '@/routes/-piles.copy'
 import { PileActions } from './pile-actions'
@@ -99,11 +100,15 @@ type ListProps = {
  * alcance corrigido em 29/08/2026). Fora de um widget não há o que encaixar.
  */
 export function PileList({ piles, onEdit }: ListProps) {
+  const { ref, first, visible, style } = useGridWindow<HTMLUListElement>(
+    piles.length,
+  )
+
   return (
     <div>
       <Columns withArt />
-      <ul className="mt-1 flex flex-col">
-        {piles.map((pile) => (
+      <ul ref={ref} style={style} className="mt-1 flex flex-col">
+        {piles.slice(first, first + visible).map((pile) => (
           <Row
             key={pile.id}
             pile={pile}
@@ -125,11 +130,15 @@ export function PileList({ piles, onEdit }: ListProps) {
  * densa em lista imprecisa.
  */
 export function PileCompactList({ piles, onEdit }: ListProps) {
+  const { ref, first, visible, style } = useGridWindow<HTMLUListElement>(
+    piles.length,
+  )
+
   return (
     <div>
       <Columns withArt={false} />
-      <ul className="mt-1 flex flex-col">
-        {piles.map((pile) => (
+      <ul ref={ref} style={style} className="mt-1 flex flex-col">
+        {piles.slice(first, first + visible).map((pile) => (
           <Row
             key={pile.id}
             pile={pile}
