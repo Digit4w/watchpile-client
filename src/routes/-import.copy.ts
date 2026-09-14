@@ -182,6 +182,27 @@ export const importCopy = {
      */
     someoneElse:
       'An import is running on this server. You can start yours when it finishes.',
+    /**
+     * A recusa do FORMULÁRIO enquanto um import roda — 14/09/2026.
+     *
+     * Até hoje o formulário inteiro sumia durante um import, e sumir não
+     * explica nada: *controle cuja existência depende do estado da tela é
+     * controle que não se aprende* (design system, 09/09/2026). Ele fica, e o
+     * que muda é o CONTEÚDO — os botões recusam com o motivo à vista.
+     *
+     * **Ela fala do import, não do aquecimento.** O índice único do servidor é
+     * por `kind`, então buscar arte não ocupa a vaga de importar: escrever uma
+     * frase que recusasse durante as duas mentiria na segunda.
+     *
+     * Duas frases e não uma interpolada, porque o que muda entre elas é de quem
+     * é o trabalho — e *artigo e possessivo dentro de copy interpolada é
+     * armadilha de i18n* (01/09/2026).
+     */
+    busy: {
+      mine: 'Your import is still running. You can start another when it finishes.',
+      theirs:
+        'An import is running on this server. You can start yours when it finishes.',
+    },
   },
 
   /**
