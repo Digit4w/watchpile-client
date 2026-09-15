@@ -175,11 +175,10 @@ export function useGridWindow<T extends HTMLElement>(
    * As dependências são o que o resultado da medição pode depender: quantos
    * itens estão montados agora (`count`) e se já houve uma medição. Rolar não
    * entra, e é o ponto — rolar muda a FATIA, não a altura da linha nem o número
-   * de colunas. Largura de janela e troca de modo continuam cobertas pelo
-   * `ResizeObserver` lá embaixo, que é quem deve pegá-las.
+   * de colunas. Mudar de LARGURA muda as colunas, e quem mede nesse caso é o
+   * `ResizeObserver` lá embaixo (ver o bloco de 15/09/2026 junto dele).
    */
-  // biome-ignore lint/correctness/useExhaustiveDependencies: medir depende do DOM montado, não de valores — ver o bloco acima
-  useLayoutEffect(() => {
+  const remeasure = useCallback(() => {
     const next = measure()
     if (!next) {
       return
@@ -193,7 +192,10 @@ export function useGridWindow<T extends HTMLElement>(
         ? current
         : next,
     )
-  }, [measure, count])
+  }, [measure])
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: medir depende do DOM montado, não de valores — ver o bloco acima
+  useLayoutEffect(remeasure, [remeasure, count])
 
   /**
    * Recalcula a fatia e **só escreve quando ela muda de verdade**.
@@ -278,11 +280,25 @@ export function useGridWindow<T extends HTMLElement>(
     window.addEventListener('scroll', recompute, { passive: true })
     window.addEventListener('resize', recompute, { passive: true })
     /**
-     * Observa o container também: trocar de modo ou abrir a folha lateral muda
-     * a largura sem rolar nem redimensionar a janela, e sem isto a conta
-     * ficaria com o número de colunas de antes.
+     * Observa o container também: maximizar a janela, recolher a sidebar ou
+     * abrir a folha lateral muda a largura sem que `count` mude.
+     *
+     * **E ele MEDE, não só recalcula — 15/09/2026.** Até então este observador
+     * chamava só `recompute`, e o comentário daqui dizia que isso bastava pro
+     * número de colunas: não bastava, porque `recompute` usa as métricas
+     * guardadas. Enquanto a medição rodava a cada render, o próximo render
+     * (uma rolagem) corrigia por acaso; quando ela passou a depender de `count`
+     * (a5b8e65), a grade ficou presa nas colunas da largura em que montou.
+     * Relatado no Electron, que abre em 1280×800: maximizado, 10 colunas reais
+     * contra 6 medidas, e a fatia acabava no meio da tela, com o resto vazio.
+     *
+     * Medir aqui não devolve o custo que a5b8e65 tirou: o observador dispara
+     * quando a caixa muda de tamanho, não a cada render nem a cada rolagem.
      */
-    const observer = new ResizeObserver(recompute)
+    const observer = new ResizeObserver(() => {
+      remeasure()
+      recompute()
+    })
     observer.observe(element)
 
     return () => {
@@ -291,7 +307,7 @@ export function useGridWindow<T extends HTMLElement>(
       window.removeEventListener('resize', recompute)
       observer.disconnect()
     }
-  }, [recompute, axis])
+  }, [recompute, remeasure, axis])
 
   /**
    * Enquanto não mediu, o lote de arranque. Depois, a fatia — e nunca a lista
