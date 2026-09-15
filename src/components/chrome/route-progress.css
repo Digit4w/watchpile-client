@@ -1,0 +1,32 @@
+/* A faixa de carregando da rota — 15/09/2026.
+ *
+ * **Pulsa, não desliza, e é por falta de token e não por gosto.** Uma faixa
+ * indeterminada que VARRE a largura pede uma duração de ~1 s, e os tokens de
+ * movimento são 120 ms, 220 ms e 4 s (design system, seção 11) — nenhum serve,
+ * e valor solto no componente é o que a seção proíbe. O pulso de opacidade em
+ * `--motion-ambient` já é vocabulário: é o `wp-import-pulse`, que diz
+ * "acontecendo" sem prometer proporção. A faixa é a mesma frase na borda da
+ * tela.
+ *
+ * É LOOP AMBIENTE, então `prefers-reduced-motion` o desliga e a faixa fica
+ * acesa e parada — continua dizendo que a tela está a caminho.
+ */
+.wp-route-progress {
+  animation: wp-route-progress var(--motion-ambient) var(--ease-chrome) infinite;
+}
+@keyframes wp-route-progress {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wp-route-progress {
+    animation: none;
+    opacity: 1;
+  }
+}
