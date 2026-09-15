@@ -9,6 +9,7 @@ import {
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router'
 import { type ReactNode, useEffect } from 'react'
+import { RouteProgress } from '@/components/chrome/route-progress'
 import { gateDecision } from '@/domain/first-run-gate'
 import { useCurrentUser } from '@/hooks/queries/auth/use-current-user'
 import { useSetupStatus } from '@/hooks/queries/setup/use-setup-status'
@@ -78,10 +79,31 @@ function FirstRunGate({ children }: { children: ReactNode }) {
   return children
 }
 
+/**
+ * Liga a faixa de carregando ao estado do router — 15/09/2026.
+ *
+ * **Mora aqui, uma vez, e não no `pendingComponent` de cada rota**, e o motivo
+ * é o shell: o `AppShell` é renderizado DENTRO de cada rota, então o pending do
+ * router substituiria a sidebar junto com a tela enquanto o chunk chega — a
+ * piscada de chrome que a seção 11 recusa. Aqui a tela anterior fica intacta e
+ * só a borda diz que a próxima está a caminho.
+ *
+ * `status` e não `isLoading`: `status` cobre o intervalo inteiro entre o clique
+ * e a árvore nova comitada, que é exatamente o intervalo em que a URL já trocou
+ * e a tela ainda não — o sintoma do bug de 14/09 (HANDOFF).
+ */
+function RouterProgress() {
+  const pending = useRouterState({
+    select: (state) => state.status === 'pending',
+  })
+  return <RouteProgress pending={pending} />
+}
+
 function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <NuqsAdapter>
+        <RouterProgress />
         <FirstRunGate>
           <Outlet />
         </FirstRunGate>

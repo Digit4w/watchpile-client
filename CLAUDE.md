@@ -791,6 +791,49 @@ que a página está errada, conferir se o ambiente que a mede está vivo —
 `visibilityState` e `hasFocus()` ao lado de `naturalWidth`. É a irmã de
 "screenshot de página com imagem mente", um nível abaixo dela.
 
+> **A armadilha do `lazy` em aba não pintada vale só pra arte de OUTRA origem
+> desde 15/09/2026.** A da nossa origem passou a esperar o
+> `IntersectionObserver` e uma vaga na fila (seção abaixo), e é baixada por
+> `fetch` — então o sintoma "grade sem arte em aba de fundo" pode ter outra
+> causa ali. A régua de conferir o ambiente antes de consertar continua a mesma.
+
+## A arte da nossa origem espera vaga, e a troca de rota tem faixa — 15/09/2026
+
+O bug *"a URL troca e a tela não"*, relatado em 14/09 e reproduzido em 15/09
+contra uma cópia da biblioteca de 1.442 obras (design system, seção 5 e
+trigésima terceira leva; HANDOFF). **A causa era de rede, e não do router:** o
+servidor fala HTTP/1.1, o navegador abre seis conexões por origem, e arte fria
+esperando cota do provedor segurava cada conexão 10–15s. Uma grade de cartas
+ocupava as seis, e o chunk da próxima rota — que o router espera antes de trocar
+a árvore — ficava na fila atrás delas por 9 a 30s.
+
+- **Arte da NOSSA origem passa por uma fila de quatro** (`lib/art-gate.ts`, com
+  spec). Quatro é o que sobra: duas conexões ficam sempre livres pro chunk e a
+  consulta da navegação. **O critério é a origem, não o tipo de arte** — hotlink
+  de busca vai pra CDN do provedor, que tem as seis dela, e segue no `<img>`
+  comum. `RemoteArt` continua sem saber se a arte é emprestada ou adquirida
+- **Baixada por `fetch` com `AbortController`, e desenhada como `blob:`.** Tirar
+  um `<img>` da tela **não cancela o download**: a primeira versão devolvia a
+  vaga ao desmontar e as imagens da tela anterior seguiam ocupando conexão —
+  medido, a espera voltou a 9,5s. O `blob:` é revogado ao desmontar
+- **Ela só pede vaga perto da tela** (`IntersectionObserver`, `200px`), senão as
+  linhas de overscan acima da dobra, que nascem primeiro no DOM, passariam na
+  frente das que a pessoa olha
+- **A fila chama o callback DENTRO de `request()` quando há vaga.** Por isso a
+  função de liberar é declarada antes e lida por arrow — a primeira versão a lia
+  cedo demais e derrubou o app inteiro no build de produção
+- **`RouteProgress` é a faixa de 2px no topo** (`components/chrome/`), ligada
+  uma vez no `__root` por `useRouterState` (`status === 'pending'`), com o
+  limiar de `useDelayedPending`. **Não é `pendingComponent` de rota**, porque o
+  `AppShell` mora dentro de cada rota e a sidebar sumiria junto. Pulsa em
+  `--motion-ambient` porque não há token pra varrer a largura
+- **Custo aceito:** com arte genuinamente lenta, uma grade fria enche de quatro
+  em quatro em vez de seis
+- **O jsdom não prova nada disto.** Os specs afirmam a fila, o abort e o limiar;
+  a prova de que a rota não trava é um proxy HTTP/1.1 que segura só as respostas
+  de arte, no `preview`, com o instrumento medindo a troca do CONTEÚDO e nunca a
+  da URL — que é o próprio sintoma
+
 ## O menu de `⋯` é UM — `components/menu/action-menu.tsx`
 
 02/09/2026, apontado pelo dono. Havia **cinco menus escritos à mão e nenhum
@@ -840,9 +883,13 @@ nada a desenhar. A obra passou a carregar **`art`** — um endereço que o
 **servidor** monta —, e o ladrilho virou o que sempre foi por baixo: o chão de
 quem não tem vínculo com provedor nenhum.
 
-- **`RemoteArt` não mudou, e esse é o ponto.** Ele desenha o endereço que
-  receber; qual arte é emprestada (hotlink da CDN) e qual é adquirida (nossa
-  rota de cache) é decisão do servidor, e o componente nunca precisou saber
+- **`RemoteArt` não mudou quando o cache nasceu, e esse era o ponto.** Ele
+  desenha o endereço que receber; qual arte é emprestada (hotlink da CDN) e qual
+  é adquirida (nossa rota de cache) é decisão do servidor, e o componente nunca
+  precisou saber. **Ele mudou em 15/09/2026, e não por isso:** arte da nossa
+  ORIGEM passou a esperar vaga numa fila (ver "A arte da nossa origem espera
+  vaga"). O critério é a origem, que é fato do navegador — o componente continua
+  sem saber que existe cache
 - **O cliente não monta endereço de arte.** Ele chega pronto, como no resultado
   de busca — montá-lo aqui seria o `if (slug === 'tmdb')` que o brief recusa, e
   aqui seria pior: o cliente passaria a saber que existe cache
@@ -1245,7 +1292,9 @@ nenhum, com o próprio componente explicando por quê.
 - **A barra de progresso é exceção registrada.** A regra de 06/09 carrega o
   próprio teste — *o denominador é conhecido E o numerador anda de um em um?* —,
   e um download responde não a ele. Sem `Content-Length` a barra fica
-  **indeterminada** e o texto diz só quanto veio
+  **indeterminada** e o texto diz só quanto veio. **Desde 15/09/2026 ela não é a
+  única:** a faixa de carregando da rota (`RouteProgress`) é a segunda, e fica
+  fora do teste por não ter nem denominador nem numerador
 - **A seção não é condicional**, ao contrário de `Network`: no container ela
   responde a pergunta mostrando o comando. **O que some é o BOTÃO, não a seção**
 - **Sem selo na coluna.** Versão nova é `info`, o sino já anunciou, e um segundo
