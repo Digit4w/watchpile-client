@@ -24,6 +24,12 @@ export const appCopy = {
     settings: 'Settings',
     /** O cabeçalho da seção de pilhas fixadas, na sidebar. */
     pinned: 'Pinned',
+    /**
+     * O nome da faixa de carregando da troca de rota (`RouteProgress`). Frase
+     * nominal e sem nomear a tela: a faixa não sabe qual é, e o leitor de tela
+     * já anunciou o link que a pessoa acabou de acionar.
+     */
+    loading: 'Loading page',
   },
   /**
    * Os idiomas que o PRODUTO fala (brief, 3.8) — não os que um objeto carrega.
