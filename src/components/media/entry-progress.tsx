@@ -1,3 +1,5 @@
+import { CheckIcon } from '@/components/menu/menu-icons'
+import { completedMark } from '@/domain/completed-mark'
 import type { Entry } from '@/domain/media'
 import { showsCounter } from '@/domain/shows-counter'
 import { useAddProgress } from '@/hooks/mutations/entries/use-add-progress'
@@ -226,6 +228,21 @@ export function EntryProgress({
 
   const glyph = variant === 'row' ? 16 : 14
 
+  /**
+   * **O ✓ de `completed` é da CARTA** (14/11/2026, decisão do dono, com
+   * mockup). As linhas de lista têm a coluna `Status`, e a régua é a mesma de
+   * `statusInRow`: o status mora na coluna de status. A carta não tem uma, e
+   * com contador ela não dizia o status em lugar nenhum — `24 / 24` era
+   * inferência. A regra, inclusive o "/ total" que sai, é pura e testada
+   * (`domain/completed-mark.ts`).
+   */
+  const mark =
+    variant === 'card' ? completedMark(entry) : { done: false, showTotal: true }
+  const total = entry.total ?? appCopy.progress.unknownTotal
+  const number = mark.showTotal
+    ? `${entry.progress} / ${total}`
+    : `${entry.progress}`
+
   const counter =
     variant === 'card'
       ? 'flex-1 whitespace-nowrap text-center font-mono text-[11px] text-muted tabular-nums'
@@ -245,7 +262,15 @@ export function EntryProgress({
         <Glyph sign="minus" size={glyph} />
       </button>
       <p className={counter}>
-        {entry.progress} / {entry.total ?? appCopy.progress.unknownTotal}
+        {mark.done ? (
+          <span className="inline-flex items-center justify-center gap-0.5">
+            <CheckIcon size={10} strokeWidth={2.4} />
+            <span className="sr-only">{appCopy.statuses.completed}</span>
+            {number}
+          </span>
+        ) : (
+          number
+        )}
       </p>
       <button
         type="button"

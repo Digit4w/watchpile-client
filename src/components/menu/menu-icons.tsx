@@ -88,13 +88,24 @@ export function OpenIcon() {
  * 1.6 como o resto do arquivo: é o único glifo que diz um ESTADO em vez de uma
  * ação, e a diferença de peso é o que o separa da lista à esquerda dele.
  */
-export function CheckIcon() {
+export function CheckIcon({
+  size = 14,
+  strokeWidth = 2,
+}: {
+  size?: number
+  /**
+   * Na carta (14/11/2026) o visto desce a 10px, ao lado de um número de 11px,
+   * e o traço 2 ali vira 1px: some contra o degradê. 2,4 é o peso que o
+   * mockup aprovou nesse tamanho.
+   */
+  strokeWidth?: number
+} = {}) {
   return (
     <svg
       {...base}
-      width="14"
-      height="14"
-      strokeWidth="2"
+      width={size}
+      height={size}
+      strokeWidth={strokeWidth}
       className="shrink-0"
       aria-hidden="true"
     >

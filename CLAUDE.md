@@ -1419,6 +1419,19 @@ Decisões do brief que a tela sente direto:
   versão esvaziou a célula de leitura e estava errada; e o defeito que ela
   escondia era pior — **duas peças computando a mesma pergunta com entradas
   diferentes**, o que fazia umas linhas ficarem em branco e outras duplicadas.
+- **A carta marca `completed` com um ✓ — 14/11/2026, decisão do dono, com
+  mockup** (`domain/completed-mark.ts`, com specs). Com contador, a carta não
+  dizia o status em lugar nenhum, e `24 / 24` era inferência. **Quem decide é o
+  STATUS, nunca o número:** `completed` em `12 / 24` ganha o ✓, `watching` em
+  `62 / 62` não. Na carta cheia ele entra na linha do contador, no tom do
+  número; quando a obra concluiu NO FIM, o "/ total" sai (`✓ 62`), porque o ✓
+  já diz isso. **E isso é medida, não estilo:** no piso de 133px,
+  `✓ 1094 / 1094` deixava os botões `+`/`−` com 14px. Na compacta de
+  `/library` ele é selo de vidro no canto inferior esquerdo, que some no hover.
+  **As linhas de lista NÃO ganham ✓**, porque a coluna `Status` já diz. O
+  mockup também achou um defeito anterior: hoje, `1094 / 1094` no piso já
+  encolhe os botões a 20px, porque eles não são `shrink-0`. Está no handoff,
+  como ciclo próprio
 - **`asks_total` não existe mais** (`0045`). Ele dizia se a folha de criar obra
   pergunta o total, e a resposta já estava no modelo: o campo é OPCIONAL e em
   branco produz o mesmo `null`. `initialTotal` tem dois casos, não três. A peça
