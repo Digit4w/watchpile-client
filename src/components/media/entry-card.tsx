@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import type { Entry } from '@/domain/media'
 import { useMediaTypeName } from '@/hooks/queries/media-types/use-media-type-name'
 import { appCopy } from '@/lib/copy'
+import { CompletedBadge } from './completed-badge'
 import { EntryActions } from './entry-actions'
 import { EntryArt } from './entry-art'
 import { EntryProgress } from './entry-progress'
@@ -111,30 +112,40 @@ export function EntryCard({
         <MediaTypeIcon type={entry.mediaType} labelled />
       </span>
 
-      {entry.rating !== null && (
-        // Vidro fosco sobre a arte (design system, seção 2). `z-10` porque o
-        // degradê da base é irmão e desenha depois.
-        // `pointer-events-none`: com a carta inteira clicável, um selo sem
-        // interação nenhuma não pode virar um buraco morto no canto. O selo de
-        // TIPO fica clicável de propósito — ele tem `title`, e tooltip precisa
-        // receber o ponteiro.
-        <span className="pointer-events-none absolute top-1.5 left-1.5 z-10 flex items-center gap-0.5 rounded-sm bg-glass px-1.5 py-0.5 text-[10px] text-ink backdrop-blur-md">
-          <svg
-            width="9"
-            height="9"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            aria-hidden="true"
-          >
-            <path d="M10 1l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1L4.6 17l1.3-6L1.3 7.2l6.1-.6L10 1z" />
-          </svg>
-          {/* O leitor de tela ouve "Rating 8.1"; a estrela é decoração. Rótulo
-           * e número ficam separados de propósito — juntá-los numa string só
-           * viraria concatenação, que é o que trava tradução. */}
-          <span className="sr-only">{appCopy.entry.rating}</span>
-          {entry.rating.toFixed(1)}
-        </span>
-      )}
+      {/**
+       * **O canto superior esquerdo é uma FILEIRA de selos** — a nota, quando
+       * há, e o de `completed` ao lado dela (14/11/2026, decisão do dono). Sem
+       * nota, o de `completed` ocupa o canto sozinho. A posição e o `z-10`
+       * moram no invólucro, que é quem encosta no canto; cada selo só desenha
+       * a si mesmo.
+       *
+       * `pointer-events-none` no invólucro: com a carta inteira clicável, um
+       * selo sem interação nenhuma não pode virar um buraco morto no canto. O
+       * selo de TIPO fica clicável de propósito — ele tem `title`, e tooltip
+       * precisa receber o ponteiro.
+       */}
+      <div className="pointer-events-none absolute top-1.5 left-1.5 z-10 flex items-center gap-1">
+        {entry.rating !== null && (
+          // Vidro fosco sobre a arte (design system, seção 2).
+          <span className="flex items-center gap-0.5 rounded-sm bg-glass px-1.5 py-0.5 text-[10px] text-ink backdrop-blur-md">
+            <svg
+              width="9"
+              height="9"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M10 1l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1L4.6 17l1.3-6L1.3 7.2l6.1-.6L10 1z" />
+            </svg>
+            {/* O leitor de tela ouve "Rating 8.1"; a estrela é decoração. Rótulo
+             * e número ficam separados de propósito — juntá-los numa string só
+             * viraria concatenação, que é o que trava tradução. */}
+            <span className="sr-only">{appCopy.entry.rating}</span>
+            {entry.rating.toFixed(1)}
+          </span>
+        )}
+        <CompletedBadge status={entry.status} />
+      </div>
 
       {/* `pt-8` é o comprimento do degradê, não espaçamento: é o que dá ao
        * texto um fundo que escurece aos poucos em vez de uma faixa com borda
