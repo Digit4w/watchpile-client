@@ -3,9 +3,12 @@ import { EntryArt } from '@/components/media/entry-art'
 import { EntryCard } from '@/components/media/entry-card'
 import { EntryMenu } from '@/components/media/entry-menu'
 import { MediaTypeIcon } from '@/components/media/media-type-icon'
+import { CheckIcon } from '@/components/menu/menu-icons'
+import { completedMark } from '@/domain/completed-mark'
 import type { Entry } from '@/domain/media'
 import { useMediaTypeName } from '@/hooks/queries/media-types/use-media-type-name'
 import { useGridWindow } from '@/hooks/use-grid-window'
+import { appCopy } from '@/lib/copy'
 
 /**
  * A grade padrão de `/library` — e a carta é a MESMA da Home, sem uma
@@ -123,6 +126,25 @@ export function LibraryCompactGrid({ entries }: { entries: Entry[] }) {
             >
               <MediaTypeIcon type={entry.mediaType} size={11} labelled />
             </span>
+
+            {/**
+             * **O ✓ de `completed`, em selo de vidro — 14/11/2026, decisão do
+             * dono, com mockup.** A carta cheia o põe na linha do contador;
+             * esta não tem contador, e o canto inferior esquerdo é o único
+             * livre (o `⋯` fica em cima à esquerda, o tipo em cima à direita).
+             * O selo é o MESMO do tipo, sem token novo.
+             *
+             * Some no hover porque a faixa do título entra por cima dele no
+             * mesmo canto. E sem `pointer-events`: ele não faz nada, e com a
+             * carta inteira clicável um selo inerte não pode virar um buraco
+             * morto no canto — a mesma régua do selo de nota da carta cheia.
+             */}
+            {completedMark(entry).done && (
+              <span className="pointer-events-none absolute bottom-1.5 left-1.5 z-10 flex items-center justify-center rounded-sm bg-glass p-1 text-ink backdrop-blur-md transition-opacity duration-[var(--motion-chrome)] ease-chrome group-hover:opacity-0">
+                <CheckIcon size={10} strokeWidth={2.4} />
+                <span className="sr-only">{appCopy.statuses.completed}</span>
+              </span>
+            )}
 
             {/* `pointer-events-none`: a faixa é `z-10`, acima do link, e é só
              * texto — sem isto o clique sobre o nome morreria nela. */}
