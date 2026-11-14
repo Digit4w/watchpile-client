@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { MediaTypeIcon } from '@/components/media/media-type-icon'
-import { fittingChips } from '@/domain/chip-fit'
+import { collapsingChips } from '@/domain/chip-fit'
 import type { EntryStatus, MediaType } from '@/domain/media'
 import { useOfferedMediaTypes } from '@/hooks/queries/media-types/use-offered-media-types'
 import { useCompactViewport } from '@/hooks/use-compact-viewport'
@@ -65,9 +65,17 @@ function Close() {
  * Aqui a saída é OUTRA, e a diferença importa. Em `/search` o tipo é parâmetro
  * obrigatório da consulta e foi inteiro pro campo. Aqui ele é **filtro
  * opcional, com `All`** — esconder um filtro ligado é justamente o que a
- * decisão de 29/08 proíbe. Então: `All` mais quantos couberem, medido; o resto
- * na seção `Media type` do menu; e o escolhido **sempre na fileira**, no lugar
- * dele no vocabulário.
+ * decisão de 29/08 proíbe. Então: o escolhido **sempre na fileira**, e o resto
+ * na seção `Media type` do menu.
+ *
+ * ── Tudo ou só o ativo — 11/09/2026, decisão do dono ────────────────────────
+ * A primeira versão mostrava `All` mais quantos coubessem. Com muitos tipos
+ * isso é um recorte arbitrário do vocabulário — os primeiros por ordem, não os
+ * que a pessoa usa — no lugar onde ela lê o que está filtrado. Agora, se os
+ * oferecidos não cabem INTEIROS, a fileira recolhe pra `All` e o ativo, e
+ * escolher passa a ser só do menu. Quem tem poucos tipos não vê diferença, e
+ * não há chave: é a mesma medição respondendo outra coisa
+ * (`domain/chip-fit.ts`, `collapsingChips`).
  *
  * **No celular a fileira continua rolando com todos.** Rolar chip é idioma
  * nativo ali, e o dedo tem como descobrir o que está fora da tela — o ponteiro
@@ -180,7 +188,7 @@ export function LibraryChips({
 
   const visible = showAll
     ? list.map((_, index) => index)
-    : fittingChips({
+    : collapsingChips({
         widths: list.map(({ slug }) => widths.current.get(slug) ?? 0),
         gap: GAP,
         available: livre,

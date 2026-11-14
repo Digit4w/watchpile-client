@@ -84,3 +84,38 @@ export function fittingChips({
 
   return [...chosen].sort((a, b) => a - b)
 }
+
+/**
+ * A fileira de TIPO de `/library`: tudo ou só o ativo — 11/09/2026.
+ *
+ * ── Por que não "os que couberem" ───────────────────────────────────────────
+ * `fittingChips` mostrava os primeiros que coubessem e mandava o resto pro
+ * menu. Com poucos tipos a diferença não aparece; com MUITOS, a fileira vira
+ * um recorte arbitrário do vocabulário — os primeiros por ordem, que não são
+ * os que a pessoa usa —, e é ruído no lugar onde ela lê o que está filtrado.
+ * Decisão do dono: quando o vocabulário oferecido não cabe inteiro, a fileira
+ * recolhe pro que está LIGADO, e escolher passa a ser só do menu, que já lista
+ * todos (07/09, sub-vista `Media type`).
+ *
+ * Isso não é chave nem preferência: é a mesma medição respondendo outra coisa
+ * quando não cabe. Quem tem poucos tipos não vê mudança nenhuma.
+ *
+ * ── Por que não oscila na fronteira ─────────────────────────────────────────
+ * O limiar é UM número — a soma de todas as larguras com os gaps —, e nem as
+ * larguras (medidas uma vez, intrínsecas) nem o espaço livre (a fileira menos
+ * o bloco fixo de status e `All`) dependem do que esta função decide mostrar.
+ * Então redimensionar cruza o limiar uma vez, em vez de alternar a cada pixel.
+ *
+ * `fittingChips` continua sendo a conta de "quantos cabem": é ela que
+ * `/setup` vai usar quando a fileira de idiomas precisar medir, e lá o
+ * recolhimento não serve — idioma é seletor obrigatório, não filtro.
+ */
+export function collapsingChips(fit: ChipFit): number[] {
+  const all = fittingChips({ ...fit, required: null })
+  if (all.length === fit.widths.length) {
+    return all
+  }
+
+  const { required = null, widths } = fit
+  return required !== null && widths[required] !== undefined ? [required] : []
+}

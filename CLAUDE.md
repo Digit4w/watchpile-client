@@ -926,6 +926,21 @@ tipos abriu, brief 3.10).
 O menu lista **todos** os tipos, não só os que transbordaram: conteúdo de menu
 que depende da largura da janela muda de assunto sem ninguém pedir.
 
+**Desde 11/09/2026 (construído em 14/11): tudo ou só o ativo** — decisão do
+dono, `collapsingChips`. Quando os tipos OFERECIDOS não cabem inteiros, a
+fileira recolhe pra `All` e o chip ativo, e escolher passa a ser só do menu. A
+versão de 01/09 mostrava "os primeiros que couberem", e com muitos tipos isso é
+um recorte arbitrário do vocabulário no lugar onde se lê o que está filtrado.
+Sem chave nem preferência: quem tem poucos tipos não vê diferença nenhuma.
+
+- **O limiar é UM número** — todas as larguras mais os gaps —, e nem as
+  larguras nem o espaço livre dependem do que se decide mostrar, nem do ATIVO.
+  Conferido no Chrome com 14 tipos, varrendo 1900→1800→1900px de pixel em
+  pixel: uma troca só, em 1891/1892, nos dois sentidos
+- **`fittingChips` continua existindo, e não é sobra:** é a conta de "quantos
+  cabem" que `/setup` vai usar na fileira de idiomas, onde recolher não serve —
+  idioma é seletor obrigatório, não filtro
+
 ## O menu de filtro abre SUB-VISTA no lugar — 07/09/2026
 
 `components/library/library-menu.tsx`, decisão do dono entre três caminhos.
