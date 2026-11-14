@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fittingChips } from './chip-fit'
+import { collapsingChips, fittingChips } from './chip-fit'
 
 /** Oito chips de 100px, como os tipos medidos em 01/09/2026 (~98px cada). */
 const OITO = Array.from({ length: 8 }, () => 100)
@@ -72,5 +72,52 @@ describe('fittingChips', () => {
 
   it('takes an empty list without arithmetic on undefined', () => {
     expect(fittingChips({ widths: [], gap: 8, available: 500 })).toEqual([])
+  })
+})
+
+describe('collapsingChips', () => {
+  it('keeps the whole row when every type fits', () => {
+    expect(
+      collapsingChips({ widths: OITO, gap: 8, available: 856, required: 3 }),
+      // 8 × 100 + 7 gaps de 8 = 856: cabe exato
+    ).toEqual([0, 1, 2, 3, 4, 5, 6, 7])
+  })
+
+  /**
+   * O caso que a regra existe pra trocar: com um pixel a menos, `fittingChips`
+   * mostraria sete de oito. Aqui a fileira recolhe pro ativo — e o ativo é o
+   * ÚLTIMO, pra que mostrar "os primeiros que cabem" não coincida com ele.
+   */
+  it('collapses to the active chip alone when the row does not fit', () => {
+    expect(
+      collapsingChips({ widths: OITO, gap: 8, available: 855, required: 7 }),
+    ).toEqual([7])
+  })
+
+  it('collapses to nothing when the row does not fit and nothing is active', () => {
+    expect(collapsingChips({ widths: OITO, gap: 8, available: 855 })).toEqual(
+      [],
+    )
+  })
+
+  /**
+   * O ativo não muda o limiar. Se ele fosse descontado do espaço, ligar um
+   * filtro poderia recolher a fileira — o recorte mudando a forma do controle
+   * que o desfaz.
+   */
+  it('decides by the whole vocabulary, whatever is active', () => {
+    const fit = { widths: OITO, gap: 8, available: 856 }
+    expect(collapsingChips({ ...fit, required: null })).toHaveLength(8)
+    expect(collapsingChips({ ...fit, required: 0 })).toHaveLength(8)
+  })
+
+  it('ignores an active index that is not in the list', () => {
+    expect(
+      collapsingChips({ widths: OITO, gap: 8, available: 10, required: 99 }),
+    ).toEqual([])
+  })
+
+  it('takes an empty list as a row that fits', () => {
+    expect(collapsingChips({ widths: [], gap: 8, available: 0 })).toEqual([])
   })
 })
